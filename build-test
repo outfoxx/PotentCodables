@@ -1,0 +1,4 @@
+xcodegen
+xcodebuild -project PotentCodables.xcodeproj -scheme PotentCodables_macOS build test
+xcodebuild -project PotentCodables.xcodeproj -scheme PotentCodables_iOS -destination 'platform=iOS Simulator,name=iPhone 8' build test
+xcodebuild -project PotentCodables.xcodeproj -scheme PotentCodables_tvOS -destination 'platform=tvOS Simulator,name=Apple TV' build test
