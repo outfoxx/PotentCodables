@@ -127,7 +127,9 @@ extension JSON : Value {}
  * Literal support
  **/
 
-extension JSON : ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral {
+extension JSON : ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral,
+                 ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral,
+                 ExpressibleByDictionaryLiteral {
 
   public init(nilLiteral: ()) {
     self = .null

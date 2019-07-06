@@ -87,6 +87,7 @@ public enum AnyValue : Hashable {
     }
   }
 
+  /// Wraps the value into an equivalent `AnyValue` tree
   public static func wrapped(_ value: Any?) throws -> AnyValue {
     guard let value = value else { return .nil }
     switch value {

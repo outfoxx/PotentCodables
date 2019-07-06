@@ -172,8 +172,8 @@ public indirect enum CBOR: Equatable, Hashable {
 }
 
 extension CBOR : ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, ExpressibleByStringLiteral,
-  ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral, ExpressibleByBooleanLiteral,
-ExpressibleByFloatLiteral {
+                 ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral, ExpressibleByBooleanLiteral,
+                 ExpressibleByFloatLiteral {
 
   public init(nilLiteral: ()) {
     self = .null
