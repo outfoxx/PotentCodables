@@ -26,6 +26,15 @@ public protocol InternalValueDeserializer {
 
 }
 
+public protocol InternalValueParser {
+
+  associatedtype Value : PotentCodables.Value
+  associatedtype Options : InternalDecoderOptions
+
+  static func value(from: String, options: Options) throws -> Value
+
+}
+
 
 /// A decoder transform provides required functionality to unbox instances of
 /// `Value` into Swift/Foundation primitives.
@@ -147,6 +156,46 @@ extension ValueDecoder where Transform : InternalValueDeserializer {
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: An error if any value throws an error during decoding.
   open func decodeIfPresent<T : Decodable>(_ type: T.Type, from data: Data) throws -> T? {
+    let value = try Transform.value(from: data, options: options)
+    guard !value.isNull else { return nil }
+    let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)
+    guard let result = try decoder.unbox(value, as: type) else {
+      throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: [], debugDescription: "The given data did not contain a top-level value."))
+    }
+    return result
+  }
+
+}
+
+extension ValueDecoder where Transform : InternalValueParser {
+
+  /// Decodes a top-level value of the given type from the given string.
+  ///
+  /// - parameter type: The type of the value to decode.
+  /// - parameter value: The string to decode from.
+  /// - returns: A value of the requested type.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
+  /// - throws: An error if any value throws an error during decoding.
+  public func decode<T : Decodable>(_ type: T.Type, from data: String) throws -> T {
+    let value = try Transform.value(from: data, options: options)
+    guard !value.isNull, let result = try decodeTreeIfPresent(type, from: value) as T? else {
+      throw DecodingError.valueNotFound(T.self,
+                                        DecodingError.Context(codingPath: [],
+                                                              debugDescription: "Value contained null when attempting to decode non-optional type"))
+    }
+    return result
+  }
+
+  /// Decodes a top-level value of the given type from the given string or
+  /// nil if the value contains a `null`.
+  ///
+  /// - parameter type: The type of the value to decode.
+  /// - parameter value: The string to decode from.
+  /// - returns: A value of the requested type or nil.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: An error if any value throws an error during decoding.
+  open func decodeIfPresent<T : Decodable>(_ type: T.Type, from data: String) throws -> T? {
     let value = try Transform.value(from: data, options: options)
     guard !value.isNull else { return nil }
     let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)

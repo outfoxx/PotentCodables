@@ -41,6 +41,23 @@ public struct JSONSerialization {
     }
   }
 
+  public static func json(from data: String, options: ReadingOptions = []) throws -> JSON {
+    var data = data
+    return try data.withUTF8 { ptr in
+      let source = JSONReader.UTF8Source(buffer: ptr)
+      guard let (json, _) = try JSONReader(source: source).parseValue(0, options: options) else {
+        throw Error.noValue
+      }
+
+      switch json {
+      case .object: return json
+      case .array: return json
+      case let json where options.contains(.allowFragments): return json
+      default: throw Error.fragmentDisallowed
+      }
+    }
+  }
+
 
   public struct WritingOptions : OptionSet {
     public let rawValue: UInt
@@ -54,6 +71,10 @@ public struct JSONSerialization {
   }
 
   public static func data(from json: JSON, options: WritingOptions = []) throws -> Data {
+    return try string(from: json, options: options).data(using: .utf8)!
+  }
+
+  public static func string(from json: JSON, options: WritingOptions = []) throws -> String {
     var output = String()
     var writer = JSONWriter(pretty: options.contains(.prettyPrinted), sortedKeys: options.contains(.sortedKeys)) {
       guard let str = $0 else { return }
@@ -62,7 +83,7 @@ public struct JSONSerialization {
 
     try writer.serialize(json)
 
-    return output.data(using: .utf8)!
+    return output
   }
 
   private init() {}

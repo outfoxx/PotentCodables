@@ -26,6 +26,15 @@ public protocol InternalValueSerializer {
 
 }
 
+public protocol InternalValueStringifier {
+
+  associatedtype Value : PotentCodables.Value
+  associatedtype Options : InternalEncoderOptions
+
+  static func string(from: Value, options: Options) throws -> String
+
+}
+
 /// An encoder transform provides required functionality to box instances of
 /// Swift/Foundation primitives into instances of `Value`.
 ///
@@ -114,6 +123,21 @@ extension ValueEncoder where Transform : InternalValueSerializer {
   open func encode<T : Encodable>(_ value: T) throws -> Data {
     let tree = try encodeTree(value)
     return try Transform.data(from: tree, options: options)
+  }
+
+}
+
+extension ValueEncoder where Transform : InternalValueStringifier {
+
+  /// Encodes the given top-level value and returns its stringified form.
+  ///
+  /// - parameter value: The value to encode.
+  /// - returns: A new value containing the stringified value.
+  /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point value is encountered during encoding, and the encoding strategy is `.throw`.
+  /// - throws: An error if any value throws an error during encoding.
+  open func encodeString<T : Encodable>(_ value: T) throws -> String {
+    let tree = try encodeTree(value)
+    return try Transform.string(from: tree, options: options)
   }
 
 }

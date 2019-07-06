@@ -84,7 +84,7 @@ public class JSONDecoder : ValueDecoder<JSON, JSONDecoderTransform> {
 }
 
 
-public struct JSONDecoderTransform : InternalDecoderTransform, InternalValueDeserializer {
+public struct JSONDecoderTransform : InternalDecoderTransform, InternalValueDeserializer, InternalValueParser {
 
   public typealias Value = JSON
 
@@ -334,6 +334,10 @@ public struct JSONDecoderTransform : InternalDecoderTransform, InternalValueDese
 
   public static func value(from data: Data, options: Options) throws -> JSON {
     return try JSONSerialization.json(from: data)
+  }
+
+  public static func value(from string: String, options: Options) throws -> JSON {
+    return try JSONSerialization.json(from: string, options: [.allowFragments])
   }
 
 }

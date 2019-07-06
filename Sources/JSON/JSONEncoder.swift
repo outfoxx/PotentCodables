@@ -104,6 +104,7 @@ public class JSONEncoder : ValueEncoder<JSON, JSONEncoderTransform> {
                                         userInfo: userInfo)
   }
 
+
   public override init() {
     super.init()
   }
@@ -112,7 +113,7 @@ public class JSONEncoder : ValueEncoder<JSON, JSONEncoderTransform> {
 
 
 
-public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSerializer {
+public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSerializer, InternalValueStringifier {
 
   public typealias Value = JSON
 
@@ -258,6 +259,17 @@ public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSeri
       writingOptions.insert(.sortedKeys)
     }
     return try JSONSerialization.data(from: value, options: writingOptions)
+  }
+
+  public static func string(from value: JSON, options: Options) throws -> String {
+    var writingOptions: JSONSerialization.WritingOptions = []
+    if options.outputFormatting.contains(.prettyPrinted) {
+      writingOptions.insert(.prettyPrinted)
+    }
+    if options.outputFormatting.contains(.sortedKeys) {
+      writingOptions.insert(.sortedKeys)
+    }
+    return try JSONSerialization.string(from: value, options: writingOptions)
   }
 
 }
