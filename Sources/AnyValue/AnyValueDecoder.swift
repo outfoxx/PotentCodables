@@ -47,9 +47,9 @@ public struct AnyValueDecoderTransform : InternalDecoderTransform {
 
   public static func unbox(_ value: AnyValue, as type: Int.Type, decoder: InternalValueDecoder<AnyValue, AnyValueDecoderTransform>) throws -> Int? {
     switch MemoryLayout<Int>.size {
-    case 32:
+    case 4:
       return try unbox(value, as: Int32.self, decoder: decoder).flatMap { Int(exactly: $0)! }
-    case 64:
+    case 8:
       return try unbox(value, as: Int64.self, decoder: decoder).flatMap { Int(exactly: $0)! }
     default:
       fatalError()
@@ -57,10 +57,10 @@ public struct AnyValueDecoderTransform : InternalDecoderTransform {
   }
 
   public static func unbox(_ value: AnyValue, as type: UInt.Type, decoder: InternalValueDecoder<AnyValue, AnyValueDecoderTransform>) throws -> UInt? {
-    switch MemoryLayout<Int>.size {
-    case 32:
+    switch MemoryLayout<UInt>.size {
+    case 4:
       return try unbox(value, as: UInt32.self, decoder: decoder).flatMap { UInt(exactly: $0)! }
-    case 64:
+    case 8:
       return try unbox(value, as: UInt64.self, decoder: decoder).flatMap { UInt(exactly: $0)! }
     default:
       fatalError()
