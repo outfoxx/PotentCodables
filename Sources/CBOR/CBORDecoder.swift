@@ -82,7 +82,7 @@ public struct CBORDecoderTransform : InternalDecoderTransform, InternalValueDese
   }
 
   static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T : BinaryInteger, F : BinaryFloatingPoint {
-    guard let result = T(exactly: from) else {
+    guard let result = T(exactly: round(from)) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
