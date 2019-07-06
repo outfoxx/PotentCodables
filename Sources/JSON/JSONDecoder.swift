@@ -115,7 +115,7 @@ public struct JSONDecoderTransform : InternalDecoderTransform, InternalValueDese
   }
 
   static func coerce<T>(_ from: Float80, at codingPath: [CodingKey]) throws -> T where T : BinaryInteger {
-    guard let result = T(exactly: from) else {
+    guard let result = T(exactly: roundl(from)) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
