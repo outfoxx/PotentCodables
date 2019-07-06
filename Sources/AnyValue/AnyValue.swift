@@ -9,6 +9,11 @@ import Foundation
 
 
 public enum AnyValue : Hashable {
+
+  public enum Error : Swift.Error {
+    case unsupportedValue(Any)
+  }
+
   case `nil`
   case bool(Bool)
   case string(String)
@@ -79,6 +84,41 @@ public enum AnyValue : Hashable {
     case .date(let value): return value
     case .array(let value): return value.compactMap { $0.unwrappedValues }
     case .dictionary(let value): return value.compactMapValues { $0.unwrappedValues }
+    }
+  }
+
+  public static func wrapped(_ value: Any?) throws -> AnyValue {
+    guard let value = value else { return .nil }
+    switch value {
+    case let val as String: return .string(val)
+    case let val as Bool: return .bool(val)
+    case let val as Decimal: return .decimal(val)
+    case let val as NSNumber:
+      /// Use NSNumber's type identifier to determine exact numeric type because
+      /// Swift's `as`, `is` and `type(of:)` all coerce numeric types into the
+      /// requested type if they are compatible
+      switch UnicodeScalar(Int(val.objCType.pointee)) {
+      case "c": return .int8(val.int8Value)
+      case "C": return .uint8(val.uint8Value)
+      case "s": return .int16(val.int16Value)
+      case "S": return .uint16(val.uint16Value)
+      case "i": return .int32(val.int32Value)
+      case "I": return .uint32(val.uint32Value)
+      case "l": return MemoryLayout<Int>.size == 8 ? .int64(Int64(val.intValue)) : .int32(Int32(val.intValue))
+      case "L": return MemoryLayout<Int>.size == 8 ? .uint64(UInt64(val.uintValue)) : .uint32(UInt32(val.intValue))
+      case "q": return .int64(val.int64Value)
+      case "Q": return .uint64(val.uint64Value)
+      case "f": return .float(val.floatValue)
+      case "d": return .double(val.doubleValue)
+      default: fatalError("Invalid NSNumber type identifier")
+      }
+    case let val as Data: return .data(val)
+    case let val as URL: return .url(val)
+    case let val as UUID: return .uuid(val)
+    case let val as Date: return .date(val)
+    case let val as [Any]: return .array(try val.map { try wrapped($0) })
+    case let val as [String: Any]: return .dictionary(try val.mapValues { try wrapped($0) })
+    default: throw Error.unsupportedValue(value)
     }
   }
 
