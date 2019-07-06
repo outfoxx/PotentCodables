@@ -99,21 +99,17 @@ public enum JSON {
     return nil
   }
 
-  public func describe(indent: String = "") -> String {
-    let nextIndent = indent + "  "
-    let newlineIndent = "\n\(nextIndent)"
-    switch self {
-    case .null: return "null"
-    case .bool(let value): return "\(value)"
-    case .string(let value): return "\"\(value)\""
-    case .number(let value): return "\(value)"
-    case .array(let value): return "[\(newlineIndent)\(value.map { $0.describe(indent: nextIndent) }.joined(separator: ",\(newlineIndent)"))\n\(indent)]"
-    case .object(let value): return "{\(newlineIndent)\(value.map { "\"\($0.key)\": \($0.value.describe(indent: nextIndent))" }.joined(separator: ",\(newlineIndent)"))\n\(indent)}"
-    }
-  }
-
   public var description: String {
-    return self.describe()
+    var output = ""
+    var writer = JSONWriter(pretty: true) { output += $0 ?? "" }
+
+    do {
+      try writer.serialize(self)
+    }
+    catch {
+      output = "Invalid JSON: \(error)"
+    }
+    return output
   }
 
 }
@@ -188,4 +184,3 @@ extension JSON {
   }
 
 }
-
