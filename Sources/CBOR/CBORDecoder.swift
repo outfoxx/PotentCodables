@@ -96,10 +96,7 @@ public struct CBORDecoderTransform : InternalDecoderTransform, InternalValueDese
   }
 
   static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T : BinaryFloatingPoint, F : BinaryFloatingPoint {
-    guard let result = T(exactly: from) else {
-      throw overflow(T.self, value: from, at: codingPath)
-    }
-    return result
+    return T(from)
   }
 
   public static func unbox(_ value: CBOR, as type: Int.Type, decoder: InternalValueDecoder<CBOR, Self>) throws -> Int? {
