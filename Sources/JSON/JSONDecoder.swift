@@ -122,10 +122,7 @@ public struct JSONDecoderTransform : InternalDecoderTransform, InternalValueDese
   }
 
   static func coerce<T>(_ from: Float80, at codingPath: [CodingKey]) throws -> T where T : BinaryFloatingPoint {
-    guard let result = T(exactly: from) else {
-      throw overflow(T.self, value: from, at: codingPath)
-    }
-    return result
+    return T(from)
   }
 
   public static func unbox(_ value: JSON, as type: Int.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Int? {
