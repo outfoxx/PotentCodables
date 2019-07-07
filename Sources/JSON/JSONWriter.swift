@@ -34,7 +34,7 @@ struct JSONWriter {
     case .bool(let bool):
       writer(bool.description)
     case .number(let number):
-      try serializeFloat(number)
+      try serializeFloat(number.value)
     case .array(let array):
       try serializeArray(array)
     case .object(let dict):
@@ -73,9 +73,8 @@ struct JSONWriter {
     writer("\"")
   }
 
-  private func serializeFloat(_ num: Float80) throws {
-    guard num.isFinite else { throw Error.invalidNumber(num) }
-    var str = num.description
+  private func serializeFloat(_ str: String) throws {
+    var str = str
     if str.hasSuffix(".0") {
       str.removeLast(2)
     }

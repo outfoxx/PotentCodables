@@ -56,7 +56,7 @@ class ValueTransformerTests: XCTestCase {
       "boolValue": 1.0
     ]
 
-    XCTAssertEqual(try encoder.encodeTree(Test(boolValue: true)), expected)
+    XCTAssertEqual(try encoder.encodeTree(Test(boolValue: true)).stableText, expected.stableText)
   }
 
 }

@@ -130,16 +130,16 @@ public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSeri
   }
 
   public static func box(_ value: Bool, encoder: InternalValueEncoder<Value, Self>)     throws -> JSON { return .bool(value) }
-  public static func box(_ value: Int, encoder: InternalValueEncoder<Value, Self>)      throws -> JSON { return .number(Float80(exactly: value)!) }
-  public static func box(_ value: Int8, encoder: InternalValueEncoder<Value, Self>)     throws -> JSON { return .number(Float80(exactly: value)!) }
-  public static func box(_ value: Int16, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(Float80(exactly: value)!) }
-  public static func box(_ value: Int32, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(Float80(exactly: value)!) }
-  public static func box(_ value: Int64, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(Float80(exactly: value)!) }
-  public static func box(_ value: UInt, encoder: InternalValueEncoder<Value, Self>)     throws -> JSON { return .number(Float80(exactly: value)!) }
-  public static func box(_ value: UInt8, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(Float80(exactly: value)!) }
-  public static func box(_ value: UInt16, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .number(Float80(exactly: value)!) }
-  public static func box(_ value: UInt32, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .number(Float80(exactly: value)!) }
-  public static func box(_ value: UInt64, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .number(Float80(exactly: value)!) }
+  public static func box(_ value: Int, encoder: InternalValueEncoder<Value, Self>)      throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int8, encoder: InternalValueEncoder<Value, Self>)     throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int16, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int32, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int64, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt, encoder: InternalValueEncoder<Value, Self>)     throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt8, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt16, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt32, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt64, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .number(.init(value.description)) }
   public static func box(_ value: String, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .string(value) }
   public static func box(_ value: URL, encoder: InternalValueEncoder<Value, Self>)      throws -> JSON { return .string(value.absoluteString) }
   public static func box(_ value: UUID, encoder: InternalValueEncoder<Value, Self>)     throws -> JSON { return .string(value.uuidString) }
@@ -161,7 +161,7 @@ public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSeri
       }
     }
 
-    return .number(Float80(float))
+    return .number(.init(float.description))
   }
 
   public static func box(_ double: Double, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
@@ -181,7 +181,7 @@ public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSeri
       }
     }
 
-    return .number(Float80(double))
+    return .number(.init(double.description))
   }
 
   public static func box(_ decimal: Decimal, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
@@ -204,7 +204,7 @@ public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSeri
     var decimal = decimal
     let rep = NSDecimalString(&decimal, NSLocale.system)
 
-    return .number(Float80(rep)!)
+    return .number(.init(rep.description))
   }
 
   public static func box(_ value: Data, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
@@ -226,10 +226,10 @@ public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSeri
       return try encoder.subEncode { try value.encode(to: $0) }
 
     case .secondsSince1970:
-      return .number(Float80(value.timeIntervalSince1970))
+      return .number(.init(value.timeIntervalSince1970.description))
 
     case .millisecondsSince1970:
-      return .number(Float80(1000.0 * value.timeIntervalSince1970))
+      return .number(.init((1000.0 * value.timeIntervalSince1970).description))
 
     case .iso8601:
       return .string(_iso8601Formatter.string(from: value))

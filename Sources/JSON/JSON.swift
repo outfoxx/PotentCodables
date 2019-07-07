@@ -22,7 +22,59 @@ public enum JSON {
     case unsupportedType
   }
 
-  public typealias Number = Float80
+  public struct Number : Equatable, Hashable, Codable {
+
+    public let value: String
+    public let isInteger: Bool
+    public let isNegative: Bool
+
+    public init(_ value: String, isInteger: Bool, isNegative: Bool) {
+      self.value = value
+      self.isInteger = isInteger
+      self.isNegative = isNegative
+    }
+
+    public init(_ value: String) {
+      self.value = value
+      self.isInteger = value.allSatisfy { $0.isNumber }
+      self.isNegative = value.hasPrefix("-")
+    }
+
+    public var integerValue: Int? {
+      guard isInteger else { return nil }
+      return Int(value)
+    }
+
+    public var unsignedIntegerValue: UInt? {
+      guard isInteger && !isNegative else { return nil }
+      return UInt(value)
+    }
+
+    public var floatValue: Float? {
+      return Float(value)
+    }
+
+    public var doubleValue: Double? {
+      return Double(value)
+    }
+
+    public var numberValue: Any? {
+      if isInteger {
+        if isNegative {
+          if MemoryLayout<Int>.size == 4 {
+            return Int(value) ?? Int64(value) ?? Decimal(string: value)
+          }
+          return Int(value) ?? Decimal(string: value)
+        }
+        if MemoryLayout<Int>.size == 4 {
+          return Int(value) ?? Int64(value) ?? UInt(value) ?? UInt64(value) ?? Decimal(string: value)
+        }
+        return Int(value) ?? UInt(value) ?? Decimal(string: value)
+      }
+      return Double(value) ?? Decimal(string: value)
+    }
+
+  }
 
   case null
   case string(String)
@@ -43,24 +95,29 @@ public enum JSON {
     return value
   }
 
-  public var numberValue: Number? {
+  public var numberValue: Any? {
     guard case .number(let value) = self else { return nil }
-    return value
+    return value.numberValue
+  }
+
+  public var integerValue: Int? {
+    guard case .number(let value) = self else { return nil }
+    return value.integerValue
+  }
+
+  public var unsignedIntegerValue: UInt? {
+    guard case .number(let value) = self else { return nil }
+    return value.unsignedIntegerValue
+  }
+
+  public var floatValue: Float? {
+    guard case .number(let value) = self else { return nil }
+    return value.floatValue
   }
 
   public var doubleValue: Double? {
-    guard case .number(let value) = self, let double = Double(exactly: value) else { return nil }
-    return double
-  }
-
-  public var integerValue: Int64? {
-    guard case .number(let value) = self, let int = Int64(exactly: value) else { return nil }
-    return int
-  }
-
-  public var unsignedIntegerValue: UInt64? {
-    guard case .number(let value) = self, let int = UInt64(exactly: value) else { return nil }
-    return int
+    guard case .number(let value) = self else { return nil }
+    return value.doubleValue
   }
 
   public var boolValue: Bool? {
@@ -101,7 +158,7 @@ public enum JSON {
 
   public var description: String {
     var output = ""
-    var writer = JSONWriter(pretty: true) { output += $0 ?? "" }
+    var writer = JSONWriter(pretty: true, sortedKeys: true) { output += $0 ?? "" }
 
     do {
       try writer.serialize(self)
@@ -116,7 +173,20 @@ public enum JSON {
 
 extension JSON : Equatable {}
 extension JSON : Hashable {}
-extension JSON : Value {}
+extension JSON : Value {
+
+  public var unwrapped: Any? {
+    switch self {
+    case .null: return nil
+    case .bool(let value): return value
+    case .string(let value): return value
+    case .number(let value): return value.numberValue
+    case .array(let value): return Array(value.map { $0.unwrapped })
+    case .object(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in (key, value.unwrapped) })
+    }
+  }
+
+}
 
 
 /**
@@ -140,11 +210,11 @@ extension JSON : ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expressib
   }
 
   public init(integerLiteral value: IntegerLiteralType) {
-    self = .number(Float80(exactly: value)!)
+    self = .number(Number(value.description))
   }
 
   public init(floatLiteral value: FloatLiteralType) {
-    self = .number(Float80(exactly: value)!)
+    self = .number(Number(value.description))
   }
 
   public typealias ArrayLiteralElement = JSON

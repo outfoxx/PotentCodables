@@ -114,15 +114,18 @@ public struct JSONDecoderTransform : InternalDecoderTransform, InternalValueDese
     return DecodingError.typeMismatch(type, context)
   }
 
-  static func coerce<T>(_ from: Float80, at codingPath: [CodingKey]) throws -> T where T : BinaryInteger {
-    guard let result = T(exactly: roundl(from)) else {
+  static func coerce<T>(_ from: JSON.Number, at codingPath: [CodingKey]) throws -> T where T : BinaryInteger & FixedWidthInteger {
+    guard let result = T(from.value) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
   }
 
-  static func coerce<T>(_ from: Float80, at codingPath: [CodingKey]) throws -> T where T : BinaryFloatingPoint {
-    return T(from)
+  static func coerce<T>(_ from: JSON.Number, at codingPath: [CodingKey]) throws -> T where T : BinaryFloatingPoint & LosslessStringConvertible {
+    guard let result = T(from.value) else {
+      throw overflow(T.self, value: from, at: codingPath)
+    }
+    return result
   }
 
   public static func unbox(_ value: JSON, as type: Int.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Int? {
@@ -235,7 +238,7 @@ public struct JSONDecoderTransform : InternalDecoderTransform, InternalValueDese
 
   public static func unbox(_ value: JSON, as type: Decimal.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Decimal? {
     switch value {
-    case .number(let number): return Decimal(string: number.description)
+    case .number(let number): return Decimal(string: number.value)
     case .null: return nil
     case let json:
       throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)

@@ -248,10 +248,13 @@ struct JSONReader {
 
   func parseNumber(_ input: Index, options opt: JSONSerialization.ReadingOptions) throws -> (JSON.Number, Index)? {
 
+    var isNegative = false
     var string = ""
+    var isInteger = true
     var exponent = 0
     var index = input
     var ascii: UInt8 = 0    // set by nextASCII()
+
     // Validate the input is a valid JSON number, also gather the following
     // about the input: isNegative, isInteger, the exponent and if it is +/-,
     // and finally the count of digits including excluding an '.'
@@ -283,6 +286,7 @@ struct JSONReader {
       guard nextASCII() else { return false }
 
       if ascii == JSONReader.minus {
+        isNegative = true
         guard nextASCII() else { return false }
       }
 
@@ -299,6 +303,7 @@ struct JSONReader {
       }
 
       if ascii == JSONReader.decimalSeparator {
+        isInteger = false
         guard readDigits() != nil else { return true }
         guard nextASCII() else { return true }
       } else if JSONReader.allDigits.contains(ascii) {
@@ -311,10 +316,9 @@ struct JSONReader {
       }
 
       // Process the exponent
+      isInteger = false
       guard nextASCII() else { return false }
-      if ascii == JSONReader.minus {
-        guard nextASCII() else { return false }
-      } else if ascii == JSONReader.plus {
+      if ascii == JSONReader.minus || ascii == JSONReader.plus {
         guard nextASCII() else { return false }
       }
       guard JSONReader.allDigits.contains(ascii) else { return false }
@@ -332,10 +336,7 @@ struct JSONReader {
 
     guard try checkJSONNumber() == true else { return nil }
 
-    if let longDoubleValue = Float80(string) {
-      return (longDoubleValue, index)
-    }
-    return nil
+    return (.init(string, isInteger: isInteger, isNegative: isNegative), index)
   }
 
   //MARK: - Value parsing

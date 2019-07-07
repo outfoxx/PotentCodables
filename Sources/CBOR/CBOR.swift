@@ -246,4 +246,25 @@ extension CBOR.Tag {
   public static let selfDescribeCBOR = CBOR.Tag(rawValue: 55799)
 }
 
-extension CBOR: Value {}
+extension CBOR: Value {
+
+  public var unwrapped: Any? {
+    switch self {
+    case .null: return nil
+    case .undefined: return nil
+    case .boolean(let value): return value
+    case .utf8String(let value): return value
+    case .byteString(let value): return value
+    case .simple(let value): return value
+    case .unsignedInt(let value): return value
+    case .negativeInt(let value): return -1 - Int(value)
+    case .float(let value): return value
+    case .half(let value): return value.floatValue
+    case .double(let value): return value
+    case .array(let value): return Array(value.map { $0.unwrapped })
+    case .map(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in (key.unwrapped as! String, value.unwrapped) })
+    case .tagged(_, let value): return value.unwrapped
+    }
+  }
+
+}

@@ -1,5 +1,5 @@
 //
-//  JSONParser.swift
+//  JSONTests.swift
 //  PotentCodables
 //
 //  Created by Kevin Wooten on 6/13/19.
@@ -11,7 +11,7 @@ import class PotentCodables.JSONEncoder
 import class PotentCodables.JSONDecoder
 
 
-class JSONFragmentTests : XCTestCase {
+class JSONTests : XCTestCase {
 
   let json = """
     {
@@ -100,14 +100,12 @@ class JSONFragmentTests : XCTestCase {
   ]
 
   func testDecodingChildContainers() {
-    let json = self.json.data(using: .utf8)!
-    let jsonValue = try! JSONDecoder().decode(JSON.self, from: json)
-    let _ = try! JSONDecoder().decodeTree(TestValue.self, from: jsonValue)
+    let _ = try! JSONDecoder().decode(TestValue.self, from: json)
   }
 
   func testEncodingChildContainers() {
-    let values = try! JSONEncoder().encodeTree(objects)
-    XCTAssertEqual(values.stableText, self.values.stableText)
+    let json = try! JSONEncoder().encodeTree(objects).stableText
+    XCTAssertEqual(json, self.values.stableText)
   }
 
 }

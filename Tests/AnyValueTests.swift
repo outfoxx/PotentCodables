@@ -44,14 +44,14 @@ class AnyValueTests: XCTestCase {
     }
     """.data(using: .utf8)!
 
-  let anyE = AnyValue.array([
+  let e = AnyValue.array([
     .dictionary([
-      "a": .int8(5),
+      "a": .int64(5),
       "b": .string("6"),
       "c": .array([.bool(true)]),
     ]),
     .dictionary([
-      "a": .int8(5),
+      "a": .int64(5),
       "b": .string("6"),
       "c": .array([.bool(true)]),
       ])
@@ -61,8 +61,8 @@ class AnyValueTests: XCTestCase {
     let tree = try JSONSerialization.json(from: json)
     let value = try JSONDecoder().decode(TestValue.self, from: json)
     let recoded = try JSONEncoder().encodeTree(value)
-    XCTAssertEqual(recoded, tree)
-    XCTAssertEqual(value.e, anyE)
+    XCTAssertEqual(recoded.stableText, tree.stableText)
+    XCTAssertEqual(value.e!, e)
   }
 
 }
