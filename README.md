@@ -45,7 +45,7 @@ let data = try CBOREncoder.default.encode(myValue)
 
 #### Standard Encoding/Decoding
 
-All PotentCodable encoders and decoders and be "dropped in" in place of Swift's JSON/PropertyList encoders and decoders and as such
+All PotentCodable encoders and decoders can be "dropped in" in place of Swift's JSON/PropertyList encoders and decoders and as such
 provide methods that allow direct serialization to and from `Data` instances.
 
 #### Data Encoding/Decoding Interface
