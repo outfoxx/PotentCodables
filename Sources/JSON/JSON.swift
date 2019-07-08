@@ -40,6 +40,18 @@ public enum JSON {
       self.isNegative = value.hasPrefix("-")
     }
 
+    public init(_ value: Double) {
+      self.value = value.description
+      self.isInteger = false
+      self.isNegative = value < 0
+    }
+
+    public init(_ value: Int) {
+      self.value = value.description
+      self.isInteger = true
+      self.isNegative = value < 0
+    }
+
     public var integerValue: Int? {
       guard isInteger else { return nil }
       return Int(value)
@@ -228,6 +240,22 @@ extension JSON : ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expressib
 
   public init(dictionaryLiteral elements: (Key, Value)...) {
     self = .object(Dictionary(elements, uniquingKeysWith: { _, last in last }))
+  }
+
+}
+
+extension JSON.Number : ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, ExpressibleByStringLiteral {
+
+  public init(stringLiteral value: String) {
+    self.init(value)
+  }
+
+  public init(floatLiteral value: Double) {
+    self.init(value)
+  }
+
+  public init(integerLiteral value: Int) {
+    self.init(value)
   }
 
 }
