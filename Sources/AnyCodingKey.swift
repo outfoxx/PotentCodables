@@ -8,31 +8,31 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-struct AnyCodingKey: CodingKey, Equatable, Hashable {
-  var stringValue: String
-  var intValue: Int?
+public struct AnyCodingKey: CodingKey, Equatable, Hashable {
+  public var stringValue: String
+  public var intValue: Int?
 
-  init?(stringValue: String) {
+  public init?(stringValue: String) {
     self.stringValue = stringValue
     intValue = nil
   }
 
-  init(intValue: Int) {
+  public init(intValue: Int) {
     stringValue = "\(intValue)"
     self.intValue = intValue
   }
 
-  init(stringValue: String, intValue: Int?) {
+  public init(stringValue: String, intValue: Int?) {
     self.stringValue = stringValue
     self.intValue = intValue
   }
 
-  init(index: Int) {
+  public init(index: Int) {
     stringValue = "Index \(index)"
     intValue = index
   }
 
-  init<Key: CodingKey>(_ base: Key) {
+  public init<Key: CodingKey>(_ base: Key) {
     if let index = base.intValue {
       self.init(intValue: index)
     }
@@ -41,7 +41,7 @@ struct AnyCodingKey: CodingKey, Equatable, Hashable {
     }
   }
 
-  func key<K: CodingKey>() -> K {
+  public func key<K: CodingKey>() -> K {
     if let intValue = self.intValue {
       return K(intValue: intValue)!
     }
@@ -55,7 +55,7 @@ struct AnyCodingKey: CodingKey, Equatable, Hashable {
 }
 
 extension AnyCodingKey: Encodable {
-  func encode(to encoder: Encoder) throws {
+  public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     if let intValue = self.intValue {
       try container.encode(intValue)
@@ -67,7 +67,7 @@ extension AnyCodingKey: Encodable {
 }
 
 extension AnyCodingKey: Decodable {
-  init(from decoder: Decoder) throws {
+  public init(from decoder: Decoder) throws {
     let value = try decoder.singleValueContainer()
     if let intValue = try? value.decode(Int.self) {
       stringValue = "\(intValue)"
@@ -80,3 +80,13 @@ extension AnyCodingKey: Decodable {
   }
 }
 
+extension AnyCodingKey: ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
+  public init(stringLiteral value: String) {
+    self.stringValue = value
+  }
+
+  public init(integerLiteral value: Int) {
+    self.intValue = value
+    self.stringValue = "\(value)"
+  }
+}
