@@ -2,14 +2,17 @@
 //  CBORDecoder.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/25/18.
-//  Copyright © 2018 Outfox, Inc. All rights reserved.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
 
 import Foundation
 
 
 /// `CBORDecoder` facilitates the decoding of CBOR into semantic `Decodable` types.
-public class CBORDecoder : ValueDecoder<CBOR, CBORDecoderTransform> {
+public class CBORDecoder: ValueDecoder<CBOR, CBORDecoderTransform> {
 
   /// The strategy to use for decoding untagged `Date` values.
   ///
@@ -32,11 +35,9 @@ public class CBORDecoder : ValueDecoder<CBOR, CBORDecoderTransform> {
 
   /// The options set on the top-level decoder.
   public override var options: CBORDecoderTransform.Options {
-    return CBORDecoderTransform.Options(
-      untaggedDateDecodingStrategy: untaggedDateDecodingStrategy,
-      keyDecodingStrategy: keyDecodingStrategy,
-      userInfo: userInfo
-    )
+    return CBORDecoderTransform.Options(untaggedDateDecodingStrategy: untaggedDateDecodingStrategy,
+                                        keyDecodingStrategy: keyDecodingStrategy,
+                                        userInfo: userInfo)
   }
 
   public override init() {
@@ -46,17 +47,17 @@ public class CBORDecoder : ValueDecoder<CBOR, CBORDecoderTransform> {
 }
 
 
-public struct CBORDecoderTransform : InternalDecoderTransform, InternalValueDeserializer {
+public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeserializer {
 
   public typealias Value = CBOR
 
   public static let nilValue = CBOR.null
 
   /// Options set on the top-level decoder to pass down the decoding hierarchy.
-  public struct Options : InternalDecoderOptions {
+  public struct Options: InternalDecoderOptions {
     public let untaggedDateDecodingStrategy: CBORDecoder.UntaggedDateDecodingStrategy
     public let keyDecodingStrategy: KeyDecodingStrategy
-    public let userInfo: [CodingUserInfoKey : Any]
+    public let userInfo: [CodingUserInfoKey: Any]
   }
 
   /// Returns the given value unboxed from a container.
@@ -74,28 +75,28 @@ public struct CBORDecoderTransform : InternalDecoderTransform, InternalValueDese
     return DecodingError.typeMismatch(type, context)
   }
 
-  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T : BinaryInteger, F : BinaryInteger {
+  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T: BinaryInteger, F: BinaryInteger {
     guard let result = T(exactly: from) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
   }
 
-  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T : BinaryInteger, F : BinaryFloatingPoint {
+  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T: BinaryInteger, F: BinaryFloatingPoint {
     guard let result = T(exactly: round(from)) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
   }
 
-  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T : BinaryFloatingPoint, F : BinaryInteger {
+  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T: BinaryFloatingPoint, F: BinaryInteger {
     guard let result = T(exactly: from) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
   }
 
-  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T : BinaryFloatingPoint, F : BinaryFloatingPoint {
+  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T: BinaryFloatingPoint, F: BinaryFloatingPoint {
     return T(from)
   }
 
@@ -349,17 +350,16 @@ public struct CBORDecoderTransform : InternalDecoderTransform, InternalValueDese
   }
 
   public static func mapToKeyedValues(_ map: [CBOR: CBOR], decoder: InternalValueDecoder<CBOR, Self>) throws -> [String: CBOR] {
-    return try Dictionary(
-      map.compactMap { key, value in
-        switch key.untagged {
-        case .utf8String(let str): return (str, value)
-        case .unsignedInt(let uint): return (String(uint), value)
-        case .negativeInt(let nint): return (String(-1 - Int(nint)), value)
-        default: return nil
-        }
-      },
-      uniquingKeysWith: { _, _ in
-        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Map contains duplicate keys"))
+    return try Dictionary(map.compactMap { key, value in
+      switch key.untagged {
+      case .utf8String(let str): return (str, value)
+      case .unsignedInt(let uint): return (String(uint), value)
+      case .negativeInt(let nint): return (String(-1 - Int(nint)), value)
+      default: return nil
+      }
+    },
+                          uniquingKeysWith: { _, _ in
+      throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Map contains duplicate keys"))
     })
   }
 

@@ -2,15 +2,18 @@
 //  AnyValue.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/15/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
 
 
-public enum AnyValue : Hashable {
+public enum AnyValue: Hashable {
 
-  public enum Error : Swift.Error {
+  public enum Error: Swift.Error {
     case unsupportedType
     case unsupportedValue(Any)
   }
@@ -75,7 +78,7 @@ public enum AnyValue : Hashable {
 }
 
 
-extension AnyValue : Value {
+extension AnyValue: Value {
 
   public var isNull: Bool {
     guard case .nil = self else { return false }
@@ -140,7 +143,7 @@ extension AnyValue : Value {
  * Decodable support
  **/
 
-extension AnyValue : Decodable {
+extension AnyValue: Decodable {
 
   public init(from decoder: Decoder) throws {
 
@@ -160,7 +163,7 @@ extension AnyValue : Decodable {
     if var container = try? decoder.unkeyedContainer() {
 
       var array = [AnyValue]()
-      for _ in 0..<(container.count ?? 0) {
+      for _ in 0 ..< (container.count ?? 0) {
         array.append(try container.decode(AnyValue.self))
       }
 
@@ -288,7 +291,7 @@ extension AnyValue : Decodable {
  * `Encodable` support
  **/
 
-extension AnyValue : Encodable {
+extension AnyValue: Encodable {
 
   public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()

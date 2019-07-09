@@ -1,3 +1,13 @@
+//
+//  CBOR.swift
+//  PotentCodables
+//
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
+
 import Foundation
 
 public indirect enum CBOR: Equatable, Hashable {
@@ -9,7 +19,7 @@ public indirect enum CBOR: Equatable, Hashable {
       self.rawValue = rawValue
     }
 
-    public var hashValue : Int {
+    public var hashValue: Int {
       return rawValue.hashValue
     }
   }
@@ -19,7 +29,7 @@ public indirect enum CBOR: Equatable, Hashable {
   case byteString(Data)
   case utf8String(String)
   case array([CBOR])
-  case map([CBOR : CBOR])
+  case map([CBOR: CBOR])
   case tagged(Tag, CBOR)
   case simple(UInt8)
   case boolean(Bool)
@@ -35,59 +45,59 @@ public indirect enum CBOR: Equatable, Hashable {
   }
 
   public var booleanValue: Bool? {
-    guard case let .boolean(bool) = self.untagged else { return nil }
+    guard case .boolean(let bool) = untagged else { return nil }
     return bool
   }
 
   public var bytesStringValue: Data? {
-    guard case let .byteString(data) = self.untagged else { return nil }
+    guard case .byteString(let data) = untagged else { return nil }
     return data
   }
 
   public var utf8StringValue: String? {
-    guard case let .utf8String(string) = self.untagged else { return nil }
+    guard case .utf8String(let string) = untagged else { return nil }
     return string
   }
 
   public var arrayValue: [CBOR]? {
-    guard case let .array(array) = self.untagged else { return nil }
+    guard case .array(let array) = untagged else { return nil }
     return array
   }
 
   public var mapValue: [CBOR: CBOR]? {
-    guard case let .map(map) = self.untagged else { return nil }
+    guard case .map(let map) = untagged else { return nil }
     return map
   }
 
   public var halfValue: Float16? {
-    guard case let .half(half) = self.untagged else { return nil }
+    guard case .half(let half) = untagged else { return nil }
     return half
   }
 
   public var floatValue: Float32? {
-    guard case let .float(float) = self.untagged else { return nil }
+    guard case .float(let float) = untagged else { return nil }
     return float
   }
 
   public var doubleValue: Float64? {
-    guard case let .double(double) = self.untagged else { return nil }
+    guard case .double(let double) = untagged else { return nil }
     return double
   }
 
   public var simpleValue: UInt8? {
-    guard case let .simple(simple) = self.untagged else { return nil }
+    guard case .simple(let simple) = untagged else { return nil }
     return simple
   }
 
   public var isNumber: Bool {
-    switch self.untagged {
+    switch untagged {
     case .unsignedInt, .negativeInt, .half, .float, .double: return true
     default: return false
     }
   }
 
   public var numberValue: Float80? {
-    switch self.untagged {
+    switch untagged {
     case .unsignedInt(let uint): return Float80(exactly: uint)
     case .negativeInt(let nint): return Float80(exactly: nint).map { -1 - $0 }
     case .half(let half): return Float80(half.floatValue)
@@ -109,14 +119,15 @@ public indirect enum CBOR: Equatable, Hashable {
     self = .byteString(value)
   }
 
-  public init( _ value: Int) {
+  public init(_ value: Int) {
     self.init(Int64(value))
   }
 
   public init(_ value: Int64) {
     if value < 0 {
       self = .negativeInt(~UInt64(bitPattern: Int64(value)))
-    } else {
+    }
+    else {
       self = .unsignedInt(UInt64(value))
     }
   }
@@ -144,14 +155,14 @@ public indirect enum CBOR: Equatable, Hashable {
   public subscript(position: CBOR) -> CBOR? {
     get {
       switch (self, position) {
-      case (let .array(l), let .unsignedInt(i)): return l[Int(i)]
+      case (let .array(l), .unsignedInt(let i)): return l[Int(i)]
       case (let .map(l), let i): return l[i]
       default: return nil
       }
     }
     set(x) {
       switch (self, position) {
-      case (var .array(l), let .unsignedInt(i)):
+      case (var .array(l), .unsignedInt(let i)):
         l[Int(i)] = x!
         self = .array(l)
       case (var .map(l), let i):
@@ -163,7 +174,7 @@ public indirect enum CBOR: Equatable, Hashable {
   }
 
   public var untagged: CBOR {
-    guard case let .tagged(_, value) = self else {
+    guard case .tagged(_, let value) = self else {
       return self
     }
     return value.untagged
@@ -171,9 +182,9 @@ public indirect enum CBOR: Equatable, Hashable {
 
 }
 
-extension CBOR : ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, ExpressibleByStringLiteral,
-                 ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral, ExpressibleByBooleanLiteral,
-                 ExpressibleByFloatLiteral {
+extension CBOR: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, ExpressibleByStringLiteral,
+  ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral, ExpressibleByBooleanLiteral,
+  ExpressibleByFloatLiteral {
 
   public init(nilLiteral: ()) {
     self = .null
@@ -200,7 +211,7 @@ extension CBOR : ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, Expressib
   }
 
   public init(dictionaryLiteral elements: (CBOR, CBOR)...) {
-    var result = [CBOR : CBOR]()
+    var result = [CBOR: CBOR]()
     for (key, value) in elements {
       result[key] = value
     }

@@ -1,5 +1,15 @@
-import XCTest
+//
+//  CBORCodableRoundtripTests.swift
+//  PotentCodables
+//
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
+
 @testable import PotentCodables
+import XCTest
 
 class CBORCodableRoundtripTests: XCTestCase {
   static var allTests = [
@@ -31,8 +41,8 @@ class CBORCodableRoundtripTests: XCTestCase {
   func testSimpleStructsInArray() {
     let encoded = try! CBOREncoder().encode([
       MyStruct(age: 27, name: "Ham"),
-      MyStruct(age: 24, name: "Greg")
-      ])
+      MyStruct(age: 24, name: "Greg"),
+    ])
     let decoded = try! CBORDecoder().decode([MyStruct].self, from: encoded)
     XCTAssertEqual(decoded, [MyStruct(age: 27, name: "Ham"), MyStruct(age: 24, name: "Greg")])
   }
@@ -40,35 +50,31 @@ class CBORCodableRoundtripTests: XCTestCase {
   func testSimpleStructsAsValuesInMap() {
     let encoded = try! CBOREncoder().encode([
       "Ham": MyStruct(age: 27, name: "Ham"),
-      "Greg": MyStruct(age: 24, name: "Greg")
-      ])
+      "Greg": MyStruct(age: 24, name: "Greg"),
+    ])
     let decoded = try! CBORDecoder().decode([String: MyStruct].self, from: encoded)
-    XCTAssertEqual(
-      decoded,
-      [
-        "Ham": MyStruct(age: 27, name: "Ham"),
-        "Greg": MyStruct(age: 24, name: "Greg")
-      ]
-    )
+    XCTAssertEqual(decoded,
+                   [
+                     "Ham": MyStruct(age: 27, name: "Ham"),
+                     "Greg": MyStruct(age: 24, name: "Greg"),
+                   ])
   }
 
   func testSimpleStructsAsKeysInMap() {
     let encoded = try! CBOREncoder().encode([
       MyStruct(age: 27, name: "Ham"): "Ham",
-      MyStruct(age: 24, name: "Greg"): "Greg"
-      ])
+      MyStruct(age: 24, name: "Greg"): "Greg",
+    ])
     let decoded = try! CBORDecoder().decode([MyStruct: String].self, from: encoded)
-    XCTAssertEqual(
-      decoded,
-      [
-        MyStruct(age: 27, name: "Ham"): "Ham",
-        MyStruct(age: 24, name: "Greg"): "Greg"
-      ]
-    )
+    XCTAssertEqual(decoded,
+                   [
+                     MyStruct(age: 27, name: "Ham"): "Ham",
+                     MyStruct(age: 24, name: "Greg"): "Greg",
+                   ])
   }
 
   func testNil() {
-    let nilValue = try! CBOREncoder().encode(Optional<String>(nil))
+    let nilValue = try! CBOREncoder().encode(String?(nil))
     XCTAssertThrowsError(try CBORDecoder().decode(String.self, from: nilValue))
     XCTAssertNil(try CBORDecoder().decodeIfPresent(String.self, from: nilValue))
   }
@@ -109,15 +115,15 @@ class CBORCodableRoundtripTests: XCTestCase {
     let hundred = try! CBOREncoder().encode(100)
     let hundredDecoded = try! CBORDecoder().decode(Int.self, from: hundred)
     XCTAssertEqual(hundredDecoded, 100)
-    let thousand = try! CBOREncoder().encode(1_000)
+    let thousand = try! CBOREncoder().encode(1000)
     let thousandDecoded = try! CBORDecoder().decode(Int.self, from: thousand)
-    XCTAssertEqual(thousandDecoded, 1_000)
-    let million = try! CBOREncoder().encode(1_000_000)
+    XCTAssertEqual(thousandDecoded, 1000)
+    let million = try! CBOREncoder().encode(1000000)
     let millionDecoded = try! CBORDecoder().decode(Int.self, from: million)
-    XCTAssertEqual(millionDecoded, 1_000_000)
-    let trillion = try! CBOREncoder().encode(Int64(1_000_000_000_000))
+    XCTAssertEqual(millionDecoded, 1000000)
+    let trillion = try! CBOREncoder().encode(Int64(1000000000000))
     let trillionDecoded = try! CBORDecoder().decode(Int64.self, from: trillion)
-    XCTAssertEqual(trillionDecoded, Int64(1_000_000_000_000))
+    XCTAssertEqual(trillionDecoded, Int64(1000000000000))
 
     // TODO: Tagged byte strings for big numbers
     //        let bigNum = try! CBORDecoder().decode(Int.self, from: Data([0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]))
@@ -139,9 +145,9 @@ class CBORCodableRoundtripTests: XCTestCase {
     let minusHundred = try! CBOREncoder().encode(-100)
     let minusHundredDecoded = try! CBORDecoder().decode(Int.self, from: minusHundred)
     XCTAssertEqual(minusHundredDecoded, -100)
-    let minusThousand = try! CBOREncoder().encode(-1_000)
+    let minusThousand = try! CBOREncoder().encode(-1000)
     let minusThousandDecoded = try! CBORDecoder().decode(Int.self, from: minusThousand)
-    XCTAssertEqual(minusThousandDecoded, -1_000)
+    XCTAssertEqual(minusThousandDecoded, -1000)
 
     // TODO: Tagged byte strings for big numbers
     //        let bigNum = try! CBORDecoder().decode(Int.self, from: Data([0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]))
@@ -226,15 +232,13 @@ class CBORCodableRoundtripTests: XCTestCase {
     }
 
     // Generate some random Data
-    let randomBytes = (1...4).map { _ in UInt8.random(in: 0...UInt8.max) }
+    let randomBytes = (1 ... 4).map { _ in UInt8.random(in: 0 ... UInt8.max) }
     let data = Data(randomBytes)
 
-    let car = Car(
-      _id: "5caf23633337661721236cfa",
-      color: "Red",
-      age: 56,
-      data: data
-    )
+    let car = Car(_id: "5caf23633337661721236cfa",
+                  color: "Red",
+                  age: 56,
+                  data: data)
 
     let encodedCar = try! CBOREncoder().encode(car)
     let decoded = try! CBORDecoder().decode(Wrapped<BasicCar>.self, from: encodedCar)

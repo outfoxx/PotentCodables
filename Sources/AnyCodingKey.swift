@@ -1,3 +1,12 @@
+//
+//  AnyCodingKey.swift
+//  PotentCodables
+//
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
 
 struct AnyCodingKey: CodingKey, Equatable, Hashable {
   var stringValue: String
@@ -5,11 +14,11 @@ struct AnyCodingKey: CodingKey, Equatable, Hashable {
 
   init?(stringValue: String) {
     self.stringValue = stringValue
-    self.intValue = nil
+    intValue = nil
   }
-  
+
   init(intValue: Int) {
-    self.stringValue = "\(intValue)"
+    stringValue = "\(intValue)"
     self.intValue = intValue
   }
 
@@ -19,14 +28,15 @@ struct AnyCodingKey: CodingKey, Equatable, Hashable {
   }
 
   init(index: Int) {
-    self.stringValue = "Index \(index)"
-    self.intValue = index
+    stringValue = "Index \(index)"
+    intValue = index
   }
 
   init<Key: CodingKey>(_ base: Key) {
     if let index = base.intValue {
       self.init(intValue: index)
-    } else {
+    }
+    else {
       self.init(stringValue: base.stringValue)!
     }
   }
@@ -34,8 +44,9 @@ struct AnyCodingKey: CodingKey, Equatable, Hashable {
   func key<K: CodingKey>() -> K {
     if let intValue = self.intValue {
       return K(intValue: intValue)!
-    } else {
-      return K(stringValue: self.stringValue)!
+    }
+    else {
+      return K(stringValue: stringValue)!
     }
   }
 
@@ -48,8 +59,9 @@ extension AnyCodingKey: Encodable {
     var container = encoder.singleValueContainer()
     if let intValue = self.intValue {
       try container.encode(intValue)
-    } else {
-      try container.encode(self.stringValue)
+    }
+    else {
+      try container.encode(stringValue)
     }
   }
 }
@@ -58,11 +70,12 @@ extension AnyCodingKey: Decodable {
   init(from decoder: Decoder) throws {
     let value = try decoder.singleValueContainer()
     if let intValue = try? value.decode(Int.self) {
-      self.stringValue = "\(intValue)"
+      stringValue = "\(intValue)"
       self.intValue = intValue
-    } else {
-      self.stringValue = try! value.decode(String.self)
-      self.intValue = nil
+    }
+    else {
+      stringValue = try! value.decode(String.self)
+      intValue = nil
     }
   }
 }

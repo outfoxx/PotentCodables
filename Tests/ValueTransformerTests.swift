@@ -2,14 +2,17 @@
 //  ValueTransformerTests.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/14/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
-import XCTest
 import PotentCodables
 import class PotentCodables.JSONEncoder
+import XCTest
 
-struct IntegerBoolTransformer : ValueCodingTransformer {
+struct IntegerBoolTransformer: ValueCodingTransformer {
 
   func encode(_ value: Bool) throws -> Int {
     return value ? 1 : 0
@@ -27,9 +30,9 @@ struct Test {
 
 }
 
-extension Test : Codable {
+extension Test: Codable {
 
-  enum CodingKeys : CodingKey {
+  enum CodingKeys: CodingKey {
     case boolValue
   }
 
@@ -53,7 +56,7 @@ class ValueTransformerTests: XCTestCase {
   func testSimple() throws {
 
     let expected: JSON = [
-      "boolValue": 1.0
+      "boolValue": 1.0,
     ]
 
     XCTAssertEqual(try encoder.encodeTree(Test(boolValue: true)).stableText, expected.stableText)

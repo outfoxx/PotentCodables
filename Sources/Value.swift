@@ -2,7 +2,10 @@
 //  Value.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/12/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -12,7 +15,7 @@ import Foundation
 /// allows querying the structure in memory, decoding
 /// it to a compatible `Decodable` type, or serializing
 /// it to `Data`
-public protocol Value : Hashable {
+public protocol Value: Hashable {
 
   var isNull: Bool { get }
 

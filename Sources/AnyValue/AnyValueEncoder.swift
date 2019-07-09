@@ -2,22 +2,23 @@
 //  AnyValueEncoder.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/15/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
 
 
-public class AnyValueEncoder : ValueEncoder<AnyValue, AnyValueEncoderTransform> {
+public class AnyValueEncoder: ValueEncoder<AnyValue, AnyValueEncoderTransform> {
 
   public static let `default` = AnyValueEncoder()
 
   /// The options set on the top-level decoder.
   public override var options: AnyValueEncoderTransform.Options {
-    return AnyValueEncoderTransform.Options(
-      keyEncodingStrategy: keyEncodingStrategy,
-      userInfo: userInfo
-    )
+    return AnyValueEncoderTransform.Options(keyEncodingStrategy: keyEncodingStrategy,
+                                            userInfo: userInfo)
   }
 
   public override init() {
@@ -26,13 +27,13 @@ public class AnyValueEncoder : ValueEncoder<AnyValue, AnyValueEncoderTransform> 
 
 }
 
-public struct AnyValueEncoderTransform : InternalEncoderTransform {
+public struct AnyValueEncoderTransform: InternalEncoderTransform {
 
   public typealias Value = AnyValue
 
-  public struct Options : InternalEncoderOptions {
+  public struct Options: InternalEncoderOptions {
     public let keyEncodingStrategy: KeyEncodingStrategy
-    public let userInfo: [CodingUserInfoKey : Any]
+    public let userInfo: [CodingUserInfoKey: Any]
   }
 
   public static var nilValue: AnyValue {
@@ -137,7 +138,7 @@ public struct AnyValueEncoderTransform : InternalEncoderTransform {
     return .array(values)
   }
 
-  public static func keyedValuesToValue(_ values: [String : AnyValue]) -> AnyValue {
+  public static func keyedValuesToValue(_ values: [String: AnyValue]) -> AnyValue {
     return .dictionary(values)
   }
 

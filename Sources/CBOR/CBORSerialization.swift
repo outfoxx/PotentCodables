@@ -1,3 +1,13 @@
+//
+//  CBORSerialization.swift
+//  PotentCodables
+//
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
+
 import Foundation
 
 
@@ -13,7 +23,7 @@ public struct CBORSerialization {
   /// + Note: These are informational only, all errors are
   /// fatal and represent corrupted data; no recovery is
   /// possible
-  public enum Error : Swift.Error {
+  public enum Error: Swift.Error {
     /// End of data stream unexpectedly encounteredd during deserialization
     case unexpectedEndOfStream
     /// Invalid item type was encountered during deserialization

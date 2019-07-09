@@ -2,14 +2,17 @@
 //  CBOREncoder.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 7/11/18.
-//  Copyright © 2018 Outfox, Inc. All rights reserved.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
 
 import Foundation
 
 
 /// `CBOREncoder` facilitates the encoding of `Encodable` values into CBOR values.
-public class CBOREncoder : ValueEncoder<CBOR, CBOREncoderTransform> {
+public class CBOREncoder: ValueEncoder<CBOR, CBOREncoderTransform> {
   // MARK: Options
 
   /// The strategy to use for encoding `Date` values.
@@ -28,7 +31,7 @@ public class CBOREncoder : ValueEncoder<CBOR, CBOREncoderTransform> {
   open var dateEncodingStrategy: DateEncodingStrategy = .iso8601
 
   /// The options set on the top-level encoder.
-  override public var options: CBOREncoderTransform.Options {
+  public override var options: CBOREncoderTransform.Options {
     return CBOREncoderTransform.Options(dateEncodingStrategy: dateEncodingStrategy,
                                         keyEncodingStrategy: keyEncodingStrategy,
                                         userInfo: userInfo)
@@ -42,36 +45,36 @@ public class CBOREncoder : ValueEncoder<CBOR, CBOREncoderTransform> {
 
 
 
-public struct CBOREncoderTransform : InternalEncoderTransform, InternalValueSerializer {
+public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSerializer {
 
   public typealias Value = CBOR
 
   public static let nilValue = CBOR.null
   public static var emptyKeyedContainer = CBOR.map([:])
 
-  public struct Options : InternalEncoderOptions {
+  public struct Options: InternalEncoderOptions {
     public let dateEncodingStrategy: CBOREncoder.DateEncodingStrategy
     public let keyEncodingStrategy: KeyEncodingStrategy
-    public let userInfo: [CodingUserInfoKey : Any]
+    public let userInfo: [CodingUserInfoKey: Any]
   }
 
-  public static func box(_ value: Bool, encoder: InternalValueEncoder<Value, Self>)     throws -> CBOR { return CBOR(value) }
-  public static func box(_ value: Int, encoder: InternalValueEncoder<Value, Self>)      throws -> CBOR { return CBOR(Int64(value)) }
-  public static func box(_ value: Int8, encoder: InternalValueEncoder<Value, Self>)     throws -> CBOR { return CBOR(Int64(value)) }
-  public static func box(_ value: Int16, encoder: InternalValueEncoder<Value, Self>)    throws -> CBOR { return CBOR(Int64(value)) }
-  public static func box(_ value: Int32, encoder: InternalValueEncoder<Value, Self>)    throws -> CBOR { return CBOR(Int64(value)) }
-  public static func box(_ value: Int64, encoder: InternalValueEncoder<Value, Self>)    throws -> CBOR { return CBOR(Int64(value)) }
-  public static func box(_ value: UInt, encoder: InternalValueEncoder<Value, Self>)     throws -> CBOR { return CBOR(UInt64(value)) }
-  public static func box(_ value: UInt8, encoder: InternalValueEncoder<Value, Self>)    throws -> CBOR { return CBOR(UInt64(value)) }
-  public static func box(_ value: UInt16, encoder: InternalValueEncoder<Value, Self>)   throws -> CBOR { return CBOR(UInt64(value)) }
-  public static func box(_ value: UInt32, encoder: InternalValueEncoder<Value, Self>)   throws -> CBOR { return CBOR(UInt64(value)) }
-  public static func box(_ value: UInt64, encoder: InternalValueEncoder<Value, Self>)   throws -> CBOR { return CBOR(UInt64(value)) }
-  public static func box(_ value: String, encoder: InternalValueEncoder<Value, Self>)   throws -> CBOR { return CBOR(value) }
-  public static func box(_ value: Float, encoder: InternalValueEncoder<Value, Self>)    throws -> CBOR { return CBOR(value) }
-  public static func box(_ value: Double, encoder: InternalValueEncoder<Value, Self>)   throws -> CBOR { return CBOR(value) }
-  public static func box(_ value: Decimal, encoder: InternalValueEncoder<Value, Self>)  throws -> CBOR { return CBOR((value as NSDecimalNumber).doubleValue) }
-  public static func box(_ value: Data, encoder: InternalValueEncoder<Value, Self>)     throws -> CBOR { return CBOR(value) }
-  public static func box(_ value: URL, encoder: InternalValueEncoder<Value, Self>)      throws -> CBOR { return .tagged(.uri, .utf8String(value.absoluteString)) }
+  public static func box(_ value: Bool, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(value) }
+  public static func box(_ value: Int, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(Int64(value)) }
+  public static func box(_ value: Int8, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(Int64(value)) }
+  public static func box(_ value: Int16, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(Int64(value)) }
+  public static func box(_ value: Int32, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(Int64(value)) }
+  public static func box(_ value: Int64, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(Int64(value)) }
+  public static func box(_ value: UInt, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(UInt64(value)) }
+  public static func box(_ value: UInt8, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(UInt64(value)) }
+  public static func box(_ value: UInt16, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(UInt64(value)) }
+  public static func box(_ value: UInt32, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(UInt64(value)) }
+  public static func box(_ value: UInt64, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(UInt64(value)) }
+  public static func box(_ value: String, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(value) }
+  public static func box(_ value: Float, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(value) }
+  public static func box(_ value: Double, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(value) }
+  public static func box(_ value: Decimal, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR((value as NSDecimalNumber).doubleValue) }
+  public static func box(_ value: Data, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return CBOR(value) }
+  public static func box(_ value: URL, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR { return .tagged(.uri, .utf8String(value.absoluteString)) }
 
   public static func box(_ value: UUID, encoder: InternalValueEncoder<Value, Self>) throws -> CBOR {
     return withUnsafeBytes(of: value) { ptr in
@@ -92,7 +95,7 @@ public struct CBOREncoderTransform : InternalEncoderTransform, InternalValueSeri
     return .array(values)
   }
 
-  public static func keyedValuesToValue(_ values: [String : CBOR]) -> CBOR {
+  public static func keyedValuesToValue(_ values: [String: CBOR]) -> CBOR {
     return .map(Dictionary(uniqueKeysWithValues: values.map { key, value in (CBOR(key), value) }))
   }
 

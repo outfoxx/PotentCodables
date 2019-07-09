@@ -2,7 +2,10 @@
 //  KeyStrategy.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/12/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -36,7 +39,7 @@ public enum KeyEncodingStrategy {
   internal static func _convertToSnakeCase(_ stringKey: String) -> String {
     guard stringKey.count > 0 else { return stringKey }
 
-    var words : [Range<String.Index>] = []
+    var words: [Range<String.Index>] = []
     // The general idea of this algorithm is to split words on transition from lower to upper case, then on transition of >1 upper case characters to lowercase
     //
     // myProperty -> my_property
@@ -44,15 +47,15 @@ public enum KeyEncodingStrategy {
     //
     // We assume, per Swift naming conventions, that the first character of the key is lowercase.
     var wordStart = stringKey.startIndex
-    var searchRange = stringKey.index(after: wordStart)..<stringKey.endIndex
+    var searchRange = stringKey.index(after: wordStart) ..< stringKey.endIndex
 
     // Find next uppercase character
     while let upperCaseRange = stringKey.rangeOfCharacter(from: CharacterSet.uppercaseLetters, options: [], range: searchRange) {
-      let untilUpperCase = wordStart..<upperCaseRange.lowerBound
+      let untilUpperCase = wordStart ..< upperCaseRange.lowerBound
       words.append(untilUpperCase)
 
       // Find next lowercase character
-      searchRange = upperCaseRange.lowerBound..<searchRange.upperBound
+      searchRange = upperCaseRange.lowerBound ..< searchRange.upperBound
       guard let lowerCaseRange = stringKey.rangeOfCharacter(from: CharacterSet.lowercaseLetters, options: [], range: searchRange) else {
         // There are no more lower case letters. Just end here.
         wordStart = searchRange.lowerBound
@@ -65,20 +68,21 @@ public enum KeyEncodingStrategy {
         // The next character after capital is a lower case character and therefore not a word boundary.
         // Continue searching for the next upper case for the boundary.
         wordStart = upperCaseRange.lowerBound
-      } else {
+      }
+      else {
         // There was a range of >1 capital letters. Turn those into a word, stopping at the capital before the lower case character.
         let beforeLowerIndex = stringKey.index(before: lowerCaseRange.lowerBound)
-        words.append(upperCaseRange.lowerBound..<beforeLowerIndex)
+        words.append(upperCaseRange.lowerBound ..< beforeLowerIndex)
 
         // Next word starts at the capital before the lowercase we just found
         wordStart = beforeLowerIndex
       }
-      searchRange = lowerCaseRange.upperBound..<searchRange.upperBound
+      searchRange = lowerCaseRange.upperBound ..< searchRange.upperBound
     }
-    words.append(wordStart..<searchRange.upperBound)
-    let result = words.map({ (range) in
-      return stringKey[range].lowercased()
-    }).joined(separator: "_")
+    words.append(wordStart ..< searchRange.upperBound)
+    let result = words.map { range in
+      stringKey[range].lowercased()
+    }.joined(separator: "_")
     return result
   }
 }
@@ -120,34 +124,38 @@ public enum KeyDecodingStrategy {
 
     // Find the last non-underscore character
     var lastNonUnderscore = stringKey.index(before: stringKey.endIndex)
-    while lastNonUnderscore > firstNonUnderscore && stringKey[lastNonUnderscore] == "_" {
-      stringKey.formIndex(before: &lastNonUnderscore);
+    while lastNonUnderscore > firstNonUnderscore, stringKey[lastNonUnderscore] == "_" {
+      stringKey.formIndex(before: &lastNonUnderscore)
     }
 
-    let keyRange = firstNonUnderscore...lastNonUnderscore
-    let leadingUnderscoreRange = stringKey.startIndex..<firstNonUnderscore
-    let trailingUnderscoreRange = stringKey.index(after: lastNonUnderscore)..<stringKey.endIndex
+    let keyRange = firstNonUnderscore ... lastNonUnderscore
+    let leadingUnderscoreRange = stringKey.startIndex ..< firstNonUnderscore
+    let trailingUnderscoreRange = stringKey.index(after: lastNonUnderscore) ..< stringKey.endIndex
 
     let components = stringKey[keyRange].split(separator: "_")
-    let joinedString : String
+    let joinedString: String
     if components.count == 1 {
       // No underscores in key, leave the word as is - maybe already camel cased
       joinedString = String(stringKey[keyRange])
-    } else {
+    }
+    else {
       joinedString = ([components[0].lowercased()] + components[1...].map { $0.capitalized }).joined()
     }
 
     // Do a cheap isEmpty check before creating and appending potentially empty strings
-    let result : String
-    if (leadingUnderscoreRange.isEmpty && trailingUnderscoreRange.isEmpty) {
+    let result: String
+    if leadingUnderscoreRange.isEmpty, trailingUnderscoreRange.isEmpty {
       result = joinedString
-    } else if (!leadingUnderscoreRange.isEmpty && !trailingUnderscoreRange.isEmpty) {
+    }
+    else if !leadingUnderscoreRange.isEmpty, !trailingUnderscoreRange.isEmpty {
       // Both leading and trailing underscores
       result = String(stringKey[leadingUnderscoreRange]) + joinedString + String(stringKey[trailingUnderscoreRange])
-    } else if (!leadingUnderscoreRange.isEmpty) {
+    }
+    else if !leadingUnderscoreRange.isEmpty {
       // Just leading
       result = String(stringKey[leadingUnderscoreRange]) + joinedString
-    } else {
+    }
+    else {
       // Just trailing
       result = joinedString + String(stringKey[trailingUnderscoreRange])
     }

@@ -16,6 +16,9 @@ let package = Package(
       targets: ["PotentCodables"]
     ),
   ],
+  dependencies: [
+    .package(url: "https://github.com/nicklockwood/SwiftFormat.git", .upToNextMinor(from: "0.40.10"))
+  ],
   targets: [
     .target(
       name: "PotentCodables",

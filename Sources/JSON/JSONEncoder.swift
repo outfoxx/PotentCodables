@@ -2,21 +2,24 @@
 //  JSONEncoder.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
 
 
 /// `JSONEncoder` facilitates the encoding of `Encodable` values into JSON values.
-public class JSONEncoder : ValueEncoder<JSON, JSONEncoderTransform> {
+public class JSONEncoder: ValueEncoder<JSON, JSONEncoderTransform> {
 
   public static let `default` = JSONEncoder()
 
   // MARK: Options
 
   /// The formatting of the output JSON data.
-  public struct OutputFormatting : OptionSet {
+  public struct OutputFormatting: OptionSet {
 
     /// The format's default value.
     public let rawValue: UInt
@@ -95,7 +98,7 @@ public class JSONEncoder : ValueEncoder<JSON, JSONEncoderTransform> {
   public var nonConformingFloatEncodingStrategy: JSONEncoder.NonConformingFloatEncodingStrategy = .throw
 
   /// The options set on the top-level encoder.
-  override public var options: JSONEncoderTransform.Options {
+  public override var options: JSONEncoderTransform.Options {
     return JSONEncoderTransform.Options(dateEncodingStrategy: dateEncodingStrategy,
                                         dataEncodingStrategy: dataEncodingStrategy,
                                         nonConformingFloatEncodingStrategy: nonConformingFloatEncodingStrategy,
@@ -113,50 +116,52 @@ public class JSONEncoder : ValueEncoder<JSON, JSONEncoderTransform> {
 
 
 
-public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSerializer, InternalValueStringifier {
+public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSerializer, InternalValueStringifier {
 
   public typealias Value = JSON
 
   public static let nilValue = JSON.null
   public static var emptyKeyedContainer = JSON.object([:])
 
-  public struct Options : InternalEncoderOptions {
+  public struct Options: InternalEncoderOptions {
     public let dateEncodingStrategy: JSONEncoder.DateEncodingStrategy
     public let dataEncodingStrategy: JSONEncoder.DataEncodingStrategy
     public let nonConformingFloatEncodingStrategy: JSONEncoder.NonConformingFloatEncodingStrategy
     public let outputFormatting: JSONEncoder.OutputFormatting
     public let keyEncodingStrategy: KeyEncodingStrategy
-    public let userInfo: [CodingUserInfoKey : Any]
+    public let userInfo: [CodingUserInfoKey: Any]
   }
 
-  public static func box(_ value: Bool, encoder: InternalValueEncoder<Value, Self>)     throws -> JSON { return .bool(value) }
-  public static func box(_ value: Int, encoder: InternalValueEncoder<Value, Self>)      throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int8, encoder: InternalValueEncoder<Value, Self>)     throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int16, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int32, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int64, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt, encoder: InternalValueEncoder<Value, Self>)     throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt8, encoder: InternalValueEncoder<Value, Self>)    throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt16, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt32, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt64, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: String, encoder: InternalValueEncoder<Value, Self>)   throws -> JSON { return .string(value) }
-  public static func box(_ value: URL, encoder: InternalValueEncoder<Value, Self>)      throws -> JSON { return .string(value.absoluteString) }
-  public static func box(_ value: UUID, encoder: InternalValueEncoder<Value, Self>)     throws -> JSON { return .string(value.uuidString) }
+  public static func box(_ value: Bool, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .bool(value) }
+  public static func box(_ value: Int, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int8, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int16, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int32, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int64, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt8, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt16, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt32, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt64, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: String, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .string(value) }
+  public static func box(_ value: URL, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .string(value.absoluteString) }
+  public static func box(_ value: UUID, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .string(value.uuidString) }
 
   public static func box(_ float: Float, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
-    guard !float.isInfinite && !float.isNaN else {
-      guard case let .convertToString(positiveInfinity: posInfString,
-                                      negativeInfinity: negInfString,
-                                      nan: nanString) = encoder.options.nonConformingFloatEncodingStrategy else {
-                                        throw EncodingError._invalidFloatingPointValue(float, at: encoder.codingPath)
+    guard !float.isInfinite, !float.isNaN else {
+      guard case .convertToString(let posInfString,
+                                  let negInfString,
+                                  let nanString) = encoder.options.nonConformingFloatEncodingStrategy else {
+        throw EncodingError._invalidFloatingPointValue(float, at: encoder.codingPath)
       }
 
       if float == Float.infinity {
         return .string(posInfString)
-      } else if float == -Float.infinity {
+      }
+      else if float == -Float.infinity {
         return .string(negInfString)
-      } else {
+      }
+      else {
         return .string(nanString)
       }
     }
@@ -165,18 +170,20 @@ public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSeri
   }
 
   public static func box(_ double: Double, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
-    guard !double.isInfinite && !double.isNaN else {
-      guard case let .convertToString(positiveInfinity: posInfString,
-                                      negativeInfinity: negInfString,
-                                      nan: nanString) = encoder.options.nonConformingFloatEncodingStrategy else {
-                                        throw EncodingError._invalidFloatingPointValue(double, at: encoder.codingPath)
+    guard !double.isInfinite, !double.isNaN else {
+      guard case .convertToString(let posInfString,
+                                  let negInfString,
+                                  let nanString) = encoder.options.nonConformingFloatEncodingStrategy else {
+        throw EncodingError._invalidFloatingPointValue(double, at: encoder.codingPath)
       }
 
       if double == Double.infinity {
         return .string(posInfString)
-      } else if double == -Double.infinity {
+      }
+      else if double == -Double.infinity {
         return .string(negInfString)
-      } else {
+      }
+      else {
         return .string(nanString)
       }
     }
@@ -185,18 +192,20 @@ public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSeri
   }
 
   public static func box(_ decimal: Decimal, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
-    guard !decimal.isInfinite && !decimal.isNaN else {
-      guard case let .convertToString(positiveInfinity: posInfString,
-                                      negativeInfinity: negInfString,
-                                      nan: nanString) = encoder.options.nonConformingFloatEncodingStrategy else {
-                                        throw EncodingError._invalidFloatingPointValue(decimal, at: encoder.codingPath)
+    guard !decimal.isInfinite, !decimal.isNaN else {
+      guard case .convertToString(let posInfString,
+                                  let negInfString,
+                                  let nanString) = encoder.options.nonConformingFloatEncodingStrategy else {
+        throw EncodingError._invalidFloatingPointValue(decimal, at: encoder.codingPath)
       }
 
-      if decimal.isInfinite && decimal.sign == .plus {
+      if decimal.isInfinite, decimal.sign == .plus {
         return .string(posInfString)
-      } else if decimal.isInfinite && decimal.sign == .minus {
+      }
+      else if decimal.isInfinite, decimal.sign == .minus {
         return .string(negInfString)
-      } else {
+      }
+      else {
         return .string(nanString)
       }
     }
@@ -246,7 +255,7 @@ public struct JSONEncoderTransform : InternalEncoderTransform, InternalValueSeri
     return .array(values)
   }
 
-  public static func keyedValuesToValue(_ values: [String : JSON]) -> JSON {
+  public static func keyedValuesToValue(_ values: [String: JSON]) -> JSON {
     return .object(values)
   }
 

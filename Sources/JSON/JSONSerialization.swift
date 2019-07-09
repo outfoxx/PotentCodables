@@ -2,7 +2,10 @@
 //  JSONSerialization.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/12/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -10,12 +13,12 @@ import Foundation
 
 public struct JSONSerialization {
 
-  public enum Error : Swift.Error {
+  public enum Error: Swift.Error {
     case fragmentDisallowed
     case noValue
   }
 
-  public struct ReadingOptions : OptionSet {
+  public struct ReadingOptions: OptionSet {
     public let rawValue: UInt
 
     public init(rawValue: UInt) {
@@ -59,7 +62,7 @@ public struct JSONSerialization {
   }
 
 
-  public struct WritingOptions : OptionSet {
+  public struct WritingOptions: OptionSet {
     public let rawValue: UInt
 
     public init(rawValue: UInt) {

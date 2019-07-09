@@ -2,22 +2,23 @@
 //  AnyValueDecoder.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/15/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
 
 
-public class AnyValueDecoder : ValueDecoder<AnyValue, AnyValueDecoderTransform> {
+public class AnyValueDecoder: ValueDecoder<AnyValue, AnyValueDecoderTransform> {
 
   public static let `default` = AnyValueDecoder()
 
   /// The options set on the top-level decoder.
   public override var options: AnyValueDecoderTransform.Options {
-    return AnyValueDecoderTransform.Options(
-      keyDecodingStrategy: keyDecodingStrategy,
-      userInfo: userInfo
-    )
+    return AnyValueDecoderTransform.Options(keyDecodingStrategy: keyDecodingStrategy,
+                                            userInfo: userInfo)
   }
 
   public override init() {
@@ -26,13 +27,13 @@ public class AnyValueDecoder : ValueDecoder<AnyValue, AnyValueDecoderTransform> 
 
 }
 
-public struct AnyValueDecoderTransform : InternalDecoderTransform {
+public struct AnyValueDecoderTransform: InternalDecoderTransform {
 
   public typealias Value = AnyValue
 
-  public struct Options : InternalDecoderOptions {
+  public struct Options: InternalDecoderOptions {
     public let keyDecodingStrategy: KeyDecodingStrategy
-    public let userInfo: [CodingUserInfoKey : Any]
+    public let userInfo: [CodingUserInfoKey: Any]
   }
 
 
@@ -147,7 +148,7 @@ public struct AnyValueDecoderTransform : InternalDecoderTransform {
     return array
   }
 
-  public static func valueToKeyedValues(_ value: AnyValue, decoder: InternalValueDecoder<AnyValue, AnyValueDecoderTransform>) throws -> [String : AnyValue]? {
+  public static func valueToKeyedValues(_ value: AnyValue, decoder: InternalValueDecoder<AnyValue, AnyValueDecoderTransform>) throws -> [String: AnyValue]? {
     guard case .dictionary(let dictionary) = value else { return nil }
     return dictionary
   }

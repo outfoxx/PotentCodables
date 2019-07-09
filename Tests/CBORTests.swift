@@ -1,11 +1,21 @@
-import XCTest
+//
+//  CBORTests.swift
+//  PotentCodables
+//
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
+
 @testable import PotentCodables
+import XCTest
 
 class CBORTests: XCTestCase {
   static var allTests = [
     ("testSubscriptSetter", testSubscriptSetter),
     ("testNestedSubscriptSetter", testNestedSubscriptSetter),
-    ("testNestedSubscriptSetterWithNewMap", testNestedSubscriptSetterWithNewMap)
+    ("testNestedSubscriptSetterWithNewMap", testNestedSubscriptSetterWithNewMap),
   ]
 
   func testSubscriptSetter() {
@@ -15,8 +25,8 @@ class CBORTests: XCTestCase {
       "zwii": "hd",
       "tags": [
         "a": "1",
-        "b": 2
-      ]
+        "b": 2,
+      ],
     ]
 
     cbor["foo"] = "changed"
@@ -30,8 +40,8 @@ class CBORTests: XCTestCase {
       "zwii": "hd",
       "tags": [
         "a": "1",
-        "b": 2
-      ]
+        "b": 2,
+      ],
     ]
 
     cbor["tags"]?[2] = "changed"
@@ -45,13 +55,13 @@ class CBORTests: XCTestCase {
       "zwii": "hd",
       "tags": [
         "a": "1",
-        "b": 2
-      ]
+        "b": 2,
+      ],
     ]
 
     let nestedMap: [CBOR: CBOR] = [
       "joe": "schmoe",
-      "age": 56
+      "age": 56,
     ]
 
     cbor["tags"]?[2] = CBOR.map(nestedMap)

@@ -2,8 +2,10 @@
 //  JSON.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/18/18.
-//  Copyright © 2018 Outfox, Inc. All rights reserved.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -18,11 +20,11 @@ import Foundation
 @dynamicMemberLookup
 public enum JSON {
 
-  enum Error : Swift.Error {
+  enum Error: Swift.Error {
     case unsupportedType
   }
 
-  public struct Number : Equatable, Hashable, Codable {
+  public struct Number: Equatable, Hashable, Codable {
 
     public let value: String
     public let isInteger: Bool
@@ -36,20 +38,20 @@ public enum JSON {
 
     public init(_ value: String) {
       self.value = value
-      self.isInteger = value.allSatisfy { $0.isNumber }
-      self.isNegative = value.hasPrefix("-")
+      isInteger = value.allSatisfy { $0.isNumber }
+      isNegative = value.hasPrefix("-")
     }
 
     public init(_ value: Double) {
       self.value = value.description
-      self.isInteger = false
-      self.isNegative = value < 0
+      isInteger = false
+      isNegative = value < 0
     }
 
     public init(_ value: Int) {
       self.value = value.description
-      self.isInteger = true
-      self.isNegative = value < 0
+      isInteger = true
+      isNegative = value < 0
     }
 
     public var integerValue: Int? {
@@ -58,7 +60,7 @@ public enum JSON {
     }
 
     public var unsignedIntegerValue: UInt? {
-      guard isInteger && !isNegative else { return nil }
+      guard isInteger, !isNegative else { return nil }
       return UInt(value)
     }
 
@@ -137,12 +139,12 @@ public enum JSON {
     return value
   }
 
-  public var arrayValue: Array<JSON>? {
+  public var arrayValue: [JSON]? {
     guard case .array(let value) = self else { return nil }
     return value
   }
 
-  public var objectValue: Dictionary<String, JSON>? {
+  public var objectValue: [String: JSON]? {
     guard case .object(let value) = self else { return nil }
     return value
   }
@@ -183,9 +185,9 @@ public enum JSON {
 
 }
 
-extension JSON : Equatable {}
-extension JSON : Hashable {}
-extension JSON : Value {
+extension JSON: Equatable {}
+extension JSON: Hashable {}
+extension JSON: Value {
 
   public var unwrapped: Any? {
     switch self {
@@ -205,9 +207,9 @@ extension JSON : Value {
  * Literal support
  **/
 
-extension JSON : ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral,
-                 ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral,
-                 ExpressibleByDictionaryLiteral {
+extension JSON: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral,
+  ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral,
+  ExpressibleByDictionaryLiteral {
 
   public init(nilLiteral: ()) {
     self = .null
@@ -244,7 +246,7 @@ extension JSON : ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expressib
 
 }
 
-extension JSON.Number : ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, ExpressibleByStringLiteral {
+extension JSON.Number: ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, ExpressibleByStringLiteral {
 
   public init(stringLiteral value: String) {
     self.init(value)
@@ -269,7 +271,7 @@ extension JSON.Number : ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, 
  **/
 extension JSON {
 
-  public var stableText : String {
+  public var stableText: String {
     var output = ""
     var writer = JSONWriter(pretty: false, sortedKeys: true) { output += $0 ?? "" }
     do {

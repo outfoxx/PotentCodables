@@ -2,14 +2,17 @@
 //  JSONDecoder.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
 
 
 /// `JSONDecoder` facilitates the decoding of JSON into semantic `Decodable` types.
-public class JSONDecoder : ValueDecoder<JSON, JSONDecoderTransform> {
+public class JSONDecoder: ValueDecoder<JSON, JSONDecoderTransform> {
 
   public static let `default` = JSONDecoder()
 
@@ -68,13 +71,11 @@ public class JSONDecoder : ValueDecoder<JSON, JSONDecoderTransform> {
 
   /// The options set on the top-level decoder.
   public override var options: JSONDecoderTransform.Options {
-    return JSONDecoderTransform.Options(
-      dateDecodingStrategy: dateDecodingStrategy,
-      dataDecodingStrategy: dataDecodingStrategy,
-      nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
-      keyDecodingStrategy: keyDecodingStrategy,
-      userInfo: userInfo
-    )
+    return JSONDecoderTransform.Options(dateDecodingStrategy: dateDecodingStrategy,
+                                        dataDecodingStrategy: dataDecodingStrategy,
+                                        nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
+                                        keyDecodingStrategy: keyDecodingStrategy,
+                                        userInfo: userInfo)
   }
 
   public override init() {
@@ -84,19 +85,19 @@ public class JSONDecoder : ValueDecoder<JSON, JSONDecoderTransform> {
 }
 
 
-public struct JSONDecoderTransform : InternalDecoderTransform, InternalValueDeserializer, InternalValueParser {
+public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeserializer, InternalValueParser {
 
   public typealias Value = JSON
 
   public static let nilValue = JSON.null
 
   /// Options set on the top-level decoder to pass down the decoding hierarchy.
-  public struct Options : InternalDecoderOptions {
+  public struct Options: InternalDecoderOptions {
     public let dateDecodingStrategy: JSONDecoder.DateDecodingStrategy
     public let dataDecodingStrategy: JSONDecoder.DataDecodingStrategy
     public let nonConformingFloatDecodingStrategy: JSONDecoder.NonConformingFloatDecodingStrategy
     public let keyDecodingStrategy: KeyDecodingStrategy
-    public let userInfo: [CodingUserInfoKey : Any]
+    public let userInfo: [CodingUserInfoKey: Any]
   }
 
   /// Returns the given value unboxed from a container.
@@ -114,14 +115,14 @@ public struct JSONDecoderTransform : InternalDecoderTransform, InternalValueDese
     return DecodingError.typeMismatch(type, context)
   }
 
-  static func coerce<T>(_ from: JSON.Number, at codingPath: [CodingKey]) throws -> T where T : BinaryInteger & FixedWidthInteger {
+  static func coerce<T>(_ from: JSON.Number, at codingPath: [CodingKey]) throws -> T where T: BinaryInteger & FixedWidthInteger {
     guard let result = T(from.value) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
   }
 
-  static func coerce<T>(_ from: JSON.Number, at codingPath: [CodingKey]) throws -> T where T : BinaryFloatingPoint & LosslessStringConvertible {
+  static func coerce<T>(_ from: JSON.Number, at codingPath: [CodingKey]) throws -> T where T: BinaryFloatingPoint & LosslessStringConvertible {
     guard let result = T(from.value) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
@@ -260,7 +261,7 @@ public struct JSONDecoderTransform : InternalDecoderTransform, InternalValueDese
     case .string(let string):
       return UUID(uuidString: string)
     case .null: return nil
-    case let json :
+    case let json:
       throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }

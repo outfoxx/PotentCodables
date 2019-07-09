@@ -2,76 +2,69 @@
 //  JSONTests.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
-import XCTest
 @testable import PotentCodables
-import class PotentCodables.JSONEncoder
 import class PotentCodables.JSONDecoder
+import class PotentCodables.JSONEncoder
+import XCTest
 
 
-class JSONTests : XCTestCase {
+class JSONTests: XCTestCase {
 
   let json = """
-    {
+  {
+    "a": 1,
+    "b": "2",
+    "c": [true, false, true],
+    "d": {
       "a": 1,
       "b": "2",
-      "c": [true, false, true],
+      "c": [false, false, true],
       "d": {
         "a": 1,
         "b": "2",
-        "c": [false, false, true],
-        "d": {
-          "a": 1,
-          "b": "2",
-          "c": [true, true, false]
-        }
+        "c": [true, true, false]
+      }
+    },
+    "e": [
+      {
+        "a": 5,
+        "b": "6",
+        "c": [true]
       },
-      "e": [
-        {
-          "a": 5,
-          "b": "6",
-          "c": [true]
-        },
-        {
-          "a": 5,
-          "b": "6",
-          "c": [true]
-        }
-      ]
-    }
-    """
-
-  fileprivate let objects = TestValue(
-    a: 1,
-    b: "2",
-    c: [true, false, true],
-    d: TestValue(
-      a: 1,
-      b: "2",
-      c: [false, false, true],
-      d: TestValue(
-        a: 1,
-        b: "2",
-        c: [true, true, false]
-      )
-    ),
-    e: [
-      TestValue(
-        a: 5,
-        b: "6",
-        c: [true]
-      ),
-      TestValue(
-        a: 5,
-        b: "6",
-        c: [true]
-      )
+      {
+        "a": 5,
+        "b": "6",
+        "c": [true]
+      }
     ]
-  )
+  }
+  """
 
-  let values : JSON = [
+  fileprivate let objects = TestValue(a: 1,
+                                      b: "2",
+                                      c: [true, false, true],
+                                      d: TestValue(a: 1,
+                                                   b: "2",
+                                                   c: [false, false, true],
+                                                   d: TestValue(a: 1,
+                                                                b: "2",
+                                                                c: [true, true, false])),
+                                      e: [
+                                        TestValue(a: 5,
+                                                  b: "6",
+                                                  c: [true]),
+                                        TestValue(a: 5,
+                                                  b: "6",
+                                                  c: [true]),
+                                      ])
+
+  let values: JSON = [
     "a": 1,
     "b": "2",
     "c": [true, false, true],
@@ -83,24 +76,24 @@ class JSONTests : XCTestCase {
         "a": 1,
         "b": "2",
         "c": [true, true, false],
-      ]
+      ],
     ],
     "e": [
       [
         "a": 5,
         "b": "6",
-        "c": [true]
+        "c": [true],
       ],
       [
         "a": 5,
         "b": "6",
-        "c": [true]
-      ]
-    ]
+        "c": [true],
+      ],
+    ],
   ]
 
   func testDecodingChildContainers() {
-    let _ = try! JSONDecoder().decode(TestValue.self, from: json)
+    _ = try! JSONDecoder().decode(TestValue.self, from: json)
   }
 
   func testEncodingChildContainers() {
@@ -111,7 +104,7 @@ class JSONTests : XCTestCase {
 }
 
 
-private class TestValue : Codable {
+private class TestValue: Codable {
   let a: Int
   let b: String
   let c: [Bool]

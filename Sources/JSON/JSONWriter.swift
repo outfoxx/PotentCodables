@@ -2,7 +2,19 @@
 //  JSONWriter.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
+
+//  NOTE:
+//  This file is heavily inspired by the JSONWriter class found in the JSONSerialization.swift
+//  file of the open-souce Swift foundation libraries located at
+//  https://github.com/apple/swift-corelibs-foundation.
+//
+//  Although this work is substantially different enough to be considered a unique work, credit
+//  to the inspiring work and its authors is hereby given.
 //
 
 import Foundation
@@ -10,7 +22,7 @@ import Foundation
 
 struct JSONWriter {
 
-  enum Error : Swift.Error {
+  enum Error: Swift.Error {
     case invalidNumber(Float80)
   }
 
@@ -62,9 +74,9 @@ struct JSONWriter {
         writer("\\r") // U+000D carriage return
       case "\t":
         writer("\\t") // U+0009 tab
-      case "\u{0}"..."\u{f}":
+      case "\u{0}" ... "\u{f}":
         writer("\\u000\(String(scalar.value, radix: 16))") // U+0000 to U+000F
-      case "\u{10}"..."\u{1f}":
+      case "\u{10}" ... "\u{1f}":
         writer("\\u00\(String(scalar.value, radix: 16))") // U+0010 to U+001F
       default:
         writer(String(scalar))
@@ -92,10 +104,12 @@ struct JSONWriter {
     for elem in array {
       if first {
         first = false
-      } else if pretty {
+      }
+      else if pretty {
         writer(",\n")
         writeIndent()
-      } else {
+      }
+      else {
         writer(",")
       }
       try serialize(elem)
@@ -119,10 +133,12 @@ struct JSONWriter {
     func serializeDictionaryElement(key: String, value: JSON) throws {
       if first {
         first = false
-      } else if pretty {
+      }
+      else if pretty {
         writer(",\n")
         writeIndent()
-      } else {
+      }
+      else {
         writer(",")
       }
 
@@ -136,14 +152,15 @@ struct JSONWriter {
     if sortedKeys {
       let elems = dict.sorted(by: { a, b in
         let options: String.CompareOptions = [.numeric, .caseInsensitive, .forcedOrdering]
-        let range: Range<String.Index>  = a.key.startIndex..<a.key.endIndex
+        let range: Range<String.Index> = a.key.startIndex ..< a.key.endIndex
 
         return a.key.compare(b.key, options: options, range: range, locale: NSLocale.system) == .orderedAscending
       })
       for elem in elems {
         try serializeDictionaryElement(key: elem.key, value: elem.value)
       }
-    } else {
+    }
+    else {
       for (key, value) in dict {
         try serializeDictionaryElement(key: key, value: value)
       }
@@ -173,7 +190,7 @@ struct JSONWriter {
   }
 
   func writeIndent() {
-    for _ in 0..<indent {
+    for _ in 0 ..< indent {
       writer(" ")
     }
   }

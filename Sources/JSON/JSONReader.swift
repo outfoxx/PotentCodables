@@ -2,7 +2,20 @@
 //  JSONReader.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
+
+//
+//  NOTE:
+//  This file is heavily inspired by the JSONReader class found in the JSONSerialization.swift
+//  file of the open-souce Swift foundation libraries located at
+//  https://github.com/apple/swift-corelibs-foundation.
+//
+//  Although this work is substantially different enough to be considered a unique work, credit
+//  to the inspiring work and its authors is hereby given.
 //
 
 import Foundation
@@ -10,7 +23,7 @@ import Foundation
 
 struct JSONReader {
 
-  public enum Error : Swift.Error {
+  public enum Error: Swift.Error {
 
     public enum InvalidData {
       case invalidString
@@ -34,14 +47,14 @@ struct JSONReader {
   ]
 
   struct Structure {
-    static let beginArray: UInt8     = 0x5B // [
-    static let endArray: UInt8       = 0x5D // ]
-    static let beginObject: UInt8    = 0x7B // {
-    static let endObject: UInt8      = 0x7D // }
-    static let nameSeparator: UInt8  = 0x3A // :
+    static let beginArray: UInt8 = 0x5B // [
+    static let endArray: UInt8 = 0x5D // ]
+    static let beginObject: UInt8 = 0x7B // {
+    static let endObject: UInt8 = 0x7D // }
+    static let nameSeparator: UInt8 = 0x3A // :
     static let valueSeparator: UInt8 = 0x2C // ,
-    static let quotationMark: UInt8  = 0x22 // "
-    static let escape: UInt8         = 0x5C // \
+    static let quotationMark: UInt8 = 0x22 // "
+    static let escape: UInt8 = 0x5C // \
   }
 
   typealias Index = Int
@@ -98,7 +111,7 @@ struct JSONReader {
       switch self.source.takeASCII(input) {
       case nil:
         throw Error.unexpectedEndOfStream
-      case let (taken, index)? where taken == ascii:
+      case (let taken, let index)? where taken == ascii:
         return index
       default:
         return nil
@@ -126,7 +139,8 @@ struct JSONReader {
     }
   }
 
-  //MARK: - String Parsing
+  // MARK: - String Parsing
+
   func parseString(_ input: Index) throws -> (String, Index)? {
     guard let beginIndex = try consumeWhitespace(input).flatMap(consumeASCII(Structure.quotationMark)) else {
       return nil
@@ -206,7 +220,7 @@ struct JSONReader {
       let (trailCodeUnit, finalIndex) = try consumeASCIISequence("\\u", input: index).flatMap(parseCodeUnit),
       UTF16.isTrailSurrogate(trailCodeUnit)
     else {
-        throw Error.invalidData(.invalidEscapeSequence, position: source.distanceFromStart(input))
+      throw Error.invalidData(.invalidEscapeSequence, position: source.distanceFromStart(input))
     }
 
     return (String(UTF16.decode(UTF16.EncodedScalar([codeUnit, trailCodeUnit]))), finalIndex)
@@ -222,12 +236,13 @@ struct JSONReader {
     let hexParser = takeMatching(isHexChr)
     guard let (result, index) = hexParser([], input).flatMap(hexParser).flatMap(hexParser).flatMap(hexParser),
       let value = Int(String(result), radix: 16) else {
-        return nil
+      return nil
     }
     return (UTF16.CodeUnit(value), index)
   }
 
-  //MARK: - Number parsing
+  // MARK: - Number parsing
+
   private static let zero = UInt8(ascii: "0")
   private static let one = UInt8(ascii: "1")
   private static let nine = UInt8(ascii: "9")
@@ -236,11 +251,11 @@ struct JSONReader {
   private static let lowerExponent = UInt8(ascii: "e")
   private static let upperExponent = UInt8(ascii: "E")
   private static let decimalSeparator = UInt8(ascii: ".")
-  private static let allDigits = (zero...nine)
-  private static let oneToNine = (one...nine)
+  private static let allDigits = (zero ... nine)
+  private static let oneToNine = (one ... nine)
 
   private static let numberCodePoints: [UInt8] = {
-    var numberCodePoints = Array(zero...nine)
+    var numberCodePoints = Array(zero ... nine)
     numberCodePoints.append(contentsOf: [decimalSeparator, minus, plus, lowerExponent, upperExponent])
     return numberCodePoints
   }()
@@ -253,7 +268,7 @@ struct JSONReader {
     var isInteger = true
     var exponent = 0
     var index = input
-    var ascii: UInt8 = 0    // set by nextASCII()
+    var ascii: UInt8 = 0 // set by nextASCII()
 
     // Validate the input is a valid JSON number, also gather the following
     // about the input: isNegative, isInteger, the exponent and if it is +/-,
@@ -293,12 +308,14 @@ struct JSONReader {
       if JSONReader.oneToNine.contains(ascii) {
         guard let ch = readDigits() else { return true }
         ascii = ch
-        if [ JSONReader.decimalSeparator, JSONReader.lowerExponent, JSONReader.upperExponent ].contains(ascii) {
+        if [JSONReader.decimalSeparator, JSONReader.lowerExponent, JSONReader.upperExponent].contains(ascii) {
           guard nextASCII() else { return false } // There should be at least one char as readDigits didn't remove the '.eE'
         }
-      } else if ascii == JSONReader.zero {
+      }
+      else if ascii == JSONReader.zero {
         guard nextASCII() else { return true }
-      } else {
+      }
+      else {
         throw Error.invalidData(.invalidNumber, position: source.distanceFromStart(input))
       }
 
@@ -306,7 +323,8 @@ struct JSONReader {
         isInteger = false
         guard readDigits() != nil else { return true }
         guard nextASCII() else { return true }
-      } else if JSONReader.allDigits.contains(ascii) {
+      }
+      else if JSONReader.allDigits.contains(ascii) {
         throw Error.invalidData(.invalidNumber, position: source.distanceFromStart(input))
       }
 
@@ -339,7 +357,8 @@ struct JSONReader {
     return (.init(string, isInteger: isInteger, isNegative: isNegative), index)
   }
 
-  //MARK: - Value parsing
+  // MARK: - Value parsing
+
   func parseValue(_ input: Index, options opt: JSONSerialization.ReadingOptions) throws -> (JSON, Index)? {
     if let (value, parser) = try parseString(input) {
       return (.string(value), parser)
@@ -365,7 +384,8 @@ struct JSONReader {
     return nil
   }
 
-  //MARK: - Object parsing
+  // MARK: - Object parsing
+
   func parseObject(_ input: Index, options opt: JSONSerialization.ReadingOptions) throws -> ([String: JSON], Index)? {
     guard let beginIndex = try consumeStructure(Structure.beginObject, input: input) else {
       return nil
@@ -409,7 +429,8 @@ struct JSONReader {
     return (name, value, finalIndex)
   }
 
-  //MARK: - Array parsing
+  // MARK: - Array parsing
+
   func parseArray(_ input: Index, options opt: JSONSerialization.ReadingOptions) throws -> ([JSON], Index)? {
     guard let beginIndex = try consumeStructure(Structure.beginArray, input: input) else {
       return nil

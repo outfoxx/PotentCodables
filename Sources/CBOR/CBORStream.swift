@@ -2,37 +2,40 @@
 //  CBORStream.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/10/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
 
 
 /// A source stream of bytes that can be used to retrieve CBOR encoded data
-public protocol CBORInputStream: class {
+public protocol CBORInputStream: AnyObject {
 
   func readByte() throws -> UInt8
   func readBytes<T>(into: UnsafeMutablePointer<T>) throws -> Void
   func readBytes(count: Int) throws -> Data
-  func readInt<T>(_ type: T.Type) throws -> T where T : FixedWidthInteger
+  func readInt<T>(_ type: T.Type) throws -> T where T: FixedWidthInteger
 
 }
 
 
 /// A destination stream of bytes that can be used to store CBOR encoded data
-public protocol CBOROutputStream: class {
+public protocol CBOROutputStream: AnyObject {
 
   func writeByte(_ byte: UInt8) throws
   func writeBytes(_ ptr: UnsafeBufferPointer<UInt8>) throws
   func writeBytes(_ data: Data) throws
-  func writeInt<T>(_ int: T) throws where T : FixedWidthInteger
+  func writeInt<T>(_ int: T) throws where T: FixedWidthInteger
 
 }
 
 
 extension CBORInputStream {
 
-  public func readInt<T>(_ type: T.Type) throws -> T where T : FixedWidthInteger {
+  public func readInt<T>(_ type: T.Type) throws -> T where T: FixedWidthInteger {
     var value: T = 0
     try readBytes(into: &value)
     return T(bigEndian: value)
@@ -42,7 +45,7 @@ extension CBORInputStream {
 
 extension CBOROutputStream {
 
-  public func writeInt<T>(_ int: T) throws where T : FixedWidthInteger {
+  public func writeInt<T>(_ int: T) throws where T: FixedWidthInteger {
     try withUnsafeBytes(of: int.bigEndian) { ptr in
       try writeBytes(ptr.bindMemory(to: UInt8.self))
     }

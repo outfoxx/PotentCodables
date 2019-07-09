@@ -2,47 +2,50 @@
 //  AnyValueTests.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/15/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
-import XCTest
 @testable import PotentCodables
 import class PotentCodables.JSONDecoder
 import class PotentCodables.JSONEncoder
 import struct PotentCodables.JSONSerialization
+import XCTest
 
 
 class AnyValueTests: XCTestCase {
 
   let json = """
-    {
+  {
+    "a": 1,
+    "b": "2",
+    "c": [true, false, true],
+    "d": {
       "a": 1,
       "b": "2",
-      "c": [true, false, true],
+      "c": [false, false, true],
       "d": {
         "a": 1,
         "b": "2",
-        "c": [false, false, true],
-        "d": {
-          "a": 1,
-          "b": "2",
-          "c": [true, true, false]
-        }
+        "c": [true, true, false]
+      }
+    },
+    "e": [
+      {
+        "a": 5,
+        "b": "6",
+        "c": [true]
       },
-      "e": [
-        {
-          "a": 5,
-          "b": "6",
-          "c": [true]
-        },
-        {
-          "a": 5,
-          "b": "6",
-          "c": [true]
-        }
-      ]
-    }
-    """.data(using: .utf8)!
+      {
+        "a": 5,
+        "b": "6",
+        "c": [true]
+      }
+    ]
+  }
+  """.data(using: .utf8)!
 
   let e = AnyValue.array([
     .dictionary([
@@ -54,7 +57,7 @@ class AnyValueTests: XCTestCase {
       "a": .int64(5),
       "b": .string("6"),
       "c": .array([.bool(true)]),
-      ])
+    ]),
   ])
 
   func testSimple() throws {
@@ -68,7 +71,7 @@ class AnyValueTests: XCTestCase {
 }
 
 
-private class TestValue : Codable {
+private class TestValue: Codable {
   let a: Int
   let b: String
   let c: [Bool]

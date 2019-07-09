@@ -2,8 +2,10 @@
 //  CodableErrors.swift
 //  PotentCodables
 //
-//  Created by Kevin Wooten on 6/18/18.
-//  Copyright © 2018 Outfox, Inc. All rights reserved.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -20,13 +22,15 @@ internal extension EncodingError {
   /// - parameter value: The value that was invalid to encode.
   /// - parameter path: The path of `CodingKey`s taken to encode this value.
   /// - returns: An `EncodingError` with the appropriate path and debug description.
-  static func _invalidFloatingPointValue<T : FloatingPoint>(_ value: T, at codingPath: [CodingKey]) -> EncodingError {
+  static func _invalidFloatingPointValue<T: FloatingPoint>(_ value: T, at codingPath: [CodingKey]) -> EncodingError {
     let valueDescription: String
     if value == T.infinity {
       valueDescription = "\(T.self).infinity"
-    } else if value == -T.infinity {
+    }
+    else if value == -T.infinity {
       valueDescription = "-\(T.self).infinity"
-    } else {
+    }
+    else {
       valueDescription = "\(T.self).nan"
     }
 
@@ -42,11 +46,13 @@ internal extension EncodingError {
   /// - returns: An `EncodingError` with the appropriate path and debug description.
   static func _invalidFloatingPointValue(_ value: Decimal, at codingPath: [CodingKey]) -> EncodingError {
     let valueDescription: String
-    if value.isInfinite && value.sign == .plus {
+    if value.isInfinite, value.sign == .plus {
       valueDescription = "\(Decimal.self).infinity"
-    } else if value.isInfinite && value.sign == .minus {
+    }
+    else if value.isInfinite, value.sign == .minus {
       valueDescription = "-\(Decimal.self).infinity"
-    } else {
+    }
+    else {
       valueDescription = "\(Decimal.self).nan"
     }
 
@@ -75,15 +81,20 @@ internal extension DecodingError {
   static func _typeDescription(of value: Any) -> String {
     if value is NSNull {
       return "a null value"
-    } else if value is NSNumber /* FIXME: If swift-corelibs-foundation isn't updated to use NSNumber, this check will be necessary: || value is Int || value is Double */ {
+    }
+    else if value is NSNumber /* FIXME: If swift-corelibs-foundation isn't updated to use NSNumber, this check will be necessary: || value is Int || value is Double */ {
       return "a number"
-    } else if value is String {
+    }
+    else if value is String {
       return "a string/data"
-    } else if value is [Any] {
+    }
+    else if value is [Any] {
       return "an array"
-    } else if value is [String : Any] {
+    }
+    else if value is [String: Any] {
       return "a dictionary"
-    } else {
+    }
+    else {
       return "\(type(of: value))"
     }
   }

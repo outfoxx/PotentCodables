@@ -1,3 +1,13 @@
+//
+//  CBORReader.swift
+//  PotentCodables
+//
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
+
 import Foundation
 
 private typealias CBORError = CBORSerialization.Error
@@ -83,7 +93,7 @@ public struct CBORReader {
   ///     including `.invalidBreak` if a break indicator is encountered in
   ///     the either the key or value slot
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItemPairs(count: Int) throws -> [CBOR : CBOR] {
+  public func decodeItemPairs(count: Int) throws -> [CBOR: CBOR] {
     var result: [CBOR: CBOR] = [:]
     for _ in 0 ..< count {
       let key = try decodeRequiredItem()
@@ -102,7 +112,7 @@ public struct CBORReader {
   ///     including `.invalidBreak` if a break indicator is encountered in
   ///     the value slot
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItemPairsUntilBreak() throws -> [CBOR : CBOR] {
+  public func decodeItemPairsUntilBreak() throws -> [CBOR: CBOR] {
     var result: [CBOR: CBOR] = [:]
     while let key = try decodeItem() {
       let val = try decodeRequiredItem()
@@ -135,18 +145,18 @@ public struct CBORReader {
 
     switch b {
     // positive integers
-    case 0x00...0x1b:
+    case 0x00 ... 0x1B:
       return .unsignedInt(try readVarUInt(b, base: 0x00))
 
     // negative integers
-    case 0x20...0x3b:
+    case 0x20 ... 0x3B:
       return .negativeInt(try readVarUInt(b, base: 0x20))
 
     // byte strings
-    case 0x40...0x5b:
+    case 0x40 ... 0x5B:
       let numBytes = try readLength(b, base: 0x40)
       return .byteString(try stream.readBytes(count: numBytes))
-    case 0x5f:
+    case 0x5F:
       let values = try decodeItemsUntilBreak().map { cbor -> Data in
         guard case .byteString(let bytes) = cbor else { throw CBORError.invalidIndefiniteElement }
         return bytes
@@ -157,53 +167,53 @@ public struct CBORReader {
       return .byteString(bytes)
 
     // utf-8 strings
-    case 0x60...0x7b:
+    case 0x60 ... 0x7B:
       let numBytes = try readLength(b, base: 0x60)
       guard let string = String(data: try stream.readBytes(count: numBytes), encoding: .utf8) else {
         throw CBORError.invalidUTF8String
       }
       return .utf8String(string)
-    case 0x7f:
+    case 0x7F:
       return .utf8String(try decodeItemsUntilBreak().map { x -> String in
         guard case .utf8String(let r) = x else { throw CBORError.invalidIndefiniteElement }
         return r
-        }.joined(separator: ""))
+      }.joined(separator: ""))
 
     // arrays
-    case 0x80...0x9b:
+    case 0x80 ... 0x9B:
       let itemCount = try readLength(b, base: 0x80)
       return .array(try decodeItems(count: itemCount))
-    case 0x9f:
+    case 0x9F:
       return .array(try decodeItemsUntilBreak())
 
     // pairs
-    case 0xa0...0xbb:
-      let itemPairCount = try readLength(b, base: 0xa0)
+    case 0xA0 ... 0xBB:
+      let itemPairCount = try readLength(b, base: 0xA0)
       return .map(try decodeItemPairs(count: itemPairCount))
-    case 0xbf:
+    case 0xBF:
       return .map(try decodeItemPairsUntilBreak())
 
     // tagged values
-    case 0xc0...0xdb:
-      let tag = try readVarUInt(b, base: 0xc0)
+    case 0xC0 ... 0xDB:
+      let tag = try readVarUInt(b, base: 0xC0)
       let item = try decodeRequiredItem()
       return .tagged(CBOR.Tag(rawValue: tag), item)
 
-    case 0xe0...0xf3: return .simple(b - 0xe0)
-    case 0xf4: return .boolean(false)
-    case 0xf5: return .boolean(true)
-    case 0xf6: return .null
-    case 0xf7: return .undefined
-    case 0xf8: return .simple(try stream.readByte())
+    case 0xE0 ... 0xF3: return .simple(b - 0xE0)
+    case 0xF4: return .boolean(false)
+    case 0xF5: return .boolean(true)
+    case 0xF6: return .null
+    case 0xF7: return .undefined
+    case 0xF8: return .simple(try stream.readByte())
 
-    case 0xf9:
+    case 0xF9:
       return .half(try readBinaryNumber(Float16.self))
-    case 0xfa:
+    case 0xFA:
       return .float(try readBinaryNumber(Float32.self))
-    case 0xfb:
+    case 0xFB:
       return .double(try readBinaryNumber(Float64.self))
 
-    case 0xff: return nil
+    case 0xFF: return nil
     default: throw CBORError.invalidItemType
     }
   }
