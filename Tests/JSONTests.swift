@@ -8,10 +8,10 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-@testable import PotentCodables
+import XCTest
 import class PotentCodables.JSONDecoder
 import class PotentCodables.JSONEncoder
-import XCTest
+@testable import PotentCodables
 
 
 class JSONTests: XCTestCase {

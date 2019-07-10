@@ -10,8 +10,29 @@
 
 import Foundation
 
+/// General CBOR value.
+///
+/// # Map Access
+/// `CBOR` supoprts Swift's "dnyamic member lookup" so CBOR fields of `map` values can be accessed in Swift syntax
+///
+///     cborObject.someValue
+///
+/// For field names that are non-conformant Swift identifiers subscript syntax is also supported:
+///
+///     cborObject["@value"]
+///
+/// - Note: CBOR supports complex key values and thus any `CBOR` value can be used to subscript a `map` value.
+///
+/// # Array Access
+/// The elements of CBOR `array` values can use index subscripting to access individual array values:
+///
+///     cborArray[0]
+///
+@dynamicMemberLookup
 public indirect enum CBOR: Equatable, Hashable {
 
+  /// A CBOR `tag` for tagged values supported by the specification.
+  ///
   public struct Tag: RawRepresentable, Equatable, Hashable {
     public let rawValue: UInt64
 
@@ -173,6 +194,12 @@ public indirect enum CBOR: Equatable, Hashable {
     }
   }
 
+  /// Returns the CBOR value stripped of all `tagged` values.
+  ///
+  /// # Map/Array
+  /// If the value is a compex value, like `map` or `array` all values
+  /// contained in them are untagged recursively.
+  ///
   public var untagged: CBOR {
     guard case .tagged(_, let value) = self else {
       return self

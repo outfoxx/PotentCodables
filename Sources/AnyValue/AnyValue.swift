@@ -11,6 +11,23 @@
 import Foundation
 
 
+/// A `Codable` value that allows encoding/decoding values of any type or structure.
+///
+/// # Dictionary Access
+/// `AnyValue` supoprts Swift's "dnyamic member lookup" so fields of `dictionary` values can be accessed in Swift syntax
+///
+///     anyObject.someValue
+///
+/// For field names that are non-conformant Swift identifiers subscript syntax is also supported:
+///
+///     anyObject["@value"]
+///
+/// # Array Access
+/// The elements of `array` values can use index subscripting to access individual array values:
+///
+///     anyArray[0]
+///
+@dynamicMemberLookup
 public enum AnyValue: Hashable {
 
   public enum Error: Swift.Error {
