@@ -294,3 +294,13 @@ extension JSON {
   }
 
 }
+
+
+/// Make encoders/decoders available in JSON namespace
+///
+public extension JSON {
+
+  typealias Encoder = JSONEncoder
+  typealias Decoder = JSONEncoder
+
+}
