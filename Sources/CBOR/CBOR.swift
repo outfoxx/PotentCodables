@@ -173,6 +173,13 @@ public indirect enum CBOR: Equatable, Hashable {
     self = .double(value)
   }
 
+  public subscript(dynamicMember member: CBOR) -> CBOR? {
+    if let map = mapValue {
+      return map[member]
+    }
+    return nil
+  }
+
   public subscript(position: CBOR) -> CBOR? {
     get {
       switch (self, position) {
