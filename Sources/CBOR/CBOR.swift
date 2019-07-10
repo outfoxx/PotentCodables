@@ -313,3 +313,13 @@ extension CBOR: Value {
   }
 
 }
+
+
+/// Make encoders/decoders available in CBOR namespace
+///
+public extension CBOR {
+
+  typealias Encoder = CBOREncoder
+  typealias Decoder = CBORDecoder
+
+}

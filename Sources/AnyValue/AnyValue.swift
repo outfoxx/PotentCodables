@@ -183,7 +183,7 @@ extension AnyValue: Value {
 
 extension AnyValue: Decodable {
 
-  public init(from decoder: Decoder) throws {
+  public init(from decoder: Swift.Decoder) throws {
 
     // Try keyed container
     if let container = try? decoder.container(keyedBy: AnyCodingKey.self) {
@@ -331,7 +331,7 @@ extension AnyValue: Decodable {
 
 extension AnyValue: Encodable {
 
-  public func encode(to encoder: Encoder) throws {
+  public func encode(to encoder: Swift.Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {
     case .nil:
@@ -379,3 +379,12 @@ extension AnyValue: Encodable {
 
 }
 
+
+/// Make encoders/decoders available in AnyValue namespace
+///
+public extension AnyValue {
+
+  typealias Encoder = AnyValueEncoder
+  typealias Decoder = AnyValueEncoder
+
+}
