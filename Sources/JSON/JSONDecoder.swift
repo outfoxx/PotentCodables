@@ -12,7 +12,8 @@ import Foundation
 
 
 /// `JSONDecoder` facilitates the decoding of JSON into semantic `Decodable` types.
-public class JSONDecoder: ValueDecoder<JSON, JSONDecoderTransform> {
+///
+public class JSONDecoder: ValueDecoder<JSON, JSONDecoderTransform>, DecodesFromString {
 
   public static let `default` = JSONDecoder()
 

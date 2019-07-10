@@ -12,7 +12,8 @@ import Foundation
 
 
 /// `CBOREncoder` facilitates the encoding of `Encodable` values into CBOR values.
-public class CBOREncoder: ValueEncoder<CBOR, CBOREncoderTransform> {
+///
+public class CBOREncoder: ValueEncoder<CBOR, CBOREncoderTransform>, EncodesToData {
   // MARK: Options
 
   /// The strategy to use for encoding `Date` values.

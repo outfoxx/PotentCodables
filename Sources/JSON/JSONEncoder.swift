@@ -12,7 +12,8 @@ import Foundation
 
 
 /// `JSONEncoder` facilitates the encoding of `Encodable` values into JSON values.
-public class JSONEncoder: ValueEncoder<JSON, JSONEncoderTransform> {
+///
+public class JSONEncoder: ValueEncoder<JSON, JSONEncoderTransform>, EncodesToString {
 
   public static let `default` = JSONEncoder()
 

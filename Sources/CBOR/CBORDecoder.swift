@@ -12,7 +12,8 @@ import Foundation
 
 
 /// `CBORDecoder` facilitates the decoding of CBOR into semantic `Decodable` types.
-public class CBORDecoder: ValueDecoder<CBOR, CBORDecoderTransform> {
+///
+public class CBORDecoder: ValueDecoder<CBOR, CBORDecoderTransform>, DecodesFromData {
 
   /// The strategy to use for decoding untagged `Date` values.
   ///
