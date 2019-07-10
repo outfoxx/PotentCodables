@@ -92,6 +92,27 @@ public enum AnyValue: Hashable {
     }
   }
 
+  public subscript(dynamicMember member: String) -> Any? {
+    if case .dictionary(let dict) = self {
+      return dict[member]
+    }
+    return nil
+  }
+
+  public subscript(member: String) -> Any? {
+    if case .dictionary(let dict) = self {
+      return dict[member]
+    }
+    return nil
+  }
+
+  public subscript(position: Int) -> Any? {
+    if case .array(let array) = self {
+      return array[position]
+    }
+    return nil
+  }
+
 }
 
 
