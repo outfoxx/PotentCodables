@@ -11,12 +11,22 @@
 import Foundation
 
 
-/**
- * General JSON value.
- *
- * * Supports `Encodable` & `Decodable` for decoding "any" value
- * * Supoprts dnyamic member lookup so JSON objects can be accessed in natural Swift syntax (e.g. `jsonObject.someValue`)
- **/
+/// General JSON value.
+///
+/// # Object Access
+/// `JSON` supoprts Swift's "dnyamic member lookup" so JSON fields of `object` values can be accessed in Swift syntax:
+///
+///     jsonObject.someValue
+///
+/// For field names that are non-conformant Swift identifiers subscript syntax is also supported:
+///
+///     jsonObject["@value"]
+///
+/// # Array Access
+/// The elements of JSON `array` values can use index subscripting to access individual array values.
+///
+///     jsonArray[0]
+///
 @dynamicMemberLookup
 public enum JSON {
 

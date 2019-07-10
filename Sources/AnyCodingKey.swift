@@ -82,11 +82,11 @@ extension AnyCodingKey: Decodable {
 
 extension AnyCodingKey: ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {
   public init(stringLiteral value: String) {
-    self.stringValue = value
+    stringValue = value
   }
 
   public init(integerLiteral value: Int) {
-    self.intValue = value
-    self.stringValue = "\(value)"
+    intValue = value
+    stringValue = "\(value)"
   }
 }
