@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import PotentCodables
 
 
 /// General JSON value.
@@ -301,6 +302,6 @@ extension JSON {
 public extension JSON {
 
   typealias Encoder = JSONEncoder
-  typealias Decoder = JSONEncoder
+  typealias Decoder = JSONDecoder
 
 }

@@ -30,18 +30,23 @@ public class AnyValueEncoder: ValueEncoder<AnyValue, AnyValueEncoderTransform> {
 public struct AnyValueEncoderTransform: InternalEncoderTransform {
 
   public typealias Value = AnyValue
+  public typealias State = Void
 
   public struct Options: InternalEncoderOptions {
     public let keyEncodingStrategy: KeyEncodingStrategy
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
-  public static var nilValue: AnyValue {
-    return .nil
-  }
-
   public static var emptyKeyedContainer: AnyValue {
     return .dictionary([:])
+  }
+
+  public static var emptyUnkeyedContainer: AnyValue {
+    return .array([])
+  }
+
+  public static func boxNil(encoder: InternalValueEncoder<AnyValue, AnyValueEncoderTransform>) throws -> AnyValue {
+    return .nil
   }
 
   public static func box(_ value: Bool, encoder: InternalValueEncoder<AnyValue, AnyValueEncoderTransform>) throws -> AnyValue {
@@ -50,9 +55,9 @@ public struct AnyValueEncoderTransform: InternalEncoderTransform {
 
   public static func box(_ value: Int, encoder: InternalValueEncoder<AnyValue, AnyValueEncoderTransform>) throws -> AnyValue {
     switch MemoryLayout<Int>.size {
-    case 32:
+    case 4:
       return try box(Int32(value), encoder: encoder)
-    case 64:
+    case 8:
       return try box(Int64(value), encoder: encoder)
     default:
       fatalError()
@@ -76,10 +81,10 @@ public struct AnyValueEncoderTransform: InternalEncoderTransform {
   }
 
   public static func box(_ value: UInt, encoder: InternalValueEncoder<AnyValue, AnyValueEncoderTransform>) throws -> AnyValue {
-    switch MemoryLayout<Int>.size {
-    case 32:
+    switch MemoryLayout<UInt>.size {
+    case 4:
       return try box(UInt32(value), encoder: encoder)
-    case 64:
+    case 8:
       return try box(UInt64(value), encoder: encoder)
     default:
       fatalError()
@@ -134,11 +139,11 @@ public struct AnyValueEncoderTransform: InternalEncoderTransform {
     return .date(value)
   }
 
-  public static func unkeyedValuesToValue(_ values: [AnyValue]) -> AnyValue {
+  public static func unkeyedValuesToValue(_ values: [AnyValue], encoder: InternalValueEncoder<Value, Self>) -> AnyValue {
     return .array(values)
   }
 
-  public static func keyedValuesToValue(_ values: [String: AnyValue]) -> AnyValue {
+  public static func keyedValuesToValue(_ values: [String: AnyValue], encoder: InternalValueEncoder<Value, Self>) -> AnyValue {
     return .dictionary(values)
   }
 

@@ -8,9 +8,9 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-import PotentCodables
-import class PotentCodables.JSONEncoder
 import XCTest
+@testable import PotentJSON
+@testable import PotentCodables
 
 struct IntegerBoolTransformer: ValueCodingTransformer {
 
@@ -51,7 +51,7 @@ extension Test: Codable {
 
 class ValueTransformerTests: XCTestCase {
 
-  let encoder = JSONEncoder()
+  let encoder = JSON.Encoder()
 
   func testSimple() throws {
 

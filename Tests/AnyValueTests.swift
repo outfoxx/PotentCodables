@@ -9,9 +9,7 @@
 //
 
 import XCTest
-import class PotentCodables.JSONDecoder
-import class PotentCodables.JSONEncoder
-import struct PotentCodables.JSONSerialization
+@testable import PotentJSON
 @testable import PotentCodables
 
 
@@ -23,25 +21,25 @@ class AnyValueTests: XCTestCase {
     "b": "2",
     "c": [true, false, true],
     "d": {
-      "a": 1,
-      "b": "2",
+      "a": 3,
+      "b": "4",
       "c": [false, false, true],
       "d": {
-        "a": 1,
-        "b": "2",
+        "a": 5,
+        "b": "6",
         "c": [true, true, false]
       }
     },
     "e": [
       {
-        "a": 5,
-        "b": "6",
-        "c": [true]
+        "aaa": 7,
+        "bbb": "8",
+        "ccc": [true]
       },
       {
-        "a": 5,
-        "b": "6",
-        "c": [true]
+        "aaaa": 9,
+        "bbbb": "10",
+        "cccc": [true]
       }
     ]
   }
@@ -49,21 +47,34 @@ class AnyValueTests: XCTestCase {
 
   let e = AnyValue.array([
     .dictionary([
-      "a": .int64(5),
-      "b": .string("6"),
-      "c": .array([.bool(true)]),
+      "aaa": .int64(7),
+      "bbb": .string("8"),
+      "ccc": .array([.bool(true)]),
     ]),
     .dictionary([
-      "a": .int64(5),
-      "b": .string("6"),
-      "c": .array([.bool(true)]),
+      "aaaa": .int64(9),
+      "bbbb": .string("10"),
+      "cccc": .array([.bool(true)]),
     ]),
   ])
 
+  let f: AnyValue = [
+    [
+      "a": 7,
+      "b": "8",
+      "c": [true],
+    ],
+    [
+      "a": 9,
+      "b": "10",
+      "c": [true],
+    ],
+  ]
+
   func testSimple() throws {
     let tree = try JSONSerialization.json(from: json)
-    let value = try JSONDecoder().decode(TestValue.self, from: json)
-    let recoded = try JSONEncoder().encodeTree(value)
+    let value = try JSON.Decoder().decode(TestValue.self, from: json)
+    let recoded = try JSON.Encoder().encodeTree(value)
     XCTAssertEqual(recoded.stableText, tree.stableText)
     XCTAssertEqual(value.e!, e)
   }

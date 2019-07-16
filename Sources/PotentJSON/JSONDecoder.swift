@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import PotentCodables
 
 
 /// `JSONDecoder` facilitates the decoding of JSON into semantic `Decodable` types.
@@ -89,6 +90,8 @@ public class JSONDecoder: ValueDecoder<JSON, JSONDecoderTransform>, DecodesFromS
 public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeserializer, InternalValueParser {
 
   public typealias Value = JSON
+  public typealias Decoder = InternalValueDecoder<Value, Self>
+  public typealias State = Void
 
   public static let nilValue = JSON.null
 
@@ -102,12 +105,12 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
   }
 
   /// Returns the given value unboxed from a container.
-  public static func unbox(_ value: JSON, as type: Bool.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Bool? {
+  public static func unbox(_ value: JSON, as type: Bool.Type, decoder: Decoder) throws -> Bool? {
     switch value {
     case .bool(let value): return value
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
@@ -130,144 +133,144 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     return result
   }
 
-  public static func unbox(_ value: JSON, as type: Int.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Int? {
+  public static func unbox(_ value: JSON, as type: Int.Type, decoder: Decoder) throws -> Int? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: Int8.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Int8? {
+  public static func unbox(_ value: JSON, as type: Int8.Type, decoder: Decoder) throws -> Int8? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: Int16.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Int16? {
+  public static func unbox(_ value: JSON, as type: Int16.Type, decoder: Decoder) throws -> Int16? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: Int32.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Int32? {
+  public static func unbox(_ value: JSON, as type: Int32.Type, decoder: Decoder) throws -> Int32? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: Int64.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Int64? {
+  public static func unbox(_ value: JSON, as type: Int64.Type, decoder: Decoder) throws -> Int64? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: UInt.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> UInt? {
+  public static func unbox(_ value: JSON, as type: UInt.Type, decoder: Decoder) throws -> UInt? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: UInt8.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> UInt8? {
+  public static func unbox(_ value: JSON, as type: UInt8.Type, decoder: Decoder) throws -> UInt8? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: UInt16.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> UInt16? {
+  public static func unbox(_ value: JSON, as type: UInt16.Type, decoder: Decoder) throws -> UInt16? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: UInt32.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> UInt32? {
+  public static func unbox(_ value: JSON, as type: UInt32.Type, decoder: Decoder) throws -> UInt32? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: UInt64.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> UInt64? {
+  public static func unbox(_ value: JSON, as type: UInt64.Type, decoder: Decoder) throws -> UInt64? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: Float.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Float? {
+  public static func unbox(_ value: JSON, as type: Float.Type, decoder: Decoder) throws -> Float? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: Double.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Double? {
+  public static func unbox(_ value: JSON, as type: Double.Type, decoder: Decoder) throws -> Double? {
     switch value {
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: Decimal.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Decimal? {
+  public static func unbox(_ value: JSON, as type: Decimal.Type, decoder: Decoder) throws -> Decimal? {
     switch value {
     case .number(let number): return Decimal(string: number.value)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: String.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> String? {
+  public static func unbox(_ value: JSON, as type: String.Type, decoder: Decoder) throws -> String? {
     switch value {
     case .null: return nil
     case .string(let string):
       return string
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: UUID.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> UUID? {
+  public static func unbox(_ value: JSON, as type: UUID.Type, decoder: Decoder) throws -> UUID? {
     switch value {
     case .string(let string):
       return UUID(uuidString: string)
     case .null: return nil
     case let json:
-      throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
     }
   }
 
-  public static func unbox(_ value: JSON, as type: Date.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Date? {
+  public static func unbox(_ value: JSON, as type: Date.Type, decoder: Decoder) throws -> Date? {
     guard !value.isNull else { return nil }
 
     switch decoder.options.dateDecodingStrategy {
@@ -285,14 +288,16 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .iso8601:
       let string = try unbox(value, as: String.self, decoder: decoder)!
       guard let date = _iso8601Formatter.date(from: string) else {
-        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected date string to be ISO8601-formatted."))
+        throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
+                                                debugDescription: "Expected date string to be ISO8601-formatted."))
       }
       return date
 
     case .formatted(let formatter):
       let string = try unbox(value, as: String.self, decoder: decoder)!
       guard let date = formatter.date(from: string) else {
-        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Date string does not match format expected by formatter."))
+        throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
+                                                debugDescription: "Date string does not match format expected by formatter."))
       }
       return date
 
@@ -301,7 +306,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     }
   }
 
-  public static func unbox(_ value: JSON, as type: Data.Type, decoder: InternalValueDecoder<JSON, Self>) throws -> Data? {
+  public static func unbox(_ value: JSON, as type: Data.Type, decoder: Decoder) throws -> Data? {
     guard !value.isNull else { return nil }
 
     switch decoder.options.dataDecodingStrategy {
@@ -310,11 +315,12 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
     case .base64:
       guard case .string(let string) = value else {
-        throw DecodingError._typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
       }
 
       guard let data = Data(base64Encoded: string) else {
-        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Encountered Data is not valid Base64."))
+        throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
+                                                debugDescription: "Encountered Data is not valid Base64."))
       }
 
       return data
@@ -324,12 +330,12 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     }
   }
 
-  public static func valueToUnkeyedValues(_ value: JSON, decoder: InternalValueDecoder<JSON, Self>) throws -> [JSON]? {
+  public static func valueToUnkeyedValues(_ value: JSON, decoder: Decoder) throws -> [JSON]? {
     guard case .array(let array) = value else { return nil }
     return array
   }
 
-  public static func valueToKeyedValues(_ value: JSON, decoder: InternalValueDecoder<JSON, Self>) throws -> [String: JSON]? {
+  public static func valueToKeyedValues(_ value: JSON, decoder: Decoder) throws -> [String: JSON]? {
     guard case .object(let dict) = value else { return nil }
     return dict
   }

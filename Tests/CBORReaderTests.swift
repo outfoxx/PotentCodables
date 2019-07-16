@@ -8,8 +8,10 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-@testable import PotentCodables
 import XCTest
+@testable import PotentCodables
+@testable import PotentCBOR
+
 
 class CBORReaderTests: XCTestCase {
   static var allTests = [

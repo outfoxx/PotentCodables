@@ -9,8 +9,7 @@
 //
 
 import XCTest
-import class PotentCodables.JSONDecoder
-import class PotentCodables.JSONEncoder
+@testable import PotentJSON
 @testable import PotentCodables
 
 

@@ -108,7 +108,7 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider>: Decodable 
   public init(from decoder: Decoder) throws {
     let refType = try Refs.decodeType(from: decoder, forKey: TKP.typeKey)
     let container = try decoder.container(keyedBy: AnyCodingKey.self)
-    value = try refType.init(from: NestedDecoder(key: VKP.valueKey, container: container, decoder: decoder))
+    value = try refType.init(from: KeyedNestedDecoder(key: VKP.valueKey, container: container, decoder: decoder))
   }
 
   /// Method attempts a conversion to the provided type `V` and throws a

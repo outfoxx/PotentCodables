@@ -2,6 +2,24 @@
   "object": {
     "pins": [
       {
+        "package": "BigInt",
+        "repositoryURL": "https://github.com/attaswift/BigInt.git",
+        "state": {
+          "branch": null,
+          "revision": "108801d539eb014469c758bc0d7f734690791fb4",
+          "version": "4.0.0"
+        }
+      },
+      {
+        "package": "OrderedDictionary",
+        "repositoryURL": "https://github.com/lukaskubanek/OrderedDictionary.git",
+        "state": {
+          "branch": null,
+          "revision": "e7adba0cb9c88b840d2813b9b720575e8e091226",
+          "version": "2.2.2"
+        }
+      },
+      {
         "package": "SwiftFormat",
         "repositoryURL": "https://github.com/nicklockwood/SwiftFormat.git",
         "state": {

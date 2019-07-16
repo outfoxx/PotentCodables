@@ -113,8 +113,99 @@ public enum AnyValue: Hashable {
     return nil
   }
 
+  public var boolValue: Bool? {
+    guard case .bool(let value) = self else { return nil }
+    return value
+  }
+
+  public var stringValue: String? {
+    guard case .string(let value) = self else { return nil }
+    return value
+  }
+
+  public var dataValue: Data? {
+    guard case .data(let value) = self else { return nil }
+    return value
+  }
+
+  public var dateValue: Date? {
+    guard case .date(let value) = self else { return nil }
+    return value
+  }
+
+  public var arrayValue: [AnyValue]? {
+    guard case .array(let value) = self else { return nil }
+    return value
+  }
+
+  public var dictionaryValue: [String: AnyValue]? {
+    guard case .dictionary(let value) = self else { return nil }
+    return value
+  }
+
+  public func integerValue<I: FixedWidthInteger>(as type: I.Type) -> I? {
+    switch self {
+    case .int8(let value): return I(value)
+    case .int16(let value): return I(value)
+    case .int32(let value): return I(value)
+    case .int64(let value): return I(value)
+    case .uint8(let value): return I(value)
+    case .uint16(let value): return I(value)
+    case .uint32(let value): return I(value)
+    case .uint64(let value): return I(value)
+    case .float(let value): return I(value)
+    case .double(let value): return I(value)
+    case .decimal(let value): return I(value.description)
+    default:
+      return nil
+    }
+  }
 }
 
+
+// MARK: ExpressibleBy<>Literal support
+
+extension AnyValue: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral,
+  ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral,
+  ExpressibleByDictionaryLiteral {
+
+  public init(nilLiteral: ()) {
+    self = .nil
+  }
+
+  public init(booleanLiteral value: BooleanLiteralType) {
+    self = .bool(value)
+  }
+
+  public init(stringLiteral value: StringLiteralType) {
+    self = .string(value)
+  }
+
+  public init(integerLiteral value: IntegerLiteralType) {
+    self = .int64(Int64(value))
+  }
+
+  public init(floatLiteral value: FloatLiteralType) {
+    self = .double(value)
+  }
+
+  public typealias ArrayLiteralElement = AnyValue
+
+  public init(arrayLiteral elements: ArrayLiteralElement...) {
+    self = .array(elements)
+  }
+
+  public typealias Key = String
+  public typealias Value = AnyValue
+
+  public init(dictionaryLiteral elements: (Key, Value)...) {
+    self = .dictionary(Dictionary(elements, uniquingKeysWith: { _, last in last }))
+  }
+
+}
+
+
+// MARK: Value (tree) conformance
 
 extension AnyValue: Value {
 
@@ -177,9 +268,7 @@ extension AnyValue: Value {
 }
 
 
-/**
- * Decodable support
- **/
+// MARK: Decodable support
 
 extension AnyValue: Decodable {
 
@@ -325,9 +414,7 @@ extension AnyValue: Decodable {
 
 }
 
-/**
- * `Encodable` support
- **/
+// MARK: Encodable support
 
 extension AnyValue: Encodable {
 

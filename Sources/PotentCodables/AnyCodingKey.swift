@@ -28,7 +28,7 @@ public struct AnyCodingKey: CodingKey, Equatable, Hashable {
   }
 
   public init(index: Int) {
-    stringValue = "Index \(index)"
+    stringValue = "\(index)"
     intValue = index
   }
 
