@@ -8,8 +8,9 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-import PotentCodables
 import XCTest
+@testable import PotentCodables
+@testable import PotentJSON
 
 
 protocol RefTestValue {}
@@ -33,7 +34,7 @@ class RefTests: XCTestCase {
 
     let src = AValue(name: "test")
 
-    let json = try JSONEncoder.default.encodeTree(Ref.Value(AValue(name: "test")))
+    let json = try JSON.Encoder.default.encodeTree(Ref.Value(AValue(name: "test")))
     XCTAssertNotNil(json["@type"])
     XCTAssertEqual(json.value?.name, "test")
 

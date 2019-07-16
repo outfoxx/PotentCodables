@@ -30,6 +30,7 @@ public class AnyValueDecoder: ValueDecoder<AnyValue, AnyValueDecoderTransform> {
 public struct AnyValueDecoderTransform: InternalDecoderTransform {
 
   public typealias Value = AnyValue
+  public typealias State = Void
 
   public struct Options: InternalDecoderOptions {
     public let keyDecodingStrategy: KeyDecodingStrategy

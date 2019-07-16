@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import PotentCodables
 
 
 /// `JSONEncoder` facilitates the encoding of `Encodable` values into JSON values.
@@ -120,9 +121,11 @@ public class JSONEncoder: ValueEncoder<JSON, JSONEncoderTransform>, EncodesToStr
 public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSerializer, InternalValueStringifier {
 
   public typealias Value = JSON
-
-  public static let nilValue = JSON.null
+  public typealias Encoder = InternalValueEncoder<Value, Self>
+  public typealias State = Void
+  
   public static var emptyKeyedContainer = JSON.object([:])
+  public static var emptyUnkeyedContainer = JSON.array([])
 
   public struct Options: InternalEncoderOptions {
     public let dateEncodingStrategy: JSONEncoder.DateEncodingStrategy
@@ -133,27 +136,28 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
-  public static func box(_ value: Bool, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .bool(value) }
-  public static func box(_ value: Int, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int8, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int16, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int32, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int64, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt8, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt16, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt32, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt64, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: String, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .string(value) }
-  public static func box(_ value: URL, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .string(value.absoluteString) }
-  public static func box(_ value: UUID, encoder: InternalValueEncoder<Value, Self>) throws -> JSON { return .string(value.uuidString) }
+  public static func boxNil(encoder: Encoder) throws -> JSON { return .null }
+  public static func box(_ value: Bool, encoder: Encoder) throws -> JSON { return .bool(value) }
+  public static func box(_ value: Int, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int8, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int16, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int32, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int64, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt8, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt16, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt32, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt64, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: String, encoder: Encoder) throws -> JSON { return .string(value) }
+  public static func box(_ value: URL, encoder: Encoder) throws -> JSON { return .string(value.absoluteString) }
+  public static func box(_ value: UUID, encoder: Encoder) throws -> JSON { return .string(value.uuidString) }
 
-  public static func box(_ float: Float, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
+  public static func box(_ float: Float, encoder: Encoder) throws -> JSON {
     guard !float.isInfinite, !float.isNaN else {
       guard case .convertToString(let posInfString,
                                   let negInfString,
                                   let nanString) = encoder.options.nonConformingFloatEncodingStrategy else {
-        throw EncodingError._invalidFloatingPointValue(float, at: encoder.codingPath)
+        throw EncodingError.invalidFloatingPointValue(float, at: encoder.codingPath)
       }
 
       if float == Float.infinity {
@@ -170,12 +174,12 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
     return .number(.init(float.description))
   }
 
-  public static func box(_ double: Double, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
+  public static func box(_ double: Double, encoder: Encoder) throws -> JSON {
     guard !double.isInfinite, !double.isNaN else {
       guard case .convertToString(let posInfString,
                                   let negInfString,
                                   let nanString) = encoder.options.nonConformingFloatEncodingStrategy else {
-        throw EncodingError._invalidFloatingPointValue(double, at: encoder.codingPath)
+        throw EncodingError.invalidFloatingPointValue(double, at: encoder.codingPath)
       }
 
       if double == Double.infinity {
@@ -192,12 +196,12 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
     return .number(.init(double.description))
   }
 
-  public static func box(_ decimal: Decimal, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
+  public static func box(_ decimal: Decimal, encoder: Encoder) throws -> JSON {
     guard !decimal.isInfinite, !decimal.isNaN else {
       guard case .convertToString(let posInfString,
                                   let negInfString,
                                   let nanString) = encoder.options.nonConformingFloatEncodingStrategy else {
-        throw EncodingError._invalidFloatingPointValue(decimal, at: encoder.codingPath)
+        throw EncodingError.invalidFloatingPointValue(decimal, at: encoder.codingPath)
       }
 
       if decimal.isInfinite, decimal.sign == .plus {
@@ -217,23 +221,23 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
     return .number(.init(rep.description))
   }
 
-  public static func box(_ value: Data, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
+  public static func box(_ value: Data, encoder: Encoder) throws -> JSON {
     switch encoder.options.dataEncodingStrategy {
     case .deferredToData:
-      return try encoder.subEncode { try value.encode(to: $0) }
+      return try encoder.subEncode { try value.encode(to: $0) } ?? emptyKeyedContainer
 
     case .base64:
       return .string(value.base64EncodedString())
 
     case .custom(let closure):
-      return try encoder.subEncode { try closure(value, $0) }
+      return try encoder.subEncode { try closure(value, $0) } ?? emptyKeyedContainer
     }
   }
 
-  public static func box(_ value: Date, encoder: InternalValueEncoder<Value, Self>) throws -> JSON {
+  public static func box(_ value: Date, encoder: Encoder) throws -> JSON {
     switch encoder.options.dateEncodingStrategy {
     case .deferredToDate:
-      return try encoder.subEncode { try value.encode(to: $0) }
+      return try encoder.subEncode { try value.encode(to: $0) } ?? emptyKeyedContainer
 
     case .secondsSince1970:
       return .number(.init(value.timeIntervalSince1970.description))
@@ -248,15 +252,15 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
       return .string(formatter.string(from: value))
 
     case .custom(let closure):
-      return try encoder.subEncode { try closure(value, $0) }
+      return try encoder.subEncode { try closure(value, $0) } ?? emptyKeyedContainer
     }
   }
 
-  public static func unkeyedValuesToValue(_ values: [JSON]) -> JSON {
+  public static func unkeyedValuesToValue(_ values: [JSON], encoder: Encoder) -> JSON {
     return .array(values)
   }
 
-  public static func keyedValuesToValue(_ values: [String: JSON]) -> JSON {
+  public static func keyedValuesToValue(_ values: [String: JSON], encoder: Encoder) -> JSON {
     return .object(values)
   }
 

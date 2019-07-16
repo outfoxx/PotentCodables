@@ -38,6 +38,7 @@ public protocol InternalValueStringifier {
 
 }
 
+
 /// An encoder transform provides required functionality to box instances of
 /// Swift/Foundation primitives into instances of `Value`.
 ///
@@ -47,10 +48,12 @@ public protocol InternalEncoderTransform {
 
   associatedtype Value: PotentCodables.Value
   associatedtype Options: InternalEncoderOptions
+  associatedtype State
 
-  static var nilValue: Value { get }
   static var emptyKeyedContainer: Value { get }
+  static var emptyUnkeyedContainer: Value { get }
 
+  static func boxNil(encoder: InternalValueEncoder<Value, Self>) throws -> Value
   static func box(_ value: Bool, encoder: InternalValueEncoder<Value, Self>) throws -> Value
   static func box(_ value: Int, encoder: InternalValueEncoder<Value, Self>) throws -> Value
   static func box(_ value: Int8, encoder: InternalValueEncoder<Value, Self>) throws -> Value
@@ -71,8 +74,13 @@ public protocol InternalEncoderTransform {
   static func box(_ value: UUID, encoder: InternalValueEncoder<Value, Self>) throws -> Value
   static func box(_ value: Date, encoder: InternalValueEncoder<Value, Self>) throws -> Value
 
-  static func unkeyedValuesToValue(_ values: [Value]) -> Value
-  static func keyedValuesToValue(_ values: [String: Value]) -> Value
+  static func intercepts(_ type: Encodable.Type) -> Bool
+  static func box(_ value: Any, interceptedType: Encodable.Type, encoder: InternalValueEncoder<Value, Self>) throws -> Value
+
+  static func box(_ value: Any, otherType: Encodable.Type, encoder: InternalValueEncoder<Value, Self>) throws -> Value?
+
+  static func unkeyedValuesToValue(_ values: [Value], encoder: InternalValueEncoder<Value, Self>) throws -> Value
+  static func keyedValuesToValue(_ values: [String: Value], encoder: InternalValueEncoder<Value, Self>) throws -> Value
 
 }
 
@@ -154,7 +162,6 @@ extension ValueEncoder where Transform: InternalValueStringifier {
 /// `InternalEncoderTransform` as the instance is also passed to all members of the transform.
 public class InternalValueEncoder<Value, Transform>: Encoder where Transform: InternalEncoderTransform, Value == Transform.Value {
   private typealias ValueEncoder = PotentCodables.ValueEncoder<Value, Transform>
-  private typealias KeyedContainer = PotentCodables.KeyedContainer<Value, Transform>
 
   // MARK: Properties
 
@@ -164,13 +171,33 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
   /// Options set on the top-level encoder.
   public let options: Transform.Options
 
+  public var state: Transform.State!
+
   /// The path to the current point in encoding.
-  public var codingPath: [CodingKey]
+  public fileprivate(set) var codingPath: [CodingKey]
+
+  public func container(depth: Int) -> Any {
+    return storage.containers[depth]
+  }
+
+  public var containerCount: Int { storage.containers.count }
+
+  public var containerTypes: [String] {
+    return storage.containers.map {
+      switch $0 {
+      case is KeyedContainer: return "Keyed"
+      case is UnkeyedContainer: return "Unkeyed"
+      default: return "Value"
+      }
+    }
+  }
 
   /// Contextual user-provided information for use during encoding.
   public var userInfo: [CodingUserInfoKey: Any] {
     return options.userInfo
   }
+
+  private var finalizers: [() throws -> Void] = []
 
   // MARK: - Initialization
 
@@ -204,7 +231,7 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
       topContainer = storage.pushKeyedContainer()
     }
     else {
-      guard let container = self.storage.containers.last?.container as? KeyedContainer else {
+      guard let container = self.storage.containers.last as? KeyedContainer else {
         preconditionFailure("Attempt to push new keyed encoding container when already previously encoded at this path.")
       }
 
@@ -217,13 +244,13 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
 
   public func unkeyedContainer() -> UnkeyedEncodingContainer {
     // If an existing unkeyed container was already requested, return that one.
-    let topContainer: UnkeyedContainer<Value, Transform>
+    let topContainer: UnkeyedContainer
     if canEncodeNewValue {
       // We haven't yet pushed a container at this level; do so here.
       topContainer = storage.pushUnkeyedContainer()
     }
     else {
-      guard let container = self.storage.containers.last?.container as? UnkeyedContainer<Value, Transform> else {
+      guard let container = self.storage.containers.last as? UnkeyedContainer else {
         preconditionFailure("Attempt to push new unkeyed encoding container when already previously encoded at this path.")
       }
 
@@ -237,7 +264,8 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
     return self
   }
 
-  public func subEncode(_ block: (Encoder) throws -> Void) throws -> Value {
+  public func subEncode(_ block: (Encoder) throws -> Void) throws -> Value? {
+    // The value should request a container from the InternalValueEncoder.
     let depth = storage.count
     do {
       try block(self)
@@ -250,12 +278,59 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
       throw error
     }
 
+    try finalize()
+
     guard storage.count > depth else {
-      // The block didn't encode anything. Return the default keyed container.
-      return Transform.emptyKeyedContainer
+      return nil
     }
 
-    return storage.popContainer().value
+    return try popRolledUpContainer()
+  }
+
+  public func popRolledUpContainer() throws -> Value {
+    let container = storage.popContainer()
+    return try rollUp(container)
+  }
+
+  fileprivate func rollUp(_ value: Any) throws -> Value {
+    if let keyed = value as? KeyedContainer {
+      let rolled = try rollUp(keyed: keyed.backing)
+      return try Transform.keyedValuesToValue(rolled, encoder: self)
+    }
+    else if let unkeyed = value as? UnkeyedContainer {
+      let rolled = try rollUp(unkeyed: unkeyed.backing)
+      return try Transform.unkeyedValuesToValue(rolled, encoder: self)
+    }
+    else {
+      return value as! Value
+    }
+  }
+
+  private func rollUp(keyed: [String: Any]) throws -> [String: Value] {
+    var result = [String: Value]()
+    for (key, value) in keyed {
+      result[key] = try rollUp(value)
+    }
+    return result
+  }
+
+  private func rollUp(unkeyed: [Any]) throws -> [Value] {
+    var result = [Value]()
+    for value in unkeyed {
+      result.append(try rollUp(value))
+    }
+    return result
+  }
+
+  fileprivate func schedule(finalizer: @escaping () throws -> Void) {
+    finalizers.append(finalizer)
+  }
+
+  fileprivate func finalize() throws {
+    for finalizer in finalizers {
+      try finalizer()
+    }
+    finalizers.removeAll()
   }
 
 }
@@ -267,7 +342,7 @@ private struct ValueEncodingStorage<Value, Transform> where Transform: InternalE
 
   /// The container stack.
   /// Elements may be any one of the containers.
-  fileprivate private(set) var containers: [AnyContainer<Value>] = []
+  fileprivate private(set) var containers: [Any] = []
 
   // MARK: - Initialization
 
@@ -280,23 +355,23 @@ private struct ValueEncodingStorage<Value, Transform> where Transform: InternalE
     return containers.count
   }
 
-  fileprivate mutating func pushKeyedContainer() -> KeyedContainer<Value, Transform> {
-    let container = KeyedContainer<Value, Transform>()
-    containers.append(AnyContainer(container))
+  fileprivate mutating func pushKeyedContainer() -> KeyedContainer {
+    let container = KeyedContainer()
+    containers.append(container)
     return container
   }
 
-  fileprivate mutating func pushUnkeyedContainer() -> UnkeyedContainer<Value, Transform> {
-    let container = UnkeyedContainer<Value, Transform>()
-    containers.append(AnyContainer(container))
+  fileprivate mutating func pushUnkeyedContainer() -> UnkeyedContainer {
+    let container = UnkeyedContainer()
+    containers.append(container)
     return container
   }
 
   fileprivate mutating func push(container: Value) {
-    containers.append(AnyContainer(ValueContainer(value: container)))
+    containers.append(container)
   }
 
-  fileprivate mutating func popContainer() -> AnyContainer<Value> {
+  fileprivate mutating func popContainer() -> Any {
     precondition(containers.count > 0, "Empty container stack.")
     return containers.popLast()!
   }
@@ -314,7 +389,7 @@ private struct ValueKeyedEncodingContainer<K: CodingKey, Value, Transform>: Keye
   private let encoder: InternalValueEncoder
 
   /// A reference to the container we're writing to.
-  private var container: KeyedContainer<Value, Transform>
+  private var container: KeyedContainer
 
   /// The path of coding keys taken to get to this point in encoding.
   public private(set) var codingPath: [CodingKey]
@@ -322,7 +397,7 @@ private struct ValueKeyedEncodingContainer<K: CodingKey, Value, Transform>: Keye
   // MARK: - Initialization
 
   /// Initializes `self` with the given references.
-  fileprivate init(referencing encoder: InternalValueEncoder, codingPath: [CodingKey], wrapping container: KeyedContainer<Value, Transform>) {
+  fileprivate init(referencing encoder: InternalValueEncoder, codingPath: [CodingKey], wrapping container: KeyedContainer) {
     self.encoder = encoder
     self.codingPath = codingPath
     self.container = container
@@ -332,6 +407,7 @@ private struct ValueKeyedEncodingContainer<K: CodingKey, Value, Transform>: Keye
 
   private func _converted(_ key: CodingKey) -> CodingKey {
     switch encoder.options.keyEncodingStrategy {
+
     case .useDefaultKeys:
       return key
     case .convertToSnakeCase:
@@ -345,66 +421,90 @@ private struct ValueKeyedEncodingContainer<K: CodingKey, Value, Transform>: Keye
   // MARK: - KeyedEncodingContainerProtocol Methods
 
   public mutating func encodeNil(forKey key: Key) throws {
-    container[_converted(key).stringValue] = Transform.nilValue
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
+    container[_converted(key).stringValue] = try encoder.boxNil()
   }
 
   public mutating func encode(_ value: Bool, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: Int, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: Int8, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: Int16, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: Int32, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: Int64, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: UInt, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: UInt8, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: UInt16, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: UInt32, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: UInt64, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: String, forKey key: Key) throws {
+    encoder.codingPath.append(key)
+    defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: Float, forKey key: Key) throws {
-    // Since the float may be invalid and throw, the coding path needs to contain this key.
     encoder.codingPath.append(key)
     defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
   }
 
   public mutating func encode(_ value: Double, forKey key: Key) throws {
-    // Since the double may be invalid and throw, the coding path needs to contain this key.
     encoder.codingPath.append(key)
     defer { self.encoder.codingPath.removeLast() }
     container[_converted(key).stringValue] = try encoder.box(value)
@@ -417,23 +517,25 @@ private struct ValueKeyedEncodingContainer<K: CodingKey, Value, Transform>: Keye
   }
 
   public mutating func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type, forKey key: Key) -> KeyedEncodingContainer<NestedKey> {
-    let keyed = NestedKeyedContainer<KeyedNesting<Value, Transform>, Value, Transform>(KeyedNesting(self.container, _converted(key).stringValue))
-    self.container[keyed.nesting.key] = keyed.currentValue
+
+    let nestedEncoder = ValueReferencingEncoder(referencing: encoder, key: key, convertedKey: _converted(key), wrapping: container)
+    let keyed = nestedEncoder.storage.pushKeyedContainer()
 
     codingPath.append(key)
     defer { self.codingPath.removeLast() }
 
-    let container = ValueKeyedEncodingContainer<NestedKey, Value, Transform>(referencing: encoder, codingPath: codingPath, wrapping: keyed)
+    let container = ValueKeyedEncodingContainer<NestedKey, Value, Transform>(referencing: nestedEncoder, codingPath: codingPath, wrapping: keyed)
     return KeyedEncodingContainer(container)
   }
 
   public mutating func nestedUnkeyedContainer(forKey key: Key) -> UnkeyedEncodingContainer {
-    let unkeyed = NestedUnkeyedContainer<KeyedNesting<Value, Transform>, Value, Transform>(KeyedNesting(container, _converted(key).stringValue))
-    container[unkeyed.nesting.key] = unkeyed.currentValue
+
+    let nestedEncoder = ValueReferencingEncoder(referencing: encoder, key: key, convertedKey: _converted(key), wrapping: container)
+    let unkeyed = nestedEncoder.storage.pushUnkeyedContainer()
 
     codingPath.append(key)
     defer { self.codingPath.removeLast() }
-    return ValueUnkeyedEncodingContainer(referencing: encoder, codingPath: codingPath, wrapping: unkeyed)
+    return ValueUnkeyedEncodingContainer(referencing: nestedEncoder, codingPath: codingPath, wrapping: unkeyed)
   }
 
   public mutating func superEncoder() -> Encoder {
@@ -452,7 +554,7 @@ private struct ValueUnkeyedEncodingContainer<Value, Transform>: UnkeyedEncodingC
   private let encoder: InternalValueEncoder<Value, Transform>
 
   /// A reference to the container we're writing to.
-  private var container: UnkeyedContainer<Value, Transform>
+  private var container: UnkeyedContainer
 
   /// The path of coding keys taken to get to this point in encoding.
   public private(set) var codingPath: [CodingKey]
@@ -465,7 +567,7 @@ private struct ValueUnkeyedEncodingContainer<Value, Transform>: UnkeyedEncodingC
   // MARK: - Initialization
 
   /// Initializes `self` with the given references.
-  fileprivate init(referencing encoder: InternalValueEncoder<Value, Transform>, codingPath: [CodingKey], wrapping container: UnkeyedContainer<Value, Transform>) {
+  fileprivate init(referencing encoder: InternalValueEncoder<Value, Transform>, codingPath: [CodingKey], wrapping container: UnkeyedContainer) {
     self.encoder = encoder
     self.codingPath = codingPath
     self.container = container
@@ -473,7 +575,7 @@ private struct ValueUnkeyedEncodingContainer<Value, Transform>: UnkeyedEncodingC
 
   // MARK: - UnkeyedEncodingContainer Methods
 
-  public mutating func encodeNil() throws { container.append(Transform.nilValue) }
+  public mutating func encodeNil() throws { container.append(try encoder.boxNil()) }
   public mutating func encode(_ value: Bool) throws { container.append(try encoder.box(value)) }
   public mutating func encode(_ value: Int) throws { container.append(try encoder.box(value)) }
   public mutating func encode(_ value: Int8) throws { container.append(try encoder.box(value)) }
@@ -508,24 +610,26 @@ private struct ValueUnkeyedEncodingContainer<Value, Transform>: UnkeyedEncodingC
   }
 
   public mutating func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type) -> KeyedEncodingContainer<NestedKey> {
+
+    let nestedEncoder = ValueReferencingEncoder(referencing: encoder, at: count, wrapping: container)
+    let keyed = nestedEncoder.storage.pushKeyedContainer()
+
     codingPath.append(AnyCodingKey(index: count))
     defer { self.codingPath.removeLast() }
 
-    let keyed = NestedKeyedContainer<UnkeyedNesting, Value, Transform>(UnkeyedNesting(self.container, self.container.count))
-    self.container.append(keyed.currentValue)
-
-    let container = ValueKeyedEncodingContainer<NestedKey, Value, Transform>(referencing: encoder, codingPath: codingPath, wrapping: keyed)
+    let container = ValueKeyedEncodingContainer<NestedKey, Value, Transform>(referencing: nestedEncoder, codingPath: codingPath, wrapping: keyed)
     return KeyedEncodingContainer(container)
   }
 
   public mutating func nestedUnkeyedContainer() -> UnkeyedEncodingContainer {
+
+    let nestedEncoder = ValueReferencingEncoder(referencing: encoder, at: count, wrapping: container)
+    let unkeyed = nestedEncoder.storage.pushUnkeyedContainer()
+
     codingPath.append(AnyCodingKey(index: count))
     defer { self.codingPath.removeLast() }
 
-    let unkeyed = NestedUnkeyedContainer<UnkeyedNesting, Value, Transform>(UnkeyedNesting(container, container.count))
-    container.append(unkeyed.currentValue)
-
-    return ValueUnkeyedEncodingContainer(referencing: encoder, codingPath: codingPath, wrapping: unkeyed)
+    return ValueUnkeyedEncodingContainer(referencing: nestedEncoder, codingPath: codingPath, wrapping: unkeyed)
   }
 
   public mutating func superEncoder() -> Encoder {
@@ -542,7 +646,7 @@ extension InternalValueEncoder: SingleValueEncodingContainer {
 
   public func encodeNil() throws {
     assertCanEncodeNewValue()
-    storage.push(container: Transform.nilValue)
+    storage.push(container: try boxNil())
   }
 
   public func encode(_ value: Bool) throws {
@@ -626,6 +730,7 @@ extension InternalValueEncoder: SingleValueEncodingContainer {
 extension InternalValueEncoder {
 
   /// Returns the given value boxed in a container appropriate for pushing onto the container stack.
+  fileprivate func boxNil() throws -> Value { return try Transform.boxNil(encoder: self) }
   fileprivate func box(_ value: Bool) throws -> Value { return try Transform.box(value, encoder: self) }
   fileprivate func box(_ value: Int) throws -> Value { return try Transform.box(value, encoder: self) }
   fileprivate func box(_ value: Int8) throws -> Value { return try Transform.box(value, encoder: self) }
@@ -647,40 +752,32 @@ extension InternalValueEncoder {
   fileprivate func box(_ value: Date) throws -> Value { return try Transform.box(value, encoder: self) }
 
   fileprivate func box(_ dict: [String: Encodable]) throws -> Value? {
-    let depth = storage.count
-    let result = storage.pushKeyedContainer()
-    do {
+
+    return try subEncode { encoder in
+
+      let result = storage.pushKeyedContainer()
+      
       for (key, value) in dict {
         codingPath.append(AnyCodingKey(stringValue: key, intValue: nil))
         defer { self.codingPath.removeLast() }
         result[key] = try box(value)
       }
-    }
-    catch {
-      // If the value pushed a container before throwing, pop it back off to restore state.
-      if storage.count > depth {
-        _ = storage.popContainer()
-      }
 
-      throw error
     }
 
-    // The top container should be a new container.
-    guard storage.count > depth else {
-      return nil
-    }
-
-    return storage.popContainer().value
   }
 
   fileprivate func box(_ value: Encodable) throws -> Value {
-    return try box_(value) ?? Transform.emptyKeyedContainer
+    return try box_(value) ?? Transform.boxNil(encoder: self)
   }
 
   // This method is called "box_" instead of "box" to disambiguate it from the overloads. Because the return type here is different from all of the "box" overloads (and is more general), any "box" calls in here would call back into "box" recursively instead of calling the appropriate overload, which is not what we want.
   fileprivate func box_(_ value: Encodable) throws -> Value? {
     let type = Swift.type(of: value)
-    if type == Date.self || type == NSDate.self {
+    if Transform.intercepts(type) {
+      return try Transform.box(value, interceptedType: type, encoder: self)
+    }
+    else if type == Date.self || type == NSDate.self {
       // Respect Date encoding strategy
       return try box(value as! Date)
     }
@@ -699,27 +796,7 @@ extension InternalValueEncoder {
     else if value is ValueStringDictionaryEncodableMarker {
       return try box(value as! [String: Encodable])
     }
-
-    // The value should request a container from the InternalValueEncoder.
-    let depth = storage.count
-    do {
-      try value.encode(to: self)
-    }
-    catch {
-      // If the value pushed a container before throwing, pop it back off to restore state.
-      if storage.count > depth {
-        _ = storage.popContainer()
-      }
-
-      throw error
-    }
-
-    // The top container should be a new container.
-    guard storage.count > depth else {
-      return nil
-    }
-
-    return storage.popContainer().value
+    return try Transform.box(value, otherType: type, encoder: self)
   }
 }
 
@@ -729,8 +806,6 @@ extension InternalValueEncoder {
 /// It's used in superEncoder(), which returns a new encoder for encoding a superclass -- the lifetime of the encoder should not escape the scope it's created in, but it doesn't necessarily know when it's done being used (to write to the original container).
 private class ValueReferencingEncoder<Value, Transform>: InternalValueEncoder<Value, Transform> where Transform: InternalEncoderTransform, Value == Transform.Value {
   typealias InternalValueEncoder = PotentCodables.InternalValueEncoder<Value, Transform>
-  typealias UnkeyedContainer = PotentCodables.UnkeyedContainer<Value, Transform>
-  typealias KeyedContainer = PotentCodables.KeyedContainer<Value, Transform>
 
   // MARK: Reference types.
 
@@ -781,62 +856,74 @@ private class ValueReferencingEncoder<Value, Transform>: InternalValueEncoder<Va
     return storage.count == codingPath.count - encoder.codingPath.count - 1
   }
 
+  public override var containerCount: Int {
+    return super.containerCount + encoder.containerCount
+  }
+
+  public override var containerTypes: [String] {
+    return encoder.containerTypes + super.containerTypes
+  }
+
+  public override func container(depth: Int) -> Any {
+    if depth < encoder.containerCount {
+      return encoder.container(depth: depth)
+    }
+    let localDepth = depth - encoder.containerCount
+    return storage.containers[localDepth]
+  }
+
+  public override var state: Transform.State? {
+    get { encoder.state }
+    set { encoder.state = newValue }
+  }
+
   // MARK: - Deinitialization
 
-  // Finalizes `self` by writing the contents of our storage to the referenced encoder's storage.
+  static func delayErrorReporting<R>(encoder: InternalValueEncoder, block: () throws -> R) -> R? {
+    do {
+      return try block()
+    }
+    catch {
+      // schedule failure for immediate reporting when the encoder is re-entered
+      encoder.schedule { throw error }
+      return nil
+    }
+  }
+
+  // Finalizes `self` by writing the contents of our storage to the referenced encoder's storage; schedules
+  // errors for reporting at the nearest interval in decoder.
   deinit {
-    let value: Value
-    switch self.storage.count {
+    let value: Value?
+    switch storage.count {
     case 0: value = Transform.emptyKeyedContainer
-    case 1: value = self.storage.popContainer().value
+    case 1: value = Self.delayErrorReporting(encoder: self.encoder) { try self.popRolledUpContainer() }
     default: fatalError("Referencing encoder deallocated with multiple containers on stack.")
     }
 
-    switch self.reference {
-    case .unkeyed(let unkeyed, let index):
-      unkeyed.insert(value, at: index)
+    if let value = value {
 
-    case .keyed(let keyed, let key):
-      keyed[key] = value
+      switch self.reference {
+      case .unkeyed(let unkeyed, let index):
+        unkeyed.insert(value, at: index)
+
+      case .keyed(let keyed, let key):
+        keyed[key] = value
+      }
+
     }
   }
 }
 
 
-private struct AnyContainer<Value> {
+public class KeyedContainer {
 
-  fileprivate let container: Any
-  private let valueAccessor: () -> Value
+  public var backing: [String: Any]
 
-  fileprivate init<Container>(_ container: Container) where Container: PotentCodables.Container, Container.Value == Value {
-    valueAccessor = { container.value }
-    self.container = container
+  public init(backing: [String: Any] = [:]) {
+    self.backing = backing
   }
 
-  fileprivate var value: Value {
-    return valueAccessor()
-  }
-
-}
-
-private protocol Container {
-
-  associatedtype Value: PotentCodables.Value
-
-  var value: Value { get }
-}
-
-private struct ValueContainer<Value>: Container where Value: PotentCodables.Value {
-
-  fileprivate var value: Value
-
-}
-
-private class KeyedContainer<Value, Transform>: Container where Transform: InternalEncoderTransform, Value == Transform.Value {
-
-  fileprivate var backing: [String: Value] = [:]
-
-  fileprivate subscript(key: String) -> Value? {
+  public subscript(key: String) -> Any? {
     get {
       return backing[key]
     }
@@ -845,33 +932,27 @@ private class KeyedContainer<Value, Transform>: Container where Transform: Inter
     }
   }
 
-  fileprivate var value: Value { return Transform.keyedValuesToValue(backing) }
-
 }
 
-private protocol Nesting {
+public class UnkeyedContainer {
 
-  associatedtype Value: PotentCodables.Value
+  public var backing: [Any] = []
 
-  func finalize(_ value: Value)
+  public init(backing: [Any] = []) {
+    self.backing = backing
+  }
 
-}
+  public var count: Int { return backing.count }
 
-private class UnkeyedContainer<Value, Transform>: Container where Transform: InternalEncoderTransform, Value == Transform.Value {
-
-  fileprivate var backing: [Value] = []
-
-  fileprivate var count: Int { return backing.count }
-
-  fileprivate func append(_ newElement: Value) {
+  public func append(_ newElement: Any) {
     backing.append(newElement)
   }
 
-  fileprivate func insert(_ newElement: Value, at: Int) {
+  public func insert(_ newElement: Any, at: Int) {
     backing.insert(newElement, at: at)
   }
 
-  fileprivate subscript(index: Int) -> Value {
+  public subscript(index: Int) -> Any {
     get {
       return backing[index]
     }
@@ -880,83 +961,8 @@ private class UnkeyedContainer<Value, Transform>: Container where Transform: Int
     }
   }
 
-  fileprivate var value: Value { return Transform.unkeyedValuesToValue(backing) }
-
 }
 
-private struct KeyedNesting<Value, Transform>: Nesting where Transform: InternalEncoderTransform, Value == Transform.Value {
-
-  fileprivate let parent: KeyedContainer<Value, Transform>
-  fileprivate let key: String
-
-  fileprivate init(_ parent: KeyedContainer<Value, Transform>, _ key: String) {
-    self.parent = parent
-    self.key = key
-  }
-
-  func finalize(_ value: Value) {
-    parent[key] = value
-  }
-
-}
-
-private struct UnkeyedNesting<Value, Transform>: Nesting where Transform: InternalEncoderTransform, Value == Transform.Value {
-
-  fileprivate let parent: UnkeyedContainer<Value, Transform>
-  fileprivate let index: Int
-
-  fileprivate init(_ parent: UnkeyedContainer<Value, Transform>, _ index: Int) {
-    self.parent = parent
-    self.index = index
-  }
-
-  func finalize(_ value: Value) {
-    parent[index] = value
-  }
-
-}
-
-private class NestedKeyedContainer<N: Nesting, Value, Transform>: KeyedContainer<Value, Transform> where Transform: InternalEncoderTransform, Value == Transform.Value, N.Value == Value {
-
-  fileprivate let nesting: N
-
-  required init(_ nesting: N) {
-    self.nesting = nesting
-    super.init()
-  }
-
-  var currentValue: Value {
-    return super.value
-  }
-
-  override var value: Value {
-    let value = super.value
-    nesting.finalize(value)
-    return value
-  }
-
-}
-
-private class NestedUnkeyedContainer<N: Nesting, Value, Transform>: UnkeyedContainer<Value, Transform> where Transform: InternalEncoderTransform, Value == Transform.Value, N.Value == Value {
-
-  fileprivate let nesting: N
-
-  required init(_ nesting: N) {
-    self.nesting = nesting
-    super.init()
-  }
-
-  var currentValue: Value {
-    return super.value
-  }
-
-  override var value: Value {
-    let value = super.value
-    nesting.finalize(value)
-    return value
-  }
-
-}
 
 /// A marker protocol used to determine whether a value is a `String`-keyed `Dictionary`
 /// containing `Encodable` values (in which case it should be exempt from key conversion strategies).
@@ -964,3 +970,21 @@ private class NestedUnkeyedContainer<N: Nesting, Value, Transform>: UnkeyedConta
 private protocol ValueStringDictionaryEncodableMarker {}
 
 extension Dictionary: ValueStringDictionaryEncodableMarker where Key == String, Value: Encodable {}
+
+
+
+public extension InternalEncoderTransform {
+
+  static func intercepts(_ type: Encodable.Type) -> Bool {
+    return false
+  }
+
+  static func box(_ value: Any, interceptedType: Encodable.Type, encoder: InternalValueEncoder<Value, Self>) throws -> Value {
+    fatalError()
+  }
+
+  static func box(_ value: Any, otherType: Encodable.Type, encoder: InternalValueEncoder<Value, Self>) throws -> Value? {
+    return try encoder.subEncode { encoder in try (value as! Encodable).encode(to: encoder) }
+  }
+
+}

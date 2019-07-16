@@ -9,6 +9,8 @@
 //
 
 import Foundation
+import PotentCodables
+
 
 /// General CBOR value.
 ///
