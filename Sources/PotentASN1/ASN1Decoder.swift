@@ -653,11 +653,11 @@ extension SchemaState {
         guard let (tag, bytes) = value.taggedValue, ASN1.Tag.tag(from: schemaTag, in: schemaTagClass) == tag else {
           // try next possible schema
           continue
-        }
+        }        
 
         let items = try DERReader.parse(data: bytes)
         guard items.count == 1 else {
-          throw DecodingError.badValue(value, errorContext("Explicit tagged value is contains invalid data"))
+          throw DecodingError.badValue(value, errorContext("Explicit tagged value contains invalid data"))
         }
 
         return items[0]
