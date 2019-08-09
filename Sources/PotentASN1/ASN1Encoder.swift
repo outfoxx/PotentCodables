@@ -164,7 +164,7 @@ extension SchemaState {
 
       guard case .schema(let possibleSchema) = possibleState else {
         if value == nil, case .nothing = possibleState {
-          return .null
+          return nil
         }
 
         continue
@@ -187,7 +187,9 @@ extension SchemaState {
             try step(into: nil, key: AnyCodingKey(stringValue: fieldName, intValue: nil))
             defer { removeLast() }
 
-            fieldValues.append(try encode(nil))
+            if let value = try tryEncode(nil) {
+              fieldValues.append(value)
+            }
 
             continue
           }
