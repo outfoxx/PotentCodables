@@ -1,8 +1,11 @@
 //
-//  File.swift
-//  
+//  NestedEncoders.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/17/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -22,9 +25,9 @@ public class KeyedNestedEncoder<K: CodingKey>: Encoder, SingleValueEncodingConta
     self.encoder = encoder
   }
 
-  public var userInfo: [CodingUserInfoKey : Any] { encoder.userInfo }
+  public var userInfo: [CodingUserInfoKey: Any] { encoder.userInfo }
 
-  public func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
+  public func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key: CodingKey {
     return container.nestedContainer(keyedBy: type, forKey: key)
   }
 
@@ -98,7 +101,7 @@ public class KeyedNestedEncoder<K: CodingKey>: Encoder, SingleValueEncodingConta
     try container.encode(value, forKey: key)
   }
 
-  public func encode<T>(_ value: T) throws where T : Encodable {
+  public func encode<T>(_ value: T) throws where T: Encodable {
     try container.encode(value, forKey: key)
   }
 
@@ -119,9 +122,9 @@ public class UnkeyedNestedEncoder: Encoder, SingleValueEncodingContainer {
     self.encoder = encoder
   }
 
-  public var userInfo: [CodingUserInfoKey : Any] { encoder.userInfo }
+  public var userInfo: [CodingUserInfoKey: Any] { encoder.userInfo }
 
-  public func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key : CodingKey {
+  public func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key: CodingKey {
     return container.nestedContainer(keyedBy: type)
   }
 
@@ -195,7 +198,7 @@ public class UnkeyedNestedEncoder: Encoder, SingleValueEncodingContainer {
     try container.encode(value)
   }
 
-  public func encode<T>(_ value: T) throws where T : Encodable {
+  public func encode<T>(_ value: T) throws where T: Encodable {
     try container.encode(value)
   }
 

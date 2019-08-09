@@ -1,8 +1,11 @@
 //
-//  File.swift
-//  
+//  ASN1Tests.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/31/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -34,5 +37,5 @@ private let TestStructSchema: Schema =
   .sequence([
     "a": .integer(),
     "b": .string(kind: .utf8),
-    "c": .setOf(.boolean())
+    "c": .setOf(.boolean()),
   ])

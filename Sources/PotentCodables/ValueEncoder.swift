@@ -753,10 +753,10 @@ extension InternalValueEncoder {
 
   fileprivate func box(_ dict: [String: Encodable]) throws -> Value? {
 
-    return try subEncode { encoder in
+    return try subEncode { _ in
 
       let result = storage.pushKeyedContainer()
-      
+
       for (key, value) in dict {
         codingPath.append(AnyCodingKey(stringValue: key, intValue: nil))
         defer { self.codingPath.removeLast() }

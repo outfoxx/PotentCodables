@@ -8,9 +8,9 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-import XCTest
-@testable import PotentJSON
 @testable import PotentCodables
+@testable import PotentJSON
+import XCTest
 
 
 class AnyValueTests: XCTestCase {
@@ -99,11 +99,11 @@ private class TestValue: Codable {
 
   required init(from: Decoder) throws {
     let container = try from.container(keyedBy: Self.CodingKeys.self)
-    self.a = try container.decode(Int.self, forKey: .a)
-    self.b = try container.decode(String.self, forKey: .b)
-    self.c = try container.decode([Bool].self, forKey: .c)
-    self.d = try container.decodeIfPresent(TestValue.self, forKey: .d)
-    self.e = try container.decodeIfPresent(AnyValue.self, forKey: .e)
+    a = try container.decode(Int.self, forKey: .a)
+    b = try container.decode(String.self, forKey: .b)
+    c = try container.decode([Bool].self, forKey: .c)
+    d = try container.decodeIfPresent(TestValue.self, forKey: .d)
+    e = try container.decodeIfPresent(AnyValue.self, forKey: .e)
   }
 
 }

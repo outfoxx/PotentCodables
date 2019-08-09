@@ -1,12 +1,15 @@
 //
-//  File.swift
-//  
+//  BigInts.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/18/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
-import Foundation
 import BigInt
+import Foundation
 
 public extension BigUInt {
 
@@ -68,7 +71,7 @@ public extension BigInt {
 
 }
 
-fileprivate extension Data {
+private extension Data {
 
   /// Two's compliment of _big endian_ integer
   func twosCompliment() -> Data {
@@ -76,10 +79,10 @@ fileprivate extension Data {
     var increment = true
     for i in stride(from: data.count - 1, through: 0, by: -1) {
       if increment {
-          (data[i], increment) = (~data[i]).addingReportingOverflow(1)
+        (data[i], increment) = (~data[i]).addingReportingOverflow(1)
       }
       else {
-          data[i] = ~data[i]
+        data[i] = ~data[i]
       }
     }
     return data

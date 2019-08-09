@@ -123,7 +123,7 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
   public typealias Value = JSON
   public typealias Encoder = InternalValueEncoder<Value, Self>
   public typealias State = Void
-  
+
   public static var emptyKeyedContainer = JSON.object([:])
   public static var emptyUnkeyedContainer = JSON.array([])
 

@@ -1,8 +1,11 @@
 //
-//  File.swift
-//  
+//  OctetString.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -29,7 +32,7 @@ extension OctetString: Codable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: TaggedItemKeys.self)
-    self.value = try container.decodeIfPresent(Data.self, expectingTag: ASN1.Tag.octetString, nullTag: ASN1.Tag.null)
+    value = try container.decodeIfPresent(Data.self, expectingTag: ASN1.Tag.octetString, nullTag: ASN1.Tag.null)
   }
 
   public func encode(to encoder: Encoder) throws {

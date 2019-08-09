@@ -1,13 +1,16 @@
 //
-//  File.swift
-//  
+//  BitString.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
+import BigInt
 import Foundation
 import PotentCodables
-import BigInt
 
 
 /// ASN.1 `BIT STRING` value.
@@ -24,7 +27,7 @@ public struct BitString: Equatable, Hashable, CustomStringConvertible {
 
   public init(bitString bytes: Data) {
     self.bytes = bytes
-    self.length = bytes.count * 8
+    length = bytes.count * 8
   }
 
   public init(octetString octets: Data) {
@@ -73,7 +76,7 @@ public struct BitString: Equatable, Hashable, CustomStringConvertible {
   }
 
   public func copyOctets<C>(into octets: inout C) where C: MutableCollection, C.Element == UInt8, C.Index == Int {
-    let bitLength = min(octets.count  * 8, self.length)
+    let bitLength = min(octets.count * 8, length)
     for bitIndex in 0 ..< bitLength {
       let byteOffset = bitIndex / 8
       let bitOffset = bitIndex % 8

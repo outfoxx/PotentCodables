@@ -8,9 +8,9 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-import XCTest
-@testable import PotentJSON
 @testable import PotentCodables
+@testable import PotentJSON
+import XCTest
 
 struct IntegerBoolTransformer: ValueCodingTransformer {
 
@@ -38,7 +38,7 @@ extension Test: Codable {
 
   init(from: Decoder) throws {
     let container = try from.container(keyedBy: Self.CodingKeys.self)
-    self.boolValue = try container.decode(forKey: .boolValue, using: IntegerBoolTransformer())
+    boolValue = try container.decode(forKey: .boolValue, using: IntegerBoolTransformer())
   }
 
   func encode(to: Encoder) throws {

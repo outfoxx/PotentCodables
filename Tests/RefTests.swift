@@ -8,9 +8,9 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-import XCTest
 @testable import PotentCodables
 @testable import PotentJSON
+import XCTest
 
 
 protocol RefTestValue {}

@@ -1,12 +1,15 @@
 //
-//  File.swift
-//  
+//  ASN1Writer.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/12/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
-import Foundation
 import BigInt
+import Foundation
 
 
 public class DERWriter {
@@ -14,7 +17,7 @@ public class DERWriter {
   public var data: Data
 
   public required init() {
-    self.data = Data(capacity: 256)
+    data = Data(capacity: 256)
   }
 
   public init(data: Data) {
