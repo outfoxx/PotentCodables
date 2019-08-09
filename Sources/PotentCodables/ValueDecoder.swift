@@ -134,8 +134,7 @@ open class ValueDecoder<Value, Transform> where Transform: InternalDecoderTransf
     return value
   }
 
-  public init() {    
-  }
+  public init() {}
 
 }
 
@@ -249,17 +248,17 @@ public class InternalValueDecoder<Value, Transform>: Decoder where Transform: In
 
   /// Initializes `self` with the given top-level container and options.
   fileprivate init(referencing container: Value, at codingPath: [CodingKey] = [], options: Transform.Options) {
-    self.storage = ValueDecodingStorage()
-    self.storage.push(container: container)
+    storage = ValueDecodingStorage()
+    storage.push(container: container)
     self.codingPath = codingPath
     self.options = options
   }
 
   fileprivate init(referencing container: Value, from decoder: InternalValueDecoder<Value, Transform>) {
-    self.storage = decoder.storage
-    self.codingPath = decoder.codingPath
-    self.options = decoder.options
-    self.state = decoder.state
+    storage = decoder.storage
+    codingPath = decoder.codingPath
+    options = decoder.options
+    state = decoder.state
   }
 
   // MARK: - Decoder Methods

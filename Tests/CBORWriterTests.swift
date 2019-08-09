@@ -8,9 +8,9 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-import XCTest
-@testable import PotentCodables
 @testable import PotentCBOR
+@testable import PotentCodables
+import XCTest
 
 
 class CBORWriterTests: XCTestCase {

@@ -1,13 +1,16 @@
 //
-//  File.swift
-//  
+//  ASN1.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/12/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
+import BigInt
 import Foundation
 import PotentCodables
-import BigInt
 
 
 public typealias Integer = BigInt
@@ -20,10 +23,10 @@ public indirect enum ASN1: Value {
   public enum Tag: UInt8, CaseIterable, Codable {
 
     public enum Class: UInt8 {
-      case universal        = 0x00
-      case application      = 0x40
-      case contextSpecific  = 0x80
-      case `private`        = 0xA0
+      case universal = 0x00
+      case application = 0x40
+      case contextSpecific = 0x80
+      case `private` = 0xA0
     }
 
     case boolean = 1
@@ -106,9 +109,9 @@ public indirect enum ASN1: Value {
   case bmpString(String)
   case tagged(UInt8, Data)
   case `default`(ASN1)
-  
 
-  public var isNull: Bool { return .null == self }
+
+  public var isNull: Bool { return self == .null }
 
   public var knownTag: Tag? {
     switch self {
@@ -155,7 +158,7 @@ public indirect enum ASN1: Value {
   }
 
   public var unwrapped: Any? {
-    switch self.absolute {
+    switch absolute {
     case .boolean(let value): return value
     case .integer(let value): return value
     case .bitString(let value): return value
@@ -187,11 +190,11 @@ public indirect enum ASN1: Value {
 }
 
 
-public func ==(lhs: ASN1.Tag, rhs: ASN1.AnyTag) -> Bool {
+public func == (lhs: ASN1.Tag, rhs: ASN1.AnyTag) -> Bool {
   return lhs.rawValue == rhs
 }
 
-public func ==(lhs: ASN1.AnyTag, rhs: ASN1.Tag) -> Bool {
+public func == (lhs: ASN1.AnyTag, rhs: ASN1.Tag) -> Bool {
   return lhs == rhs.rawValue
 }
 
@@ -244,117 +247,117 @@ public extension ASN1 {
   }
 
   var booleanValue: Bool? {
-    guard case .boolean(let value) = self.absolute else { return nil }
+    guard case .boolean(let value) = absolute else { return nil }
     return value
   }
 
   var integerValue: BigInt? {
-    guard case .integer(let value) = self.absolute else { return nil }
+    guard case .integer(let value) = absolute else { return nil }
     return value
   }
 
   var bitStringValue: (length: Int, bytes: Data)? {
-    guard case .bitString(let value) = self.absolute else { return nil }
+    guard case .bitString(let value) = absolute else { return nil }
     return value
   }
 
   var octetStringValue: Data? {
-    guard case .octetString(let value) = self.absolute else { return nil }
+    guard case .octetString(let value) = absolute else { return nil }
     return value
   }
 
   var objectIdentifierValue: [UInt64]? {
-    guard case .objectIdentifier(let value) = self.absolute else { return nil }
+    guard case .objectIdentifier(let value) = absolute else { return nil }
     return value
   }
 
   var realValue: Decimal? {
-    guard case .real(let value) = self.absolute else { return nil }
+    guard case .real(let value) = absolute else { return nil }
     return value
   }
 
   var utf8StringValue: String? {
-    guard case .utf8String(let value) = self.absolute else { return nil }
+    guard case .utf8String(let value) = absolute else { return nil }
     return value
   }
 
   var sequenceValue: [ASN1]? {
-    guard case .sequence(let value) = self.absolute else { return nil }
+    guard case .sequence(let value) = absolute else { return nil }
     return value
   }
 
   var setValue: [ASN1]? {
-    guard case .set(let value) = self.absolute else { return nil }
+    guard case .set(let value) = absolute else { return nil }
     return value
   }
 
   var numericStringValue: String? {
-    guard case .numericString(let value) = self.absolute else { return nil }
+    guard case .numericString(let value) = absolute else { return nil }
     return value
   }
 
   var printableStringValue: String? {
-    guard case .printableString(let value) = self.absolute else { return nil }
+    guard case .printableString(let value) = absolute else { return nil }
     return value
   }
 
   var teletexStringValue: String? {
-    guard case .teletexString(let value) = self.absolute else { return nil }
+    guard case .teletexString(let value) = absolute else { return nil }
     return value
   }
 
   var videotexStringValue: String? {
-    guard case .videotexString(let value) = self.absolute else { return nil }
+    guard case .videotexString(let value) = absolute else { return nil }
     return value
   }
 
   var ia5StringValue: String? {
-    guard case .ia5String(let value) = self.absolute else { return nil }
+    guard case .ia5String(let value) = absolute else { return nil }
     return value
   }
 
   var utcTimeValue: Date? {
-    guard case .utcTime(let value) = self.absolute else { return nil }
+    guard case .utcTime(let value) = absolute else { return nil }
     return value
   }
 
   var generalizedTimeValue: Date? {
-    guard case .generalizedTime(let value) = self.absolute else { return nil }
+    guard case .generalizedTime(let value) = absolute else { return nil }
     return value
   }
 
   var graphicStringValue: String? {
-    guard case .graphicString(let value) = self.absolute else { return nil }
+    guard case .graphicString(let value) = absolute else { return nil }
     return value
   }
 
   var visibleStringValue: String? {
-    guard case .visibleString(let value) = self.absolute else { return nil }
+    guard case .visibleString(let value) = absolute else { return nil }
     return value
   }
 
   var generalStringValue: String? {
-    guard case .generalString(let value) = self.absolute else { return nil }
+    guard case .generalString(let value) = absolute else { return nil }
     return value
   }
 
   var universalStringValue: String? {
-    guard case .universalString(let value) = self.absolute else { return nil }
+    guard case .universalString(let value) = absolute else { return nil }
     return value
   }
 
   var characterStringValue: String? {
-    guard case .characterString(let value) = self.absolute else { return nil }
+    guard case .characterString(let value) = absolute else { return nil }
     return value
   }
 
   var bmpStringValue: String? {
-    guard case .bmpString (let value) = self.absolute else { return nil }
+    guard case .bmpString(let value) = absolute else { return nil }
     return value
   }
 
   var stringValue: (String, AnyString.Kind)? {
-    switch self.absolute {
+    switch absolute {
     case .utf8String(let value): return (value, .utf8)
     case .numericString(let value): return (value, .numeric)
     case .printableString(let value): return (value, .printable)
@@ -372,7 +375,7 @@ public extension ASN1 {
   }
 
   var timeValue: (Date, AnyTime.Kind)? {
-    switch self.absolute {
+    switch absolute {
     case .utcTime(let value): return (value, .utc)
     case .generalizedTime(let value): return (value, .generalized)
     default: return nil
@@ -380,7 +383,7 @@ public extension ASN1 {
   }
 
   var collectionValue: [ASN1]? {
-    switch self.absolute {
+    switch absolute {
     case .set(let value): return value
     case .sequence(let value): return value
     default: return nil
@@ -388,7 +391,7 @@ public extension ASN1 {
   }
 
   var octetsValue: (length: Int, bytes: Data)? {
-    switch self.absolute {
+    switch absolute {
     case .octetString(let data): return (data.count * 8, data)
     case .bitString(let length, let data): return (length, data)
     default: return nil
@@ -396,7 +399,7 @@ public extension ASN1 {
   }
 
   var taggedValue: (AnyTag, Data)? {
-    guard case .tagged(let tag, let bytes) = self.absolute else { return nil }
+    guard case .tagged(let tag, let bytes) = absolute else { return nil }
     return (tag, bytes)
   }
 
@@ -471,8 +474,8 @@ extension ASN1: Codable {
 
   public func encode(to encoder: Encoder) throws {
     var container = encoder.unkeyedContainer()
-    try container.encode(self.anyTag)
-    switch self.absolute {
+    try container.encode(anyTag)
+    switch absolute {
     case .boolean(let value):
       try container.encode(value)
     case .integer(let value):

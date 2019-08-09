@@ -1,8 +1,11 @@
 //
-//  File.swift
-//  
+//  ObjectIdentifier.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -12,13 +15,13 @@ import PotentCodables
 /// ASN.1 `OBJECT IDENTIFIER` value (aka `OID`).
 ///
 public struct ObjectIdentifier: Equatable, Hashable {
-  
+
   public var fields: [UInt64]
 
   public init(_ fields: [UInt64]) {
     self.fields = fields
   }
-  
+
   public init?(_ string: String) {
     var fields = [UInt64]()
     for num in string.split(separator: ".") {
@@ -49,7 +52,7 @@ extension ObjectIdentifier: Codable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
-    self.fields = Self(try container.decode(String.self))?.fields ?? []
+    fields = Self(try container.decode(String.self))?.fields ?? []
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -62,7 +65,7 @@ extension ObjectIdentifier: Codable {
 extension ObjectIdentifier: ExpressibleByArrayLiteral, ExpressibleByStringLiteral {
 
   public init(arrayLiteral elements: UInt64...) {
-    self.fields = elements
+    fields = elements
   }
 
   public init(stringLiteral value: String) {

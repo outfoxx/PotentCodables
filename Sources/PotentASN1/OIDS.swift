@@ -1,8 +1,11 @@
 //
-//  File.swift
-//  
+//  OIDS.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/15/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation

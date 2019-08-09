@@ -1,5 +1,5 @@
 //
-//  NestedDecoder.swift
+//  NestedDecoders.swift
 //  PotentCodables
 //
 //  Copyright © 2019 Outfox, inc.

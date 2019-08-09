@@ -1,12 +1,15 @@
 //
-//  File.swift
-//  
+//  ASN1Reader.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/12/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
-import Foundation
 import BigInt
+import Foundation
 
 
 public class DERReader {
@@ -160,7 +163,7 @@ public class DERReader {
 
     case .sequence, .set:
       throw Error.nonConstructedCollection
-      
+
     case .objectDescriptor, .external, .enumerated, .embedded, .relativeOID:
       // Default to saving tagged version
       return .tagged(tag.rawValue, Data(itemBuffer.popAll()))
@@ -173,7 +176,7 @@ public class DERReader {
     if lead & 0x40 == 0x40 {
       return lead & 0x1 == 0 ? Decimal(Double.infinity) : Decimal(-Double.infinity)
     }
-    else if lead & 0x3f == 0 {
+    else if lead & 0x3F == 0 {
       // Choose ISO-6093 NR3
       let bytes = buffer.popAll()
       return Decimal(string: String(bytes: bytes, encoding: .ascii) ?? "") ?? .zero

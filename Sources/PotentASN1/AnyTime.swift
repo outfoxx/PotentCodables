@@ -1,8 +1,11 @@
 //
-//  File.swift
-//  
+//  AnyTime.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -13,7 +16,7 @@ import PotentCodables
 ///
 public struct AnyTime: Equatable, Hashable {
 
-  
+
   public enum Kind: Int, Equatable, Hashable, Codable {
     case utc
     case generalized
@@ -25,7 +28,7 @@ public struct AnyTime: Equatable, Hashable {
 
   public init(_ value: Date = Date(), kind: Kind? = nil) {
     self.kind = kind
-    self.storage = value
+    storage = value
   }
 
 }
@@ -35,7 +38,7 @@ extension AnyTime: Codable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
-    self.storage = try container.decode(Date.self)
+    storage = try container.decode(Date.self)
   }
 
   public func encode(to encoder: Encoder) throws {

@@ -1,14 +1,17 @@
 //
-//  File.swift
-//  
+//  ASN1Decoder.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
-import Foundation
-import PotentCodables
-import OrderedDictionary
 import BigInt
+import Foundation
+import OrderedDictionary
+import PotentCodables
 
 
 /// `ASN1Decoder` facilitates the decoding of ASN1 into semantic `Decodable` types.
@@ -387,7 +390,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
     guard let decoded = try decode(value, decoder: decoder) else { return nil }
 
-    guard let structure = decoded as? [String:ASN1] else {
+    guard let structure = decoded as? [String: ASN1] else {
       fatalError()
     }
 
@@ -442,7 +445,7 @@ extension SchemaState {
           continue
         }
 
-        var results = [String:ASN1]()
+        var results = [String: ASN1]()
         var valueIdx = 0
 
         for (fieldName, fieldSchema) in fields {

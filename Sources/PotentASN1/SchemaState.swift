@@ -1,8 +1,11 @@
 //
-//  File.swift
-//  
+//  SchemaState.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/23/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -55,12 +58,12 @@ public struct SchemaState {
 
   internal private(set) var keyStack: [CodingKey] = []
   private var stateStack: [[State]] = []
-  private var scopes: [[String]:Scope] = [:]
-  private var containers: [[String]:Any?] = [:]
+  private var scopes: [[String]: Scope] = [:]
+  private var containers: [[String]: Any?] = [:]
 
 
   init(initial: Schema) throws {
-    self.stateStack.append(try expand(schema: initial))
+    stateStack.append(try expand(schema: initial))
   }
 
   var count: Int { keyStack.count }
@@ -188,7 +191,7 @@ public struct SchemaState {
 
 
     case .type(let typeSchema):
-      guard let scope = nearestScope else { fatalError("no scope")  }
+      guard let scope = nearestScope else { fatalError("no scope") }
 
       scope.typeFieldName = currentKey.stringValue
       return try expand(schema: typeSchema)
@@ -244,7 +247,7 @@ public struct SchemaState {
 
       return try expand(schema: versionedSchema)
 
-      
+
     default:
       return [.schema(schema)]
     }

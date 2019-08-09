@@ -1,8 +1,11 @@
 //
-//  File.swift
-//  
+//  AnyString.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/14/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
 import Foundation
@@ -35,7 +38,7 @@ public struct AnyString: Equatable, Hashable {
 
   public init(_ value: String, kind: Kind) {
     self.kind = kind
-    self.storage = value
+    storage = value
   }
 
 }
@@ -45,7 +48,7 @@ extension AnyString: Codable {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
-    self.storage = try container.decode(String.self)
+    storage = try container.decode(String.self)
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -63,16 +66,16 @@ extension AnyString: StringProtocol {
   public typealias UnicodeScalarView = String.UnicodeScalarView
 
   public init(stringLiteral value: String) {
-    self.kind = nil
-    self.storage = value
+    kind = nil
+    storage = value
   }
 
   public init(_ value: String) {
-    self.kind = nil
-    self.storage = value
+    kind = nil
+    storage = value
   }
 
-  public init<C, Encoding>(decoding codeUnits: C, as sourceEncoding: Encoding.Type) where C : Collection, Encoding : _UnicodeEncoding, C.Element == Encoding.CodeUnit {
+  public init<C, Encoding>(decoding codeUnits: C, as sourceEncoding: Encoding.Type) where C: Collection, Encoding: _UnicodeEncoding, C.Element == Encoding.CodeUnit {
     kind = nil
     storage = String(decoding: codeUnits, as: sourceEncoding)
   }
@@ -82,7 +85,7 @@ extension AnyString: StringProtocol {
     storage = String(cString: nullTerminatedUTF8)
   }
 
-  public init<Encoding>(decodingCString nullTerminatedCodeUnits: UnsafePointer<Encoding.CodeUnit>, as sourceEncoding: Encoding.Type) where Encoding : _UnicodeEncoding {
+  public init<Encoding>(decodingCString nullTerminatedCodeUnits: UnsafePointer<Encoding.CodeUnit>, as sourceEncoding: Encoding.Type) where Encoding: _UnicodeEncoding {
     kind = nil
     storage = String(decodingCString: nullTerminatedCodeUnits, as: sourceEncoding)
   }
@@ -111,7 +114,7 @@ extension AnyString: StringProtocol {
     return try storage.withCString(body)
   }
 
-  public func withCString<Result, Encoding>(encodedAs targetEncoding: Encoding.Type, _ body: (UnsafePointer<Encoding.CodeUnit>) throws -> Result) rethrows -> Result where Encoding : _UnicodeEncoding {
+  public func withCString<Result, Encoding>(encodedAs targetEncoding: Encoding.Type, _ body: (UnsafePointer<Encoding.CodeUnit>) throws -> Result) rethrows -> Result where Encoding: _UnicodeEncoding {
     return try storage.withCString(encodedAs: targetEncoding, body)
   }
 
@@ -139,7 +142,7 @@ extension AnyString: StringProtocol {
     storage.write(string)
   }
 
-  public func write<Target>(to target: inout Target) where Target : TextOutputStream {
+  public func write<Target>(to target: inout Target) where Target: TextOutputStream {
     storage.write(to: &target)
   }
 

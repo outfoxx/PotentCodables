@@ -1,13 +1,16 @@
 //
-//  File.swift
-//  
+//  ASN1Encoder.swift
+//  PotentCodables
 //
-//  Created by Kevin Wooten on 7/13/19.
+//  Copyright © 2019 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
 //
 
+import BigInt
 import Foundation
 import PotentCodables
-import BigInt
 
 
 /// `ASN1Encoder` facilitates the encoding of `Encodable` values into ASN1 values.
@@ -171,7 +174,7 @@ extension SchemaState {
 
       case .sequence(let fields):
 
-        guard let values = value as? [String:ASN1] else {
+        guard let values = value as? [String: ASN1] else {
           // try next possible schema
           continue
         }

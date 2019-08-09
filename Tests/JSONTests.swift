@@ -8,9 +8,9 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-import XCTest
-@testable import PotentJSON
 @testable import PotentCodables
+@testable import PotentJSON
+import XCTest
 
 
 class JSONTests: XCTestCase {
@@ -97,7 +97,7 @@ class JSONTests: XCTestCase {
 
   func testEncodingChildContainers() {
     let json = try! JSONEncoder().encodeTree(objects).stableText
-    XCTAssertEqual(json, self.values.stableText)
+    XCTAssertEqual(json, values.stableText)
   }
 
 }
