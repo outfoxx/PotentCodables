@@ -87,7 +87,7 @@ public indirect enum Schema {
     case .versioned(_, let schema): return schema.possibleTags
     case .optional(let schema): return schema.possibleTags
     case .implicit(let tag, let tagClass, _): return [ASN1.Tag.tag(from: tag, in: tagClass)]
-    case .explicit(let tag, let tagClass, _): return [ASN1.Tag.tag(from: tag, in: tagClass)]
+    case .explicit(let tag, let tagClass, _): return [ASN1.Tag.structuredTag(from: tag, in: tagClass)]
     case .boolean: return [ASN1.Tag.boolean.universal]
     case .integer: return [ASN1.Tag.integer.universal]
     case .real: return [ASN1.Tag.real.universal]

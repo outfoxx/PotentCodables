@@ -530,7 +530,7 @@ extension SchemaState {
           continue
         }
         let encodedData = try DERWriter.write(encoded)
-        return .tagged(ASN1.Tag.tag(from: tag, in: tagClass), encodedData)
+        return .tagged(ASN1.Tag.structuredTag(from: tag, in: tagClass), encodedData)
 
 
       case .choiceOf, .optional, .version, .versioned, .type, .dynamic:

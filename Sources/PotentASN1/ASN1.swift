@@ -26,7 +26,7 @@ public indirect enum ASN1: Value {
       case universal = 0x00
       case application = 0x40
       case contextSpecific = 0x80
-      case `private` = 0xA0
+      case `private` = 0xC0
     }
 
     case boolean = 1
@@ -62,12 +62,12 @@ public indirect enum ASN1: Value {
       return (value & ~0xE0) | tagClass.rawValue
     }
 
-    public static func value(from tag: AnyTag, in tagClass: Class) -> AnyTag {
-      return (tag & ~0xE0) & ~tagClass.rawValue
+    public static func structuredTag(from value: AnyTag, in tagClass: Class) -> AnyTag {
+      return tag(from: value, in: tagClass) | 0x20
     }
 
-    public static func structured(tag: AnyTag, in tagClass: Class) -> AnyTag {
-      return (tag & ~0xE0) | tagClass.rawValue | 0x20
+    public static func value(from tag: AnyTag, in tagClass: Class) -> AnyTag {
+      return (tag & ~0xE0) & ~tagClass.rawValue
     }
 
     public var universal: AnyTag {
@@ -79,7 +79,7 @@ public indirect enum ASN1: Value {
     }
 
     public var constructed: AnyTag {
-      return Self.structured(tag: rawValue, in: .universal)
+      return Self.structuredTag(from: rawValue, in: .universal)
     }
 
   }
