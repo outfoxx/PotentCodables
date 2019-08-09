@@ -18,7 +18,13 @@ PotentCodables currently supports Swift Package Manager for project integration.
   .package(url: "https://github.com/outfoxx/PotentCodables.git", from: "1.0.0")
 ```
 
-The library name is `PotentCodables` when adding dependencies to your target(s).
+
+The package provides multiple libraries corresponding to the core library and each format that is provided:
+
+* `PotentCodables` is the core library to be used by format implementors
+* `PotentJSON` provides JSON format support
+* `PotentCBOR` provide CBOR format support
+* `PotentASN1` provides ASN.1 support
 
 
 ## Usage
@@ -42,6 +48,11 @@ let data = try CBOREncoder.default.encode(myValue)
   and to/from native value trees) and offer performance enhancements when using `AnyValue`.  
 - CBOR - `CBOREncoder`/`CBORDecoder` or `CBOR.Encoder`/`CBOR.Decoder`
   A conformant implementation of the [CBOR](cbor.io) serialization format written in pure Swift.
+- ASN.1 - `ASN1Encoder`/`ASN1Decoder` or `ASN1.Encoder`/`ASN1.Decoder`
+  A conformant implementation of the [ASN.1](https://en.wikipedia.org/wiki/Abstract_Syntax_Notation_One) serialization format written in pure Swift.
+  ASN.1's position based format can be very ambiguous, even so it is commonly used in situations that require absolute unambiguity. To
+  overcome these issues the ASN1Encoder and ASN1Decoder require a schema be passed to their initializer that directs the encoding and/or decoding. More
+  information is available [here](Docs/ASN1Schemas.md)
 - AnyValue - `AnyValueEncoder`/`AnyValueDecoder` or `AnyValue.Encoder`/`AnyValue.Decoder`
   An in-memory transcoding implementation for working with unstructured values using `AnyValue`.
 
