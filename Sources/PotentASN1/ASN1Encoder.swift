@@ -194,6 +194,12 @@ extension SchemaState {
             continue
           }
 
+          /// HACK: Exclude explicitly/implicitly tagged default values... this should be handled
+          /// in a more elegant fashion that is more explicit about what is intended.
+          if fieldValue.taggedValue?.bytes.isEmpty == true, fieldSchema.defaultValue != nil {
+            continue
+          }
+
           fieldValues.append(fieldValue)
         }
 

@@ -34,7 +34,7 @@ public struct SchemaState {
 
   class Scope {
     let container: KeyedContainer
-    var versionFieldName: String?
+    var versionField: (name: String, schema: Schema)?
     var typeFieldName: String?
 
     init(container: KeyedContainer) {
@@ -221,7 +221,7 @@ public struct SchemaState {
     case .version(let versionSchema):
       guard let scope = nearestScope else { fatalError("no scope") }
 
-      scope.versionFieldName = currentKey.stringValue
+      scope.versionField = (currentKey.stringValue, versionSchema)
 
       return try expand(schema: versionSchema)
 
@@ -229,7 +229,7 @@ public struct SchemaState {
     case .versioned(range: let allowedRange, let versionedSchema):
       guard let nearestScope = nearestScope else { fatalError("no scope") }
 
-      guard let versionFieldName = nearestScope.versionFieldName else {
+      guard let (versionFieldName, versionFieldSchema) = nearestScope.versionField else {
         throw SchemaError.noVersionDefined("Version referenced but none marked in structure's schema")
       }
 
@@ -237,11 +237,24 @@ public struct SchemaState {
         throw SchemaError.noVersion(errorContext("No version found"))
       }
 
-      guard let version = versionValue.integerValue?.unsignedIntegerValue else {
+      let version: UInt?
+      if let taggedVersionValue = versionValue.taggedValue {
+        if taggedVersionValue.bytes.isEmpty {
+          version = versionFieldSchema.defaultValue?.integerValue?.unsignedIntegerValue
+        }
+        else {
+          version = try ASN1Decoder(schema: versionFieldSchema).decodeTree(UInt.self, from: versionValue)
+        }
+      }
+      else {
+        version = versionValue.integerValue?.unsignedIntegerValue
+      }
+
+      guard version != nil else {
         throw SchemaError.noVersion(errorContext("Version is required to be unsigned integer"))
       }
 
-      guard allowedRange.contains(version) else {
+      guard allowedRange.contains(version!) else {
         return [.disallowed(schema), .nothing]
       }
 

@@ -650,7 +650,7 @@ extension SchemaState {
 
       case .explicit(let schemaTag, in: let schemaTagClass, _):
 
-        guard let (tag, bytes) = value.taggedValue, ASN1.Tag.tag(from: schemaTag, in: schemaTagClass) == tag else {
+        guard let (tag, bytes) = value.taggedValue, ASN1.Tag.structuredTag(from: schemaTag, in: schemaTagClass) == tag else {
           // try next possible schema
           continue
         }        
@@ -660,7 +660,7 @@ extension SchemaState {
           throw DecodingError.badValue(value, errorContext("Explicit tagged value contains invalid data"))
         }
 
-        return items[0]
+        return items[0].unwrapped
 
 
       case .choiceOf, .optional, .version, .versioned, .type, .dynamic:

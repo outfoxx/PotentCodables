@@ -398,7 +398,7 @@ public extension ASN1 {
     }
   }
 
-  var taggedValue: (AnyTag, Data)? {
+  var taggedValue: (tag: AnyTag, bytes: Data)? {
     guard case .tagged(let tag, let bytes) = absolute else { return nil }
     return (tag, bytes)
   }
