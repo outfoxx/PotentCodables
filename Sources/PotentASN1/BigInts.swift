@@ -59,14 +59,14 @@ public extension BigInt {
   /// Return a `Data` value that contains the two's compliment base-256 representation of this integer, in network (big-endian) byte order.
   func serialize() -> Data {
     var bytes = magnitude.serialize()
-    if sign == .minus {
-      // Make room for sign (if needed)
-      if (bytes[0] & 0x80) == 0x80 {
-        bytes.insert(0, at: 0)
-      }
-      return bytes.twosCompliment()
+    if bytes.isEmpty || (bytes[0] & 0x80) == 0x80 {
+      // Make room for sign
+      bytes.insert(0, at: 0)
     }
-    return bytes
+    if sign == .plus {
+      return bytes
+    }
+    return bytes.twosCompliment()
   }
 
 }
