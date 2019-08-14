@@ -161,29 +161,29 @@ public indirect enum ASN1: Value {
     switch absolute {
     case .boolean(let value): return value
     case .integer(let value): return value
-    case .bitString(let value): return value
+    case .bitString(let length, let bytes): return BitString(length: length, bytes: bytes)
     case .octetString(let value): return value
     case .null: return nil
-    case .objectIdentifier(let value): return value
+    case .objectIdentifier(let fields): return ObjectIdentifier(fields)
     case .real(let value): return value
-    case .utf8String(let value): return value
-    case .sequence(let value): return value
-    case .set(let value): return value
-    case .numericString(let value): return value
-    case .printableString(let value): return value
-    case .teletexString(let value): return value
-    case .videotexString(let value): return value
-    case .ia5String(let value): return value
-    case .utcTime(let value): return value
-    case .generalizedTime(let value): return value
-    case .graphicString(let value): return value
-    case .visibleString(let value): return value
-    case .generalString(let value): return value
-    case .universalString(let value): return value
-    case .characterString(let value): return value
-    case .bmpString(let value): return value
-    case .tagged(_, let value): return value
-    case .default(let value): return value
+    case .utf8String(let value): return AnyString(value, kind: .utf8)
+    case .sequence(let values): return values
+    case .set(let values): return values
+    case .numericString(let value): return AnyString(value, kind: .numeric)
+    case .printableString(let value): return AnyString(value, kind: .printable)
+    case .teletexString(let value): return AnyString(value, kind: .teletex)
+    case .videotexString(let value): return AnyString(value, kind: .videotex)
+    case .ia5String(let value): return AnyString(value, kind: .ia5)
+    case .utcTime(let value): return AnyTime(value, kind: .utc)
+    case .generalizedTime(let value): return AnyTime(value, kind: .generalized)
+    case .graphicString(let value): return AnyString(value, kind: .graphic)
+    case .visibleString(let value): return AnyString(value, kind: .visible)
+    case .generalString(let value): return AnyString(value, kind: .general)
+    case .universalString(let value): return AnyString(value, kind: .universal)
+    case .characterString(let value): return AnyString(value, kind: .character)
+    case .bmpString(let value): return AnyString(value, kind: .bmp)
+    case .tagged(_, let value): return self
+    case .default(let value): return value.unwrapped
     }
   }
 

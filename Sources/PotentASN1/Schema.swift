@@ -133,6 +133,15 @@ public indirect enum Schema {
     }
   }
 
+  public var unwrapDirectives: Schema {
+    switch self {
+    case .type(let schema): return schema.unwrapDirectives
+    case .version(let schema): return schema.unwrapDirectives
+    case .versioned(range: _, let schema): return schema.unwrapDirectives
+    default: return self
+    }
+  }
+
   public var isVersioned: Bool {
     guard case .versioned = self else { return false }
     return true

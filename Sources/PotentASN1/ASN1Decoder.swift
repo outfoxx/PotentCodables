@@ -454,15 +454,17 @@ extension SchemaState {
           guard let value = possibleValue else {
             // No value... asign default (if available)
             if let defaultValue = fieldSchema.defaultValue {
-              results[fieldName] = defaultValue
+              var fieldSchemaState = try SchemaState(initial: fieldSchema.unwrapDirectives)
+              results[fieldName] = try fieldSchemaState.encode(nil)
             }
             continue
           }
 
           if let fieldSchemaPossibleTags = fieldSchema.possibleTags, !fieldSchemaPossibleTags.contains(value.anyTag) {
-            // No value... asign default (if available)
+            // No value... assign default (if available)
             if let defaultValue = fieldSchema.defaultValue {
-              results[fieldName] = defaultValue
+              var fieldSchemaState = try SchemaState(initial: fieldSchema.unwrapDirectives)
+              results[fieldName] = try fieldSchemaState.encode(nil)
             }
             // value tag not in schema's possible tags... skip to next field and try value again
             continue
@@ -648,7 +650,7 @@ extension SchemaState {
         }
 
 
-      case .explicit(let schemaTag, in: let schemaTagClass, _):
+      case .explicit(let schemaTag, in: let schemaTagClass, let explicitSchema):
 
         guard let (tag, bytes) = value.taggedValue, ASN1.Tag.structuredTag(from: schemaTag, in: schemaTagClass) == tag else {
           // try next possible schema
@@ -657,6 +659,9 @@ extension SchemaState {
 
         let items = try DERReader.parse(data: bytes)
         guard items.count == 1 else {
+          if items.count == 0, let defaultValue = explicitSchema.defaultValue {
+            return defaultValue.unwrapped
+          }
           throw DecodingError.badValue(value, errorContext("Explicit tagged value contains invalid data"))
         }
 
