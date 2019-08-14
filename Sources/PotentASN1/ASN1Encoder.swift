@@ -371,12 +371,15 @@ extension SchemaState {
 
       case .boolean(default: let defaultValue):
 
-        guard let value = value as? Bool else {
+        guard let boolValue = value as? Bool else {
+          if value == nil, let defaultValue = defaultValue {
+            return .default(.boolean(defaultValue))
+          }
           // try next possible schema
           continue
         }
 
-        return value == defaultValue ? .default(.boolean(value)) : .boolean(value)
+        return boolValue == defaultValue ? .default(.boolean(boolValue)) : .boolean(boolValue)
 
 
       case .integer(allowed: let allowedValues, default: let defaultValue):
@@ -398,6 +401,9 @@ extension SchemaState {
         case let int as Int: return try check(BigInt(int))
         case let uint as UInt: return try check(BigInt(uint))
         default:
+          if let defaultValue = defaultValue {
+            return .default(.integer(BigInt(defaultValue)))
+          }
           // try next possible schema
           continue
         }
