@@ -490,11 +490,13 @@ extension SchemaState {
 
 
       case .any:
-        guard let encoded = value as? ASN1 else {
+        switch value {
+        case nil: return .null
+        case let value as ASN1: return value
+        default:
           throw EncodingError.badValue(value as Any, errorContext("ANY requires value to be an ASN1 instance"))
         }
-        return encoded
-
+        
 
       case .implicit(let tag, in: let tagClass, let implicitSchema):
         var implicitSchemaState = try SchemaState(initial: implicitSchema)
