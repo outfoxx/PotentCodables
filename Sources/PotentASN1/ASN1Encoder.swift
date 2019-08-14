@@ -398,7 +398,15 @@ extension SchemaState {
 
         switch value {
         case let int as BigInt: return try check(int)
+        case let int as Int8: return try check(BigInt(int))
+        case let int as Int16: return try check(BigInt(int))
+        case let int as Int32: return try check(BigInt(int))
+        case let int as Int64: return try check(BigInt(int))
         case let int as Int: return try check(BigInt(int))
+        case let uint as UInt8: return try check(BigInt(uint))
+        case let uint as UInt16: return try check(BigInt(uint))
+        case let uint as UInt32: return try check(BigInt(uint))
+        case let uint as UInt64: return try check(BigInt(uint))
         case let uint as UInt: return try check(BigInt(uint))
         default:
           if let defaultValue = defaultValue {
