@@ -453,7 +453,7 @@ extension SchemaState {
 
           guard let value = possibleValue else {
             // No value... asign default (if available)
-            if let defaultValue = fieldSchema.defaultValue {
+            if fieldSchema.defaultValue != nil {
               var fieldSchemaState = try SchemaState(initial: fieldSchema.unwrapDirectives)
               results[fieldName] = try fieldSchemaState.encode(nil)
             }
@@ -462,7 +462,7 @@ extension SchemaState {
 
           if let fieldSchemaPossibleTags = fieldSchema.possibleTags, !fieldSchemaPossibleTags.contains(value.anyTag) {
             // No value... assign default (if available)
-            if let defaultValue = fieldSchema.defaultValue {
+            if fieldSchema.defaultValue != nil {
               var fieldSchemaState = try SchemaState(initial: fieldSchema.unwrapDirectives)
               results[fieldName] = try fieldSchemaState.encode(nil)
             }

@@ -182,7 +182,7 @@ public indirect enum ASN1: Value {
     case .universalString(let value): return AnyString(value, kind: .universal)
     case .characterString(let value): return AnyString(value, kind: .character)
     case .bmpString(let value): return AnyString(value, kind: .bmp)
-    case .tagged(_, let value): return self
+    case .tagged: return self
     case .default(let value): return value.unwrapped
     }
   }
