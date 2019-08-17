@@ -57,7 +57,7 @@ public indirect enum Schema {
 
   case any
   case type(Schema)
-  case dynamic(allowUnknownTypes: Bool = false, DynamicMap)
+  case dynamic(unknownTypeSchema: Schema? = nil, DynamicMap)
 
   case version(Schema)
   case versioned(range: ClosedRange<UInt>, Schema)

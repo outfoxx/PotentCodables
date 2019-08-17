@@ -197,7 +197,7 @@ public struct SchemaState {
       return try expand(schema: typeSchema)
 
 
-    case .dynamic(let allowUnknownTypes, let dynamicSchemaMappings):
+    case .dynamic(let unknownTypeSchema, let dynamicSchemaMappings):
       guard let nearestScope = nearestScope else { fatalError("no scope") }
 
       guard let typeFieldName = nearestScope.typeFieldName else {
@@ -208,10 +208,7 @@ public struct SchemaState {
         throw SchemaError.noDynamicType(errorContext("No dynamic type found"))
       }
 
-      guard let dynamicSchema = dynamicSchemaMappings[dynamicType] else {
-        if allowUnknownTypes {
-          return [.schema(.any)]
-        }
+      guard let dynamicSchema = (dynamicSchemaMappings[dynamicType] ?? unknownTypeSchema) else {
         throw SchemaError.unknownDynamicType(errorContext("Dynamic type not found in mapping"))
       }
 
