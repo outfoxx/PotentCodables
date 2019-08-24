@@ -58,12 +58,8 @@ public indirect enum ASN1: Value {
     case characterString = 29
     case bmpString = 30
 
-    public static func tag(from value: UInt8, in tagClass: Class) -> AnyTag {
-      return (value & ~0xE0) | tagClass.rawValue
-    }
-
-    public static func structuredTag(from value: AnyTag, in tagClass: Class) -> AnyTag {
-      return tag(from: value, in: tagClass) | 0x20
+    public static func tag(from value: UInt8, in tagClass: Class, constructed: Bool) -> AnyTag {
+      return (value & ~0xE0) | tagClass.rawValue | (constructed ? 0x20 : 0x00)
     }
 
     public static func value(from tag: AnyTag, in tagClass: Class) -> AnyTag {
@@ -75,11 +71,11 @@ public indirect enum ASN1: Value {
     }
 
     public var primitive: AnyTag {
-      return Self.tag(from: rawValue, in: .universal)
+      return Self.tag(from: rawValue, in: .universal, constructed: false)
     }
 
     public var constructed: AnyTag {
-      return Self.structuredTag(from: rawValue, in: .universal)
+      return Self.tag(from: rawValue, in: .universal, constructed: true)
     }
 
   }

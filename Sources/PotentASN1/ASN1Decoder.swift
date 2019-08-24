@@ -627,7 +627,7 @@ extension SchemaState {
 
       case .implicit(let schemaTag, in: let schemaTagClass, let implicitSchema):
 
-        guard let (tag, bytes) = value.taggedValue, ASN1.Tag.tag(from: schemaTag, in: schemaTagClass) == tag else {
+        guard let (tag, bytes) = value.taggedValue, ASN1.Tag.tag(from: schemaTag, in: schemaTagClass, constructed: implicitSchema.isCollection) == tag else {
           // try next possible schema
           continue
         }
@@ -652,7 +652,7 @@ extension SchemaState {
 
       case .explicit(let schemaTag, in: let schemaTagClass, let explicitSchema):
 
-        guard let (tag, bytes) = value.taggedValue, ASN1.Tag.structuredTag(from: schemaTag, in: schemaTagClass) == tag else {
+        guard let (tag, bytes) = value.taggedValue, ASN1.Tag.tag(from: schemaTag, in: schemaTagClass, constructed: true) == tag else {
           // try next possible schema
           continue
         }        

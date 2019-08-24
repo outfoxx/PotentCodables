@@ -86,8 +86,8 @@ public indirect enum Schema {
     case .version(let schema): return schema.possibleTags
     case .versioned(_, let schema): return schema.possibleTags
     case .optional(let schema): return schema.possibleTags
-    case .implicit(let tag, let tagClass, _): return [ASN1.Tag.tag(from: tag, in: tagClass)]
-    case .explicit(let tag, let tagClass, _): return [ASN1.Tag.structuredTag(from: tag, in: tagClass)]
+    case .implicit(let tag, let tagClass, let schema): return [ASN1.Tag.tag(from: tag, in: tagClass, constructed: schema.isCollection)]
+    case .explicit(let tag, let tagClass, _): return [ASN1.Tag.tag(from: tag, in: tagClass, constructed: true)]
     case .boolean: return [ASN1.Tag.boolean.universal]
     case .integer: return [ASN1.Tag.integer.universal]
     case .real: return [ASN1.Tag.real.universal]
@@ -222,6 +222,10 @@ public indirect enum Schema {
   public var isSetOf: Bool {
     guard case .setOf = self else { return false }
     return true
+  }
+
+  public var isCollection: Bool {
+    return isSequence || isSequenceOf || isSetOf
   }
 
 }

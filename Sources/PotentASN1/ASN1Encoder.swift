@@ -531,7 +531,7 @@ extension SchemaState {
           continue
         }
         let encodedData = try DERReader.parseTagged(data: DERWriter.write(encoded)).data
-        return .tagged(ASN1.Tag.tag(from: tag, in: tagClass), encodedData)
+        return .tagged(ASN1.Tag.tag(from: tag, in: tagClass, constructed: implicitSchema.isCollection), encodedData)
 
 
       case .explicit(let tag, in: let tagClass, let explicitSchema):
@@ -552,7 +552,7 @@ extension SchemaState {
           continue
         }
         let encodedData = try DERWriter.write(encoded)
-        return .tagged(ASN1.Tag.structuredTag(from: tag, in: tagClass), encodedData)
+        return .tagged(ASN1.Tag.tag(from: tag, in: tagClass, constructed: true), encodedData)
 
 
       case .choiceOf, .optional, .version, .versioned, .type, .dynamic:
