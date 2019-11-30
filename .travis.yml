@@ -1,22 +1,8 @@
 language: objective-c
 osx_image: xcode11
-xcode_project: PotentCodables.xcodeproj
-addons:
-  homebrew:
-    packages:
-      - xcodegen
-    update: true
-matrix:
-  include:
-    - xcode_scheme: PotentCodables_macOS
-      xcode_destination: platform=macOS
-
-    - xcode_scheme: PotentCodables_iOS
-      xcode_destination: platform=iOS Simulator,OS=13.0,name=iPhone X
-
-    - xcode_scheme: PotentCodables_tvOS
-      xcode_destination: platform=tvOS Simulator,OS=13.0,name=Apple TV
-before_script:
-  - xcodegen
-after_success:
-  - bash <(curl -s https://codecov.io/bash)
+env:
+  - PLATFORM=macOS
+  - PLATFORM=iOS
+  - PLATFORM=tvOS
+script:
+  - make build-test-$PLATFORM
