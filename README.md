@@ -1,4 +1,6 @@
 # 🧪 PotentCodables
+[![Build Status](https://travis-ci.org/outfoxx/PotentCodables.svg?branch=master)](https://travis-ci.org/outfoxx/PotentCodables)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/outfoxx/PotentCodables)
 ## A potent set of implementations and extension to the Swift `Codable` system
 
 ### Why?
