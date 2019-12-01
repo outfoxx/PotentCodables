@@ -230,31 +230,31 @@ public class InternalValueDecoder<Value, Transform>: Decoder where Transform: In
   // MARK: Properties
 
   /// The decoder's storage.
-  fileprivate var storage: ValueDecodingStorage<Value>
+  internal var storage: ValueDecodingStorage<Value>
 
   public let options: Transform.Options
 
   public var state: Transform.State!
 
   /// The path to the current point in encoding.
-  public fileprivate(set) var codingPath: [CodingKey]
+  public internal(set) var codingPath: [CodingKey]
 
   /// Contextual user-provided information for use during encoding.
-  open var userInfo: [CodingUserInfoKey: Any] {
+  public var userInfo: [CodingUserInfoKey: Any] {
     return options.userInfo
   }
 
   // MARK: - Initialization
 
   /// Initializes `self` with the given top-level container and options.
-  fileprivate init(referencing container: Value, at codingPath: [CodingKey] = [], options: Transform.Options) {
+  internal init(referencing container: Value, at codingPath: [CodingKey] = [], options: Transform.Options) {
     storage = ValueDecodingStorage()
     storage.push(container: container)
     self.codingPath = codingPath
     self.options = options
   }
 
-  fileprivate init(referencing container: Value, from decoder: InternalValueDecoder<Value, Transform>) {
+  internal init(referencing container: Value, from decoder: InternalValueDecoder<Value, Transform>) {
     storage = decoder.storage
     codingPath = decoder.codingPath
     options = decoder.options
@@ -301,7 +301,7 @@ public class InternalValueDecoder<Value, Transform>: Decoder where Transform: In
 
 // MARK: - Decoding Storage
 
-private struct ValueDecodingStorage<Value> where Value: PotentCodables.Value {
+internal struct ValueDecodingStorage<Value> where Value: PotentCodables.Value {
   // MARK: Properties
 
   /// The container stack.
