@@ -161,11 +161,12 @@ extension ValueEncoder where Transform: InternalValueStringifier {
 /// Although the type represents an implementation of the public API for `Encodable` it can also be used by implementations of
 /// `InternalEncoderTransform` as the instance is also passed to all members of the transform.
 public class InternalValueEncoder<Value, Transform>: Encoder where Transform: InternalEncoderTransform, Value == Transform.Value {
+  private typealias ValueEncoder = PotentCodables.ValueEncoder<Value, Transform>
 
   // MARK: Properties
 
   /// The encoder's storage.
-  internal var storage: ValueEncodingStorage<Value, Transform>
+  fileprivate var storage: ValueEncodingStorage<Value, Transform>
 
   /// Options set on the top-level encoder.
   public let options: Transform.Options
@@ -173,7 +174,7 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
   public var state: Transform.State!
 
   /// The path to the current point in encoding.
-  public internal(set) var codingPath: [CodingKey]
+  public fileprivate(set) var codingPath: [CodingKey]
 
   public func container(depth: Int) -> Any {
     return storage.containers[depth]
@@ -196,7 +197,7 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
     return options.userInfo
   }
 
-  internal var finalizers: [() throws -> Void] = []
+  private var finalizers: [() throws -> Void] = []
 
   // MARK: - Initialization
 
@@ -210,7 +211,7 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
   /// Returns whether a new element can be encoded at this coding path.
   ///
   /// `true` if an element has not yet been encoded at this coding path; `false` otherwise.
-  internal var canEncodeNewValue: Bool {
+  fileprivate var canEncodeNewValue: Bool {
     // Every time a new value gets encoded, the key it's encoded for is pushed onto the coding path (even if it's a nil key from an unkeyed container).
     // At the same time, every time a container is requested, a new value gets pushed onto the storage stack.
     // If there are more values on the storage stack than on the coding path, it means the value is requesting more than one container, which violates the precondition.
@@ -336,7 +337,7 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
 
 // MARK: - Encoding Storage and Containers
 
-internal struct ValueEncodingStorage<Value, Transform> where Transform: InternalEncoderTransform, Value == Transform.Value {
+private struct ValueEncodingStorage<Value, Transform> where Transform: InternalEncoderTransform, Value == Transform.Value {
   // MARK: Properties
 
   /// The container stack.
@@ -803,13 +804,13 @@ extension InternalValueEncoder {
 
 /// ValueReferencingEncoder is a special subclass of InternalValueEncoder which has its own storage, but references the contents of a different encoder.
 /// It's used in superEncoder(), which returns a new encoder for encoding a superclass -- the lifetime of the encoder should not escape the scope it's created in, but it doesn't necessarily know when it's done being used (to write to the original container).
-internal class ValueReferencingEncoder<Value, Transform>: InternalValueEncoder<Value, Transform> where Transform: InternalEncoderTransform, Value == Transform.Value {
+private class ValueReferencingEncoder<Value, Transform>: InternalValueEncoder<Value, Transform> where Transform: InternalEncoderTransform, Value == Transform.Value {
   typealias InternalValueEncoder = PotentCodables.InternalValueEncoder<Value, Transform>
 
   // MARK: Reference types.
 
   /// The type of container we're referencing.
-  internal enum Reference {
+  private enum Reference {
     /// Referencing a specific index in an array container.
     case unkeyed(UnkeyedContainer, Int)
 
@@ -820,15 +821,15 @@ internal class ValueReferencingEncoder<Value, Transform>: InternalValueEncoder<V
   // MARK: - Properties
 
   /// The encoder we're referencing.
-  internal let encoder: InternalValueEncoder
+  fileprivate let encoder: InternalValueEncoder
 
   /// The container reference itself.
-  internal var reference: Reference
+  private var reference: Reference
 
   // MARK: - Initialization
 
   /// Initializes `self` by referencing the given array container in the given encoder.
-  internal init(referencing encoder: InternalValueEncoder, at index: Int, wrapping unkeyed: UnkeyedContainer) {
+  fileprivate init(referencing encoder: InternalValueEncoder, at index: Int, wrapping unkeyed: UnkeyedContainer) {
     self.encoder = encoder
     reference = .unkeyed(unkeyed, index)
     super.init(options: encoder.options, codingPath: encoder.codingPath)
@@ -837,7 +838,7 @@ internal class ValueReferencingEncoder<Value, Transform>: InternalValueEncoder<V
   }
 
   /// Initializes `self` by referencing the given dictionary container in the given encoder.
-  internal init(referencing encoder: InternalValueEncoder,
+  fileprivate init(referencing encoder: InternalValueEncoder,
                    key: CodingKey, convertedKey: CodingKey, wrapping keyed: KeyedContainer) {
     self.encoder = encoder
     reference = .keyed(keyed, convertedKey.stringValue)
@@ -848,7 +849,7 @@ internal class ValueReferencingEncoder<Value, Transform>: InternalValueEncoder<V
 
   // MARK: - Coding Path Operations
 
-  internal override var canEncodeNewValue: Bool {
+  fileprivate override var canEncodeNewValue: Bool {
     // With a regular encoder, the storage and coding path grow together.
     // A referencing encoder, however, inherits its parents coding path, as well as the key it was created for.
     // We have to take this into account.
