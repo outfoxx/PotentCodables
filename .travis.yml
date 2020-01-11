@@ -2,7 +2,7 @@ language: objective-c
 osx_image:
   - xcode11
   - xcode11.1
-  - xcode11.2
+  - xcode11.3
 env:
   - PLATFORM=macOS
   - PLATFORM=iOS
