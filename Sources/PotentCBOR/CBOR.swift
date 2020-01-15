@@ -119,13 +119,13 @@ public indirect enum CBOR: Equatable, Hashable {
     }
   }
 
-  public var numberValue: Float80? {
+  public var numberValue: Double? {
     switch untagged {
-    case .unsignedInt(let uint): return Float80(exactly: uint)
-    case .negativeInt(let nint): return Float80(exactly: nint).map { -1 - $0 }
-    case .half(let half): return Float80(half.floatValue)
-    case .float(let float): return Float80(float)
-    case .double(let double): return Float80(double)
+    case .unsignedInt(let uint): return Double(exactly: uint)
+    case .negativeInt(let nint): return Double(exactly: nint).map { -1 - $0 }
+    case .half(let half): return Double(half.floatValue)
+    case .float(let float): return Double(float)
+    case .double(let double): return double
     default: return nil
     }
   }

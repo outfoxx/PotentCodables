@@ -23,7 +23,7 @@ import Foundation
 struct JSONWriter {
 
   enum Error: Swift.Error {
-    case invalidNumber(Float80)
+    case invalidNumber(Double)
   }
 
   var indent = 0
