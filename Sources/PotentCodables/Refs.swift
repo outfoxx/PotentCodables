@@ -41,6 +41,43 @@ public struct DefaultValueKey: ValueKeyProvider {
   public static var valueKey: AnyCodingKey = "value"
 }
 
+/// Provides static functions for looking up types by id for deserialization
+/// and generating type ids for types during serialization.
+///
+public protocol TypeIndex {
+  static func findType(id: String) -> Any.Type?
+  static func typeId(of: Any.Type) -> String
+}
+
+/// Default type index that uses a simple global map that can be updated
+/// by clients.
+///
+/// Type ids are generated as the "simple" type name. E.g. a struct declared as
+/// `struct MyType {}` will use the type id `MyType`.
+///
+/// The list of allowed types can be updated by using the method
+/// `mapAllowedTypes(:)` which will generate an appropriate type id for each
+/// provided type and assign them to the map of allowed types.
+///
+/// Note: The initial map of allowed types is empty and must be provided
+/// by clients prior to using `Ref` or `EmbeddedRef`.
+///
+/// - See Also: `TypeIndex`
+///
+public struct DefaultTypeIndex: TypeIndex {
+  
+  fileprivate static var allowedTypes: [String: Any.Type] = [:]
+  
+  public static func mapAllowedTypes(_ types: [Decodable.Type]) {
+    Self.allowedTypes = Dictionary(uniqueKeysWithValues: types.map { (key: Self.typeId(of: $0), value: $0) })
+  }
+  
+  public static func findType(id: String) -> Any.Type? { allowedTypes[id] }
+  public static func typeId(of type: Any.Type) -> String { "\(type)".split(separator: ".").last.map { String($0) }  ?? "\(type)" }
+  
+}
+
+
 /// A decodable type for decoding general polymorphic types.
 ///
 /// `Ref` relies upon the encoded value being wrapped in a keyed container that contains a
@@ -49,13 +86,15 @@ public struct DefaultValueKey: ValueKeyProvider {
 ///
 /// # Expected Encoded Structure (JSON):
 /// ```javascript
-/// {"@type" : "MyApp.VyValue", "value": {"name" : "Foo"}}
+/// {"@type" : "MyValue", "value": {"name" : "Foo"}}
 /// ```
 ///
 /// Decoding a `Ref` instance will decode the value to its `value` property,
 /// which can then be accesed in a number of ways.
 ///
 /// # Example:
+///
+///     DefaultTypeIndex.mapAllowedTypes([MyValue.self])
 ///
 ///     myValue = container.decode(Ref.self).value as! MyValue
 ///
@@ -74,18 +113,32 @@ public struct DefaultValueKey: ValueKeyProvider {
 ///     typealias MyRef = CustomRef<MyTypeKey, MyValueKey>
 ///     myValue = container.decode(My.self).value
 ///
-/// # Requires:
-///   `class`
+/// # Customizing Type Lookup:
+/// Types are saved by transforming them into a type id (aka name). During decoding by type ids are
+/// transformed back into the requested types. To enable extensability, and ensure security during
+/// decoding, type ids are looked up using a type index. A type index simply generates type ids
+/// for types and provides the ability to lookup a type for a matching id.
 ///
-///   Due to the vagaries of Swift's dynamic type resolution, currently all the
-///   types **must** be a `class`. This restriction will be lifted as soon as Swift's runtime
-///   is supported.
+/// The default type index, used by `Ref`, is `DefaultTypeIndex`. The index has a simple global map
+/// of allowed types to their type ids. `DefaultTypeIndex` uses the simple module local type name
+/// for each type (see `DefaultTypeIndex` for specifics).
+///
+/// - Note: `DefaultTypeIndex`'s map of allowed types is initially empty and will not provide any
+///  types during decoding. You must explicitly updated the map of allowed types using
+/// `DefaultTypeIndex.mapAllowedTypes(:)`.
+///
+/// A new type index implementation can be provided by using `CustomRef` explicity and providing a
+/// cusom type index:
+///
+///     typealias MyRef = CustomRef<DefaultTypeKey, DefaultValueKey, MyTypeIndex>
+///
+///
 ///
 /// - See Also: `Ref.Value`
 /// - See Also: `EmbeddedRef`
 /// - See Also: `CustomRef<>`
 ///
-public typealias Ref = CustomRef<DefaultTypeKey, DefaultValueKey>
+public typealias Ref = CustomRef<DefaultTypeKey, DefaultValueKey, DefaultTypeIndex>
 
 
 /// The implementation type for `Ref` types.
@@ -94,19 +147,20 @@ public typealias Ref = CustomRef<DefaultTypeKey, DefaultValueKey>
 /// by providing custom `KeyProvider` implementations for each required generic parameter.
 ///
 /// - Parameters:
+///   - TI: Type parameter that provides type id generation & lookup.
 ///   - TKP: Type parameter that provides the type key to use.
 ///   - VKP: Type parameter that provides the value key to use.
 ///
 /// - See Also: `Ref`
 /// - See Also: `KeyProvider`
 ///
-public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider>: Decodable {
+public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeIndex>: Decodable {
 
   /// The decoded value
   public let value: Any
 
   public init(from decoder: Decoder) throws {
-    let refType = try Refs.decodeType(from: decoder, forKey: TKP.typeKey)
+    let refType = try Refs.decodeType(from: decoder, forKey: TKP.typeKey, using: TI.self)
     let container = try decoder.container(keyedBy: AnyCodingKey.self)
     value = try refType.init(from: KeyedNestedDecoder(key: VKP.valueKey, container: container, decoder: decoder))
   }
@@ -158,7 +212,7 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider>: Decodable 
 
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: AnyCodingKey.self)
-      try container.encode(_typeName(EncodedValue.self), forKey: TKP.typeKey)
+      try container.encode(TI.self.typeId(of: EncodedValue.self), forKey: TKP.typeKey)
       try container.encode(value, forKey: VKP.valueKey)
     }
 
@@ -174,13 +228,15 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider>: Decodable 
 ///
 /// # Expected Encoded Structure (JSON):
 /// ```javascript
-/// {"@type" : "MyApp.VyValue", "name" : "Foo"}
+/// {"@type" : "MyValue", "name" : "Foo"}
 /// ```
 ///
 /// Decoding an `EmbeddedRef` instance will decode the value to its `value` property,
 /// which can then be accesed in a number of ways.
 ///
 /// # Example:
+///
+///     DefaultTypeIndex.mapAllowedTypes([MyValue.self])
 ///
 ///     myValue = container.decode(EmbeddedRef.self).value as! MyValue
 ///
@@ -198,6 +254,27 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider>: Decodable 
 ///     typealias MyRef = CustomEmbeddedRef<MyTypeKey>
 ///     myValue = container.decode(My.self).value
 ///
+///
+/// # Customizing Type Lookup:
+/// Types are saved by transforming them into a type id (aka name). During decoding by type ids are
+/// transformed back into the requested types. To enable extensability, and ensure security during
+/// decoding, type ids are looked up using a type index. A type index simply generates type ids
+/// for types and provides the ability to lookup a type for a matching id.
+///
+/// The default type index, used by `Ref`, is `DefaultTypeIndex`. The index has a simple global map
+/// of allowed types to their type ids. `DefaultTypeIndex` uses the simple module local type name
+/// for each type (see `DefaultTypeIndex` for specifics).
+///
+/// - Note: `DefaultTypeIndex`'s map of allowed types is initially empty and will not provide any
+///  types during decoding. You must explicitly updated the map of allowed types using
+/// `DefaultTypeIndex.mapAllowedTypes(:)`.
+///
+/// A new type index implementation can be provided by using `CustomRef` explicity and providing a
+/// cusom type index:
+///
+///     typealias MyRef = CustomEmbeddedRef<DefaultTypeKey, MyTypeIndex>
+///
+///
 /// # Requires:
 ///   Keyed Container
 ///
@@ -208,18 +285,12 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider>: Decodable 
 ///   `Ref` is provided to support encoding/decoding of "general" values of any
 ///   structure.
 ///
-/// # Requires:
-///   `class`
-///
-///   Due to the vagaries of Swift's dynamic type resolution, currently all the
-///   types **must** be a `class`. This restriction will be lifted as soon as Swift's runtime
-///   is supported.
 ///
 /// - See Also: `EmbeddedRef.Value`
 /// - See Also: `Ref`
 /// - See Also: `CustomEmbeddedRef<>`
 ///
-public typealias EmbeddedRef = CustomEmbeddedRef<DefaultTypeKey>
+public typealias EmbeddedRef = CustomEmbeddedRef<DefaultTypeKey, DefaultTypeIndex>
 
 /// The implementation type for `EmbeddedRef` types.
 ///
@@ -232,13 +303,13 @@ public typealias EmbeddedRef = CustomEmbeddedRef<DefaultTypeKey>
 /// - See Also: `EmbeddedRef`
 /// - See Also: `KeyProvider`
 ///
-public struct CustomEmbeddedRef<TKP: TypeKeyProvider>: Decodable {
+public struct CustomEmbeddedRef<TKP: TypeKeyProvider, TI: TypeIndex>: Decodable {
 
   /// The decoded value
   public let value: Any
 
   public init(from decoder: Decoder) throws {
-    let refType = try Refs.decodeType(from: decoder, forKey: TKP.typeKey)
+    let refType = try Refs.decodeType(from: decoder, forKey: TKP.typeKey, using: TI.self)
     value = try refType.init(from: decoder)
   }
 
@@ -291,7 +362,7 @@ public struct CustomEmbeddedRef<TKP: TypeKeyProvider>: Decodable {
 
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: AnyCodingKey.self)
-      try container.encode(_typeName(EncodedValue.self), forKey: TKP.typeKey)
+      try container.encode(TI.self.typeId(of: EncodedValue.self), forKey: TKP.typeKey)
       try value.encode(to: encoder)
     }
 
@@ -314,16 +385,14 @@ public struct Refs {
   /// - Parameters:
   ///   - decoder: `Decoder` to decode the `key` from
   ///   - key: CodingKey used to decode the type name
+  ///   - using: Type index to use for type lookup
   /// - Returns: A `Decodable` type reference
   ///
-  /// # Warning:
-  /// The dynamic type lookup can currently only locate `class` types.
-  ///
-  public static func decodeType(from decoder: Decoder, forKey key: AnyCodingKey) throws -> Decodable.Type {
+  public static func decodeType(from decoder: Decoder, forKey key: AnyCodingKey, using index: TypeIndex.Type) throws -> Decodable.Type {
     let container = try decoder.container(keyedBy: AnyCodingKey.self)
-    let typeName = try container.decode(String.self, forKey: key)
-    guard let type = _typeByName(typeName) else {
-      throw Error.typeNotFound("\(typeName) could not be found; it must be a class, struct types are not currently supported")
+    let typeId = try container.decode(String.self, forKey: key)
+    guard let type = index.findType(id: typeId) else {
+      throw Error.typeNotFound("\(typeId) could not be found using index \(index)")
     }
     guard let refType = type as? Decodable.Type else {
       fatalError("Type '\(String(describing: type))' does not conform to Decodable")

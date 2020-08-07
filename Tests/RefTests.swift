@@ -15,7 +15,7 @@ import XCTest
 
 protocol RefTestValue {}
 
-final class AValue: RefTestValue, Codable {
+struct AValue: RefTestValue, Codable {
   let name: String
 
   init(name: String) {
@@ -23,12 +23,16 @@ final class AValue: RefTestValue, Codable {
   }
 }
 
-final class BValue: RefTestValue, Codable {
+struct BValue: RefTestValue, Codable {
   let values: [String]
 }
 
 
 class RefTests: XCTestCase {
+  
+  override class func setUp() {
+    DefaultTypeIndex.mapAllowedTypes([AValue.self, BValue.self])
+  }
 
   func testRef() throws {
 
@@ -50,7 +54,7 @@ class RefTests: XCTestCase {
       static var typeKey: AnyCodingKey = "_type"
       static var valueKey: AnyCodingKey = "_value"
     }
-    typealias MyRef = CustomRef<MyTypeKeys, MyTypeKeys>
+    typealias MyRef = CustomRef<MyTypeKeys, MyTypeKeys, DefaultTypeIndex>
 
     let src = AValue(name: "test")
 
@@ -80,10 +84,12 @@ class RefTests: XCTestCase {
 
   func testCustomEmbeddedRef() throws {
 
+    
+    
     struct MyTypeKey: TypeKeyProvider {
       static var typeKey: AnyCodingKey = "_type"
     }
-    typealias MyRef = CustomEmbeddedRef<MyTypeKey>
+    typealias MyRef = CustomEmbeddedRef<MyTypeKey, DefaultTypeIndex>
 
     let src = AValue(name: "test")
 

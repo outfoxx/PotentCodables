@@ -117,6 +117,8 @@ struct Bar: FooBar, Codable {
   let count: Int
 }
 
+DefaultTypeIndex.mapAllowedTypes([Foo.self, Bar.self]) // Authorize & map allowed types for polymorphic decoding
+
 let val = try JSONDecoder.default.decode(Ref.self).as(FooBar.self)  // Decode ref and use the `as` utility to cast it or throw
 ```
 
@@ -137,11 +139,21 @@ it, but they can be used with `Ref`.
 
 
 The documentation for `Ref` and `EmbeddedRef` provide a lot of details on their usage as well as documentation of how to customize the
-keys used during encoding/decoding.
+keys used during encoding/decoding. 
 
-##### ⚠️ Top-Level Classes Only ⚠️
-Currently due to limitations with Swift's dynamic type lookup `Ref` and `EmbeddedRef` currently only support top-level reference types
-(aka `class`).  When Swift's runtime support dynamic lookup of value & generic types, those will be supported as well.
+##### Type serialization & lookup
+By default the type serialization & lookup mechanism (see `Ref`  & `DefaultTypeIndex` code documentation) disallows all types to be decoded.
+This is to ensure that decoding is secure as only specific/authorized types can be deserialized. Additionally, the index mechanism, by default,
+uses a type id that does not include the Swift module name so as to ensure stable type ids across modules, frameworks, and languages.
+
+The means that you must explicity map allowed classes prior to using polymorphic deserialization. This is done as simply as:
+```swift
+DefaultTypeIndex.mapAllowedTypes([Foo.self, Bar.self])
+```
+This generates a type id for each type (`Foo` & `Bar`) and upates the map to allow those types. 
+
+Alternatively you can implement and provide a custom type index (see `Ref`, `CustomRef` & `TypeIndex` code documentation). If you have
+an alternate means of looking up types.
 
 
 ### `AnyValue` - Unstructured Values
