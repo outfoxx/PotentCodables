@@ -253,8 +253,8 @@ public extension ASN1 {
   }
 
   var bitStringValue: (length: Int, bytes: Data)? {
-    guard case .bitString(let value) = absolute else { return nil }
-    return value
+    guard case .bitString(let length, let bytes) = absolute else { return nil }
+    return (length: length, bytes: bytes)
   }
 
   var octetStringValue: Data? {

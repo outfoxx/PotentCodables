@@ -90,7 +90,7 @@ public class DERWriter {
       append(byte: value ? 0xFF : 0x00)
 
     case .integer(let value):
-      var bytes = value.serialize()
+      let bytes = value.serialize()
       append(tag: .integer, length: max(1, bytes.count))
       append(data: bytes.isEmpty ? Self.zero : bytes)
 

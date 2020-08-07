@@ -794,7 +794,7 @@ extension InternalValueEncoder {
       return try box(NSDecimalNumber(decimal: value as! Decimal).doubleValue)
     }
     else if value is ValueStringDictionaryEncodableMarker {
-      return try box(value as! [String: Encodable])
+      return try box((value as Any) as! [String: Encodable])
     }
     return try Transform.box(value, otherType: type, encoder: self)
   }

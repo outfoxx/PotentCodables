@@ -194,7 +194,7 @@ public class DERReader {
     }
 
     if let characterSet = characterSet {
-      if !string.unicodeScalars.allSatisfy { characterSet.contains($0) } {
+      if !string.unicodeScalars.allSatisfy({ characterSet.contains($0) }) {
         throw Error.invalidStringCharacters
       }
     }
