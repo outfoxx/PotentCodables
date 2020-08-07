@@ -400,10 +400,7 @@ public struct Refs {
     guard let type = index.findType(id: typeId) else {
       throw Error.typeNotFound("\(typeId) could not be found using index \(index)")
     }
-    guard let refType = type as? Decodable.Type else {
-      fatalError("Type '\(String(describing: type))' does not conform to Decodable")
-    }
-    return refType
+    return type
   }
 
 }
