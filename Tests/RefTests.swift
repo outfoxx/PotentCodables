@@ -31,7 +31,7 @@ struct BValue: RefTestValue, Codable {
 class RefTests: XCTestCase {
   
   override class func setUp() {
-    DefaultTypeIndex.mapAllowedTypes([AValue.self, BValue.self])
+    DefaultTypeIndex.setAllowedTypes([AValue.self, BValue.self])
   }
 
   func testRef() throws {

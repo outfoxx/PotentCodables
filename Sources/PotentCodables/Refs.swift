@@ -41,11 +41,11 @@ public struct DefaultValueKey: ValueKeyProvider {
   public static var valueKey: AnyCodingKey = "value"
 }
 
-/// Provides static functions for looking up types by id for deserialization
-/// and generating type ids for types during serialization.
+/// Provides static functions for looking up types by id for decoding
+/// and generating type ids for types during encoding.
 ///
 public protocol TypeIndex {
-  static func findType(id: String) -> Any.Type?
+  static func findType(id: String) -> Decodable.Type?
   static func typeId(of: Any.Type) -> String
 }
 
@@ -56,7 +56,7 @@ public protocol TypeIndex {
 /// `struct MyType {}` will use the type id `MyType`.
 ///
 /// The list of allowed types can be updated by using the method
-/// `mapAllowedTypes(:)` which will generate an appropriate type id for each
+/// `setAllowedTypes(:)` which will generate an appropriate type id for each
 /// provided type and assign them to the map of allowed types.
 ///
 /// Note: The initial map of allowed types is empty and must be provided
@@ -66,13 +66,19 @@ public protocol TypeIndex {
 ///
 public struct DefaultTypeIndex: TypeIndex {
   
-  fileprivate static var allowedTypes: [String: Any.Type] = [:]
+  fileprivate static var allowedTypes: [String: Decodable.Type] = [:]
   
-  public static func mapAllowedTypes(_ types: [Decodable.Type]) {
-    Self.allowedTypes = Dictionary(uniqueKeysWithValues: types.map { (key: Self.typeId(of: $0), value: $0) })
+  // Set the allowed types to the given array after mapping them using `mapAllowedTypes(:)`.
+  public static func setAllowedTypes(_ types: [Decodable.Type]) {
+    Self.allowedTypes = mapAllowedTypes(types)
   }
   
-  public static func findType(id: String) -> Any.Type? { allowedTypes[id] }
+  // Maps the given array of types to their generated type id and returns the dictionary.
+  public static func mapAllowedTypes(_ types: [Decodable.Type]) -> [String: Decodable.Type] {
+    return Dictionary(uniqueKeysWithValues: types.map { (key: Self.typeId(of: $0), value: $0) })
+  }
+  
+  public static func findType(id: String) -> Decodable.Type? { allowedTypes[id] }
   public static func typeId(of type: Any.Type) -> String { "\(type)".split(separator: ".").last.map { String($0) }  ?? "\(type)" }
   
 }
@@ -94,7 +100,7 @@ public struct DefaultTypeIndex: TypeIndex {
 ///
 /// # Example:
 ///
-///     DefaultTypeIndex.mapAllowedTypes([MyValue.self])
+///     DefaultTypeIndex.setAllowedTypes([MyValue.self])
 ///
 ///     myValue = container.decode(Ref.self).value as! MyValue
 ///
@@ -125,7 +131,7 @@ public struct DefaultTypeIndex: TypeIndex {
 ///
 /// - Note: `DefaultTypeIndex`'s map of allowed types is initially empty and will not provide any
 ///  types during decoding. You must explicitly updated the map of allowed types using
-/// `DefaultTypeIndex.mapAllowedTypes(:)`.
+/// `DefaultTypeIndex.setAllowedTypes(:)`.
 ///
 /// A new type index implementation can be provided by using `CustomRef` explicity and providing a
 /// cusom type index:
@@ -236,7 +242,7 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
 ///
 /// # Example:
 ///
-///     DefaultTypeIndex.mapAllowedTypes([MyValue.self])
+///     DefaultTypeIndex.setAllowedTypes([MyValue.self])
 ///
 ///     myValue = container.decode(EmbeddedRef.self).value as! MyValue
 ///
@@ -267,7 +273,7 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
 ///
 /// - Note: `DefaultTypeIndex`'s map of allowed types is initially empty and will not provide any
 ///  types during decoding. You must explicitly updated the map of allowed types using
-/// `DefaultTypeIndex.mapAllowedTypes(:)`.
+/// `DefaultTypeIndex.setAllowedTypes(:)`.
 ///
 /// A new type index implementation can be provided by using `CustomRef` explicity and providing a
 /// cusom type index:
