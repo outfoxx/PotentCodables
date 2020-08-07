@@ -181,6 +181,10 @@ public enum JSON {
     return nil
   }
 
+}
+
+extension JSON: CustomStringConvertible {
+  
   public var description: String {
     var output = ""
     var writer = JSONWriter(pretty: true, sortedKeys: true) { output += $0 ?? "" }
