@@ -319,11 +319,12 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
   }
 
   public static func unbox(_ value: ASN1, interceptedType: Decodable.Type, decoder: Decoder) throws -> Any? {
-    guard let decoded = try decode(value, decoder: decoder) else { return nil }
     if interceptedType == ASN1.self {
-      return decoded
+      return value
     }
-    else if interceptedType == BigInt.self {
+    
+    guard let decoded = try decode(value, decoder: decoder) else { return nil }
+    if interceptedType == BigInt.self {
       guard let int = decoded as? BigInt else {
         throw DecodingError.typeMismatch(at: decoder.codingPath,
                                          expectation: interceptedType,
