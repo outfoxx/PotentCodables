@@ -49,7 +49,7 @@ let data = try CBOREncoder.default.encode(myValue)
   decoder provided by Foundation. These implementations offer enhancements to what items can be encoded to (e.g. to/from Strings
   and to/from native value trees) and offer performance enhancements when using `AnyValue`.  
 - CBOR - `CBOREncoder`/`CBORDecoder` or `CBOR.Encoder`/`CBOR.Decoder`
-  A conformant implementation of the [CBOR](cbor.io) serialization format written in pure Swift.
+  A conformant implementation of the [CBOR](https://cbor.io) serialization format written in pure Swift.
 - ASN.1 - `ASN1Encoder`/`ASN1Decoder` or `ASN1.Encoder`/`ASN1.Decoder`
   A conformant implementation of the [ASN.1](https://en.wikipedia.org/wiki/Abstract_Syntax_Notation_One) serialization format written in pure Swift.
   ASN.1's position based format can be very ambiguous, even so it is commonly used in situations that require absolute unambiguity. To
