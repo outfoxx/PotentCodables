@@ -679,3 +679,14 @@ extension SchemaState {
   }
 
 }
+
+
+#if canImport(Combine)
+
+import Combine
+
+extension ASN1Decoder : TopLevelDecoder {
+  public typealias Input = Data
+}
+
+#endif

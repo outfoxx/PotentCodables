@@ -93,6 +93,11 @@ func decode<T: Decodable>(_ type: T.Type, from data: String) throws -> T
 func decodeIfPresent<T: Decodable>(_ type: T.Type, from data: String) throws -> T?
 ```
 
+##### Combine
+
+When used on Apple platforms where the Combine framework is available, all the encoders conform to Combine's
+`TopLevelEncoder` and all decoders conform to its `TopLevelDecoder`.
+
 ### Polymorphic Encoding/Decoding
 
 `Codable` encoders and decoders are a great tool and very convenient. Unfortunately using them with polymorphic types is cumbersome,

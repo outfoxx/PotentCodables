@@ -565,3 +565,14 @@ extension SchemaState {
   }
 
 }
+
+
+#if canImport(Combine)
+
+import Combine
+
+extension ASN1Encoder : TopLevelEncoder {
+  public typealias Output = Data
+}
+
+#endif
