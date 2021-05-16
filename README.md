@@ -48,13 +48,16 @@ let data = try CBOREncoder.default.encode(myValue)
   A conformant [JSON](https://tools.ietf.org/html/rfc8259) implementation that is a drop-in replacement for Swift's JSON encoder and
   decoder provided by Foundation. These implementations offer enhancements to what items can be encoded to (e.g. to/from Strings
   and to/from native value trees) and offer performance enhancements when using `AnyValue`.  
+
 - CBOR - `CBOREncoder`/`CBORDecoder` or `CBOR.Encoder`/`CBOR.Decoder`
   A conformant implementation of the [CBOR](https://cbor.io) serialization format written in pure Swift.
+
 - ASN.1 - `ASN1Encoder`/`ASN1Decoder` or `ASN1.Encoder`/`ASN1.Decoder`
   A conformant implementation of the [ASN.1](https://en.wikipedia.org/wiki/Abstract_Syntax_Notation_One) serialization format written in pure Swift.
   ASN.1's position based format can be very ambiguous, even so it is commonly used in situations that require absolute unambiguity. To
   overcome these issues the ASN1Encoder and ASN1Decoder require a schema be passed to their initializer that directs the encoding and/or decoding. More
   information is available [here](Docs/ASN1Schemas.md)
+
 - AnyValue - `AnyValueEncoder`/`AnyValueDecoder` or `AnyValue.Encoder`/`AnyValue.Decoder`
   An in-memory transcoding implementation for working with unstructured values using `AnyValue`.
 
@@ -156,11 +159,43 @@ overwrites the current set of allowed types and as such applications should regi
 Alternatively you can implement and provide a custom type index (see `Ref`, `CustomRef` & `TypeIndex` code documentation). If you have
 an alternate means of looking up types.
 
-##### Allowded Types in Frameworks
+##### Allowed Types in Frameworks
 
 The default type index is designed to be convenient and safe for simple applications. Unfortunately this means frameworks **must** use a custom
 type index to ensure the types it expects are registered and reduce the chance of inadvertantly creating security vulnerabilities.
 
+### Raw Value Container
+
+Each decoder has an in memory representation known as the "tree" value. The great thing about tree values is that they hold
+the values in their exact serialized representation.  For example, `JSON` tree values store numbers as a specialized `JSON.Number`
+that stores the exact number value as a string along with a number of other properties for helping the conversion of strings to
+integer or floating point numbers. Accessing this `JSON.Number` and reading the exact decimal value serialized in JSON is
+ available from tree values. 
+
+The decoders support accessing the tree value using specializations of the protocol `TreeValueDecodingContainer` which
+extends the  `SingleValueDecodingContainer` protocol. 
+
+Decoding `JSON` values using the `TreeValueDecodingContainer` as follows:
+```swift
+func init(from decoder: Decoder) throws {
+let treeContainer = try decoder.singleValuedContainer() as! TreeValueDecodingContainer
+self.jsonValue = try treeContainer.decodeTreeValue() as! JSON
+}
+```
+
+Each tree value has the ability to "unwrap" itself (using it's `unwrapped` property) into it's the best available standard Swift type,
+returned as an  `Any`. As an example, unwrappingthe the JSON value `123.456` result in a Swift `Double`.
+
+Tree values are returned as an `Any` to allow easy support any possible tree value. For this reason the
+`TreeValueDecodingContainer` has a convenience method to access the unwrapped tree value without excessive casting.
+
+Decoding unwrapped `JSON` values using the `TreeValueDecodingContainer` as follows:
+```swift
+func init(from decoder: Decoder) throws {
+let treeContainer = try decoder.singleValuedContainer() as! TreeValueDecodingContainer
+self.value = try treeContainer.decodeUnwrappedValue()
+}
+```
 
 ### `AnyValue` - Unstructured Values
 
@@ -189,7 +224,6 @@ of the `data` field.
 **Performance**
 Although `AnyValue` is compatible with any conformant `Codable` encoder or decoder, PotentCodables decoders specifically have shortcuts
 to decode the proper values in a more performant fashion and should be used when possible.
-
 
 ## More
 

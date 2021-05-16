@@ -303,8 +303,8 @@ extension AnyValue: Decodable {
       fatalError("Invalid decoder")
     }
 
-    if let rawContainer = container as? RawValueDecodingContainer {
-      self = try Self.wrapped(rawContainer.decodeRawValue())
+    if let rawContainer = container as? TreeValueDecodingContainer {
+      self = try Self.wrapped(rawContainer.decodeUnwrappedValue())
       return
     }
 

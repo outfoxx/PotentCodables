@@ -843,7 +843,7 @@ private struct ValueUnkeyedDecodingContainer<Value, Transform>: UnkeyedDecodingC
   }
 }
 
-extension InternalValueDecoder: SingleValueDecodingContainer, RawValueDecodingContainer {
+extension InternalValueDecoder: SingleValueDecodingContainer, TreeValueDecodingContainer {
   // MARK: SingleValueDecodingContainer Methods
 
   private func expectNonNull<T>(_ type: T.Type) throws {
@@ -851,9 +851,13 @@ extension InternalValueDecoder: SingleValueDecodingContainer, RawValueDecodingCo
       throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: codingPath, debugDescription: "Expected \(type) but found null value instead."))
     }
   }
-
-  public func decodeRawValue() -> Any? {
-    storage.topContainer.unwrapped
+  
+  public func decodeTreeValue() -> Any? {
+    return storage.topContainer
+  }
+  
+  public func decodeUnwrappedValue() -> Any? {
+    return storage.topContainer.unwrapped
   }
 
   public func decodeNil() -> Bool {
