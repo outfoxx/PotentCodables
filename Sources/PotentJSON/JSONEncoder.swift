@@ -297,3 +297,14 @@ private let _iso8601Formatter: DateFormatter = {
   formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
   return formatter
 }()
+
+
+#if canImport(Combine)
+
+import Combine
+
+extension JSONEncoder : TopLevelEncoder {
+  public typealias Output = Data
+}
+
+#endif
