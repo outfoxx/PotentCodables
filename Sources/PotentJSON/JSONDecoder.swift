@@ -341,7 +341,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
   }
 
   public static func value(from data: Data, options: Options) throws -> JSON {
-    return try JSONSerialization.json(from: data)
+    return try JSONSerialization.json(from: data, options: [.allowFragments])
   }
 
   public static func value(from string: String, options: Options) throws -> JSON {
