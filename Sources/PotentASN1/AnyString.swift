@@ -121,6 +121,10 @@ extension AnyString: StringProtocol {
   public subscript(position: String.Index) -> Character {
     return storage[position]
   }
+  
+  public subscript(bounds: Range<String.Index>) -> Substring {
+    return storage[bounds]
+  }
 
   public func index(before i: String.Index) -> String.Index {
     return storage.index(before: i)
