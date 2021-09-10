@@ -102,7 +102,7 @@ public struct ASN1EncoderTransform: InternalEncoderTransform, InternalValueSeria
 
   public static func intercepts(_ type: Encodable.Type) -> Bool {
     return
-      type is ASN1.Type || type is TaggedValue.Type ||
+      type == ASN1.self || type is TaggedValue.Type ||
       type == AnyString.self || type == AnyTime.self ||
       type == BitString.self || type == ObjectIdentifier.self || type == BigInt.self
   }
@@ -419,16 +419,20 @@ extension SchemaState {
 
       case .time(kind: let requiredKind):
 
-        func asn1Time(_ date: Date) -> ASN1 {
+        func asn1Time(_ zonedDate: ZonedDate) -> ASN1 {
           switch requiredKind {
-          case .generalized: return .generalizedTime(date)
-          case .utc: return .utcTime(date)
+          case .generalized: return .generalizedTime(zonedDate)
+          case .utc: return .utcTime(zonedDate.utcDate)
           }
         }
 
         switch value {
+
         case let date as Date:
-          return asn1Time(date)
+          return asn1Time(ZonedDate(date: date, timeZone: .utc))
+
+        case let zonedDate as ZonedDate:
+          return asn1Time(zonedDate)
 
         case let time as AnyTime:
 
@@ -438,8 +442,7 @@ extension SchemaState {
             continue
           }
 
-          return asn1Time(time.storage)
-
+          return asn1Time(time.zonedDate)
 
         default:
           // try next possible schema
