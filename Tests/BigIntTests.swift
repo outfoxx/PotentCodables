@@ -17,35 +17,35 @@ class BigIntTests: XCTestCase {
 
   func testSerialize() {
     let src1 = BigInt(sign: .minus, magnitude: BigUInt(0xFFFFFFFF))
-    let dst1 = BigInt(src1.serialize())
+    let dst1 = BigInt(serialized: src1.serialized())
     XCTAssertEqual(src1, dst1)
 
     let src2 = BigInt(sign: .plus, magnitude: BigUInt(0xFFFFFFFF))
-    let dst2 = BigInt(src2.serialize())
+    let dst2 = BigInt(serialized: src2.serialized())
     XCTAssertEqual(src2, dst2)
 
     let src3 = BigInt(sign: .minus, magnitude: BigUInt(0x10000000))
-    let dst3 = BigInt(src3.serialize())
+    let dst3 = BigInt(serialized: src3.serialized())
     XCTAssertEqual(src3, dst3)
 
     let src4 = BigInt(sign: .plus, magnitude: BigUInt(0x10000000))
-    let dst4 = BigInt(src4.serialize())
+    let dst4 = BigInt(serialized: src4.serialized())
     XCTAssertEqual(src4, dst4)
 
     let src5 = BigInt(sign: .minus, magnitude: BigUInt(0x0))
-    let dst5 = BigInt(src5.serialize())
+    let dst5 = BigInt(serialized: src5.serialized())
     XCTAssertEqual(src5, dst5)
 
     let src6 = BigInt(sign: .plus, magnitude: BigUInt(0x0))
-    let dst6 = BigInt(src6.serialize())
+    let dst6 = BigInt(serialized: src6.serialized())
     XCTAssertEqual(src6, dst6)
 
     let src7 = BigInt(sign: .minus, magnitude: BigUInt(0x1))
-    let dst7 = BigInt(src7.serialize())
+    let dst7 = BigInt(serialized: src7.serialized())
     XCTAssertEqual(src7, dst7)
 
     let src8 = BigInt(sign: .plus, magnitude: BigUInt(0x1))
-    let dst8 = BigInt(src8.serialize())
+    let dst8 = BigInt(serialized: src8.serialized())
     XCTAssertEqual(src8, dst8)
   }
 

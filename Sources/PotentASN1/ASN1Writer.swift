@@ -14,7 +14,7 @@ import Foundation
 
 public class DERWriter {
 
-  public var data: Data
+  public private(set) var data: Data
 
   public required init() {
     data = Data(capacity: 256)
@@ -58,7 +58,7 @@ public class DERWriter {
       append(byte: UInt8(value & 0xFF))
 
     default:
-      let bytes = BigUInt(value).serialize()
+      let bytes = BigUInt(value).serialized()
       guard let byteCount = UInt8(exactly: bytes.count), byteCount <= 127 else {
         fatalError("Invalid DER length")
       }
@@ -90,7 +90,7 @@ public class DERWriter {
       append(byte: value ? 0xFF : 0x00)
 
     case .integer(let value):
-      let bytes = value.serialize()
+      let bytes = value.serialized()
       append(tag: .integer, length: max(1, bytes.count))
       append(data: bytes.isEmpty ? Self.zero : bytes)
 
@@ -200,7 +200,8 @@ public class DERWriter {
       append(data: ascii)
 
     case .generalizedTime(let value):
-      let ascii = generalizedFormatter.string(from: value).data(using: String.Encoding.ascii)!
+      let formatter = GeneralizedFormatters.for(timeZone: value.timeZone)
+      let ascii = formatter.string(from: value.date).data(using: String.Encoding.ascii)!
       append(tag: .generalizedTime, length: ascii.count)
       append(data: ascii)
 
@@ -249,17 +250,35 @@ public class DERWriter {
 
 private let utcDateFormatter: DateFormatter = {
   let fmt = DateFormatter()
-  fmt.timeZone = TimeZone(abbreviation: "UTC")
+  fmt.locale = Locale(identifier: "en_US_POSIX")
+  fmt.timeZone = .utc
   fmt.dateFormat = "yyMMddHHmmss'Z'"
   return fmt
 }()
 
+private enum GeneralizedFormatters {
 
-private let generalizedFormatter: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.dateFormat = "yyyyMMddHHmmss.SSSXXXXX"
-  return formatter
-}()
+  private static var generalizedFormatters: [TimeZone: DateFormatter] = [:]
+  private static let generalizedFormattersLock = NSLock()
+
+  static func `for`(timeZone: TimeZone) -> DateFormatter {
+    generalizedFormattersLock.lock()
+    defer { generalizedFormattersLock.unlock() }
+
+    if let found = generalizedFormatters[timeZone] {
+      return found
+    }
+
+    let formatter = DateFormatter()
+    formatter.calendar = Calendar(identifier: .iso8601)
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = timeZone
+    formatter.dateFormat = "yyyyMMddHHmmss.SSSXXXXX"
+
+    generalizedFormatters[timeZone] = formatter
+
+    return formatter
+  }
+
+}
+

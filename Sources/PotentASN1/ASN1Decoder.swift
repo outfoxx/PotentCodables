@@ -590,12 +590,12 @@ extension SchemaState {
 
       case .time(kind: let requiredKind):
 
-        guard let (time, kind) = value.timeValue, requiredKind == kind else {
+        guard let (date, kind) = value.timeValue, requiredKind == kind else {
           // try next possible schema
           continue
         }
 
-        return AnyTime(time, kind: kind)
+        return AnyTime(date, kind: kind)
 
 
       case .string(kind: let requiredKind, size: let requiredSize):

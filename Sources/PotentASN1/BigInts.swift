@@ -23,6 +23,12 @@ public extension BigUInt {
     return words[0]
   }
 
+  init(serialized data: Data) {
+    self.init(data)
+  }
+
+  func serialized() -> Data { serialize() }
+
 }
 
 public extension BigInt {
@@ -42,7 +48,7 @@ public extension BigInt {
 
   /// Initializes an integer from the bits stored inside a piece of `Data`.
   /// The data is assumed to be the two's compliment base-256 representation, in network (big-endian) byte order.
-  init(_ data: Data) {
+  init(serialized data: Data) {
     let sign: Sign
     let magnitude: BigUInt
     if (data[0] & 0x80) == 0x80 {
@@ -57,7 +63,7 @@ public extension BigInt {
   }
 
   /// Return a `Data` value that contains the two's compliment base-256 representation of this integer, in network (big-endian) byte order.
-  func serialize() -> Data {
+  func serialized() -> Data {
     var bytes = magnitude.serialize()
     if bytes.isEmpty || (bytes[0] & 0x80) == 0x80 {
       // Make room for sign
