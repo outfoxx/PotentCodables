@@ -1,4 +1,6 @@
 /.swiftpm
 /PotentCodables.xcodeproj
+/PotentCodablesTest.xcodeproj
 /Project
+/TestResults
 /.build
