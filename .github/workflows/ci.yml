@@ -9,13 +9,14 @@ on:
 jobs:
   build:
 
-    runs-on: macos-latest
+    runs-on: macos-11
     strategy:
       matrix:
         platform: [macOS, iOS, tvOS]
         xcode:
         - '/Applications/Xcode_11.7.app/Contents/Developer'
-        - '/Applications/Xcode_12.app/Contents/Developer'
+        - '/Applications/Xcode_12.5.1.app/Contents/Developer'
+        - '/Applications/Xcode_13.0.app/Contents/Developer'        
     steps:
     - uses: actions/checkout@v2
     - name: Select Xcode
