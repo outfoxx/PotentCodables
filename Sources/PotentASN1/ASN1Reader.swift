@@ -156,11 +156,11 @@ public class DERReader {
       else {
         parsedDate = generalizedFormatter.date(from: string)
       }
-      guard let parsedDate = parsedDate else {
+      guard parsedDate != nil else {
         throw Error.invalidGeneralizedTime
       }
       let parsedTimeZone = TimeZone.timeZone(from: string) ?? .current
-      return .generalizedTime(ZonedDate(date: parsedDate, timeZone: parsedTimeZone))
+      return .generalizedTime(ZonedDate(date: parsedDate!, timeZone: parsedTimeZone))
 
     case .graphicString:
       return .graphicString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
