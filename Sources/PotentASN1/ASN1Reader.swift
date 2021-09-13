@@ -143,24 +143,10 @@ public class DERReader {
 
     case .generalizedTime:
       let string = try parseString(&itemBuffer, tag: tag, encoding: .ascii)
-      let parsedDate: Date?
-      if string.hasFractionalSeconds && string.hasZone {
-        parsedDate = generalizedFormatterWithFractionalSecondsAndZone.date(from: string)
-      }
-      else if string.hasFractionalSeconds {
-        parsedDate = generalizedFormatterWithFractionalSeconds.date(from: string)
-      }
-      else if string.hasZone {
-        parsedDate = generalizedFormatterWithZone.date(from: string)
-      }
-      else {
-        parsedDate = generalizedFormatter.date(from: string)
-      }
-      guard parsedDate != nil else {
+      guard let zonedDate = generalizedFormatter.date(from: string) else {
         throw Error.invalidGeneralizedTime
       }
-      let parsedTimeZone = TimeZone.timeZone(from: string) ?? .current
-      return .generalizedTime(ZonedDate(date: parsedDate!, timeZone: parsedTimeZone))
+      return .generalizedTime(zonedDate)
 
     case .graphicString:
       return .graphicString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
@@ -336,35 +322,4 @@ private extension String {
   var hasZone: Bool { contains("+") || contains("-") || contains("Z") }
 }
 
-private let generalizedFormatter: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.dateFormat = "yyyyMMddHHmmss"
-  return formatter
-}()
-private let generalizedFormatterWithZone: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.dateFormat = "yyyyMMddHHmmssXXXX"
-  return formatter
-}()
-private let generalizedFormatterWithFractionalSeconds: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.dateFormat = "yyyyMMddHHmmss.S"
-  return formatter
-}()
-private let generalizedFormatterWithFractionalSecondsAndZone: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.dateFormat = "yyyyMMddHHmmss.SXXXX"
-  return formatter
-}()
+private let generalizedFormatter = ISO8601SuffixedDateFormatter(basePattern: "yyyyMMddHHmmss")

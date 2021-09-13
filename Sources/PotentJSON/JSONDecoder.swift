@@ -287,11 +287,11 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
     case .iso8601:
       let string = try unbox(value, as: String.self, decoder: decoder)!
-      guard let date = _iso8601Formatter.date(from: string) else {
+      guard let zonedDate = _iso8601Formatter.date(from: string) else {
         throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
                                                 debugDescription: "Expected date string to be ISO8601-formatted."))
       }
-      return date
+      return zonedDate.utcDate
 
     case .formatted(let formatter):
       let string = try unbox(value, as: String.self, decoder: decoder)!
@@ -351,14 +351,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
 }
 
 
-private let _iso8601Formatter: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
-  return formatter
-}()
+private let _iso8601Formatter = ISO8601SuffixedDateFormatter(basePattern: "yyyy-MM-dd'T'HH:mm:ss")
 
 
 #if canImport(Combine)
