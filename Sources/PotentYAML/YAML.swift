@@ -132,6 +132,7 @@ public enum YAML {
   }
   
   public enum StringStyle : Int32 {
+    case any = -1
     case plain = 0
     case singleQuoted = 1
     case doubleQuoted = 2
@@ -140,6 +141,7 @@ public enum YAML {
   }
   
   public enum CollectionStyle : Int32 {
+    case any
     case flow
     case block
   }
@@ -358,7 +360,7 @@ extension YAML : ExpressibleByFloatLiteral {
 extension YAML : ExpressibleByStringLiteral {
   
   public init(stringLiteral value: StringLiteralType) {
-    self = .string(value, style: .doubleQuoted, tag: nil, anchor: nil)
+    self = .string(value, style: .any, tag: nil, anchor: nil)
   }
   
 }
@@ -366,7 +368,7 @@ extension YAML : ExpressibleByStringLiteral {
 extension YAML : ExpressibleByArrayLiteral {
   
   public init(arrayLiteral elements: YAML...) {
-    self = .sequence(elements, style: .block, tag: nil, anchor: nil)    
+    self = .sequence(elements, style: .any, tag: nil, anchor: nil)
   }
   
 }
@@ -375,8 +377,40 @@ extension YAML : ExpressibleByArrayLiteral {
 extension YAML : ExpressibleByDictionaryLiteral {
   
   public init(dictionaryLiteral elements: (YAML, YAML)...) {
-    self = .mapping(elements.map { MapEntry(key: $0, value: $1) }, style: .block, tag: nil, anchor: nil)    
+    self = .mapping(elements.map { MapEntry(key: $0, value: $1) }, style: .any, tag: nil, anchor: nil)    
   }
   
 }
 
+
+/**
+ * "Stable" encoding of YAML to text
+ *
+ * Encodes values in a stable (aka repeatable) manner making it
+ * easy to compare different complex values that have been encoded
+ * to text
+ **/
+extension YAML {
+
+  public var stableText: String {
+    var output = ""
+    do {
+      try YAMLWriter.write([self], sortedKeys: true) { output += $0 ?? "" }
+    }
+    catch {
+      output = "Invalid YAML: \(error)"
+    }
+    return output
+  }
+
+}
+
+
+/// Make encoders/decoders available in JSON namespace
+///
+public extension YAML {
+
+  typealias Encoder = YAMLEncoder
+  typealias Decoder = YAMLDecoder
+
+}

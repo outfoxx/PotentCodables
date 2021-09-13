@@ -32,7 +32,7 @@ public struct YAMLSerialization {
     if yamls.count == 1 {
       return yamls[0]
     }
-    return .sequence(yamls, style: .block, tag: nil, anchor: nil)
+    return .sequence(yamls, style: .any, tag: nil, anchor: nil)
   }
 
   

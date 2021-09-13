@@ -433,7 +433,7 @@ struct fy_token *fy_token_vcreate(enum fy_token_type type, va_list ap)
 		break;
 	case FYTT_SCALAR:
 		fyt->scalar.style = va_arg(ap, enum fy_scalar_style);
-		if ((unsigned int)fyt->scalar.style >= FYSS_MAX)
+		if (fyt->scalar.style >= FYSS_MAX)
 			goto err_out;
 		break;
 	case FYTT_TAG:
