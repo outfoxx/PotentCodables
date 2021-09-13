@@ -50,9 +50,9 @@ struct YAMLWriter {
       emit(emitter: emitter, type: FYET_STREAM_START)
       
       try documents.forEach {
-        emit(emitter: emitter, type: FYET_DOCUMENT_START)
+        emit(emitter: emitter, type: FYET_DOCUMENT_START, args: 0, 0, 0)
         
-        try emit(emitter: emitter, value: $0)
+        try emit(emitter: emitter, value: $0, sortedKeys: sortedKeys)
         
         emit(emitter: emitter, type: FYET_DOCUMENT_END)
       }
@@ -62,7 +62,7 @@ struct YAMLWriter {
     
   }
   
-  private static func emit(emitter: OpaquePointer, value: YAML) throws {
+  private static func emit(emitter: OpaquePointer, value: YAML, sortedKeys: Bool) throws {
     
     switch value {
     case .null(anchor: let anchor):
@@ -83,15 +83,20 @@ struct YAMLWriter {
     case .sequence(let sequence, style: let style, tag: let tag, anchor: let anchor):
       emit(emitter: emitter, type: FYET_SEQUENCE_START, args: style.nodeStyle.rawValue, anchor.varArg, (tag?.rawValue).varArg)
       try sequence.forEach { element in
-        try emit(emitter: emitter, value: element)
+        try emit(emitter: emitter, value: element, sortedKeys: sortedKeys)
       }
       emit(emitter: emitter, type: FYET_SEQUENCE_END)
-      
-    case .mapping(let mapping, style: let style, tag: let tag, anchor: let anchor):
+
+    case .mapping(var mapping, style: let style, tag: let tag, anchor: let anchor):
       emit(emitter: emitter, type: FYET_MAPPING_START, args: style.nodeStyle.rawValue, anchor.varArg, (tag?.rawValue).varArg)
+      if sortedKeys {
+        mapping = mapping.sorted { a, b in
+          a.key.description < b.key.description
+        }
+      }
       try mapping.forEach { entry in
-        try emit(emitter: emitter, value: entry.key)
-        try emit(emitter: emitter, value: entry.value)
+        try emit(emitter: emitter, value: entry.key, sortedKeys: sortedKeys)
+        try emit(emitter: emitter, value: entry.value, sortedKeys: sortedKeys)
       }
       emit(emitter: emitter, type: FYET_MAPPING_END)
 
@@ -144,6 +149,7 @@ extension YAML.CollectionStyle {
  
   var nodeStyle: fy_node_style {
     switch self {
+    case .any: return FYNS_ANY
     case .flow: return FYNS_FLOW
     case .block: return FYNS_BLOCK
     }

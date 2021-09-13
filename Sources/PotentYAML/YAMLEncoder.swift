@@ -121,8 +121,8 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
   public typealias Encoder = InternalValueEncoder<Value, Self>
   public typealias State = Void
   
-  public static var emptyKeyedContainer = YAML.mapping([], style: .block, tag: nil, anchor: nil)
-  public static var emptyUnkeyedContainer = YAML.sequence([], style: .block, tag: nil, anchor: nil)
+  public static var emptyKeyedContainer = YAML.mapping([], style: .any, tag: nil, anchor: nil)
+  public static var emptyUnkeyedContainer = YAML.sequence([], style: .any, tag: nil, anchor: nil)
   
   public struct Options: InternalEncoderOptions {
     public let dateEncodingStrategy: YAMLEncoder.DateEncodingStrategy
@@ -145,9 +145,9 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
   public static func box(_ value: UInt16, encoder: Encoder) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
   public static func box(_ value: UInt32, encoder: Encoder) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
   public static func box(_ value: UInt64, encoder: Encoder) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(_ value: String, encoder: Encoder) throws -> YAML { return .string(value, style: .doubleQuoted, tag: nil, anchor: nil) }
-  public static func box(_ value: URL, encoder: Encoder) throws -> YAML { return .string(value.absoluteString, style: .doubleQuoted, tag: nil, anchor: nil) }
-  public static func box(_ value: UUID, encoder: Encoder) throws -> YAML { return .string(value.uuidString, style: .doubleQuoted, tag: nil, anchor: nil) }
+  public static func box(_ value: String, encoder: Encoder) throws -> YAML { return .string(value, style: .any, tag: nil, anchor: nil) }
+  public static func box(_ value: URL, encoder: Encoder) throws -> YAML { return .string(value.absoluteString, style: .any, tag: nil, anchor: nil) }
+  public static func box(_ value: UUID, encoder: Encoder) throws -> YAML { return .string(value.uuidString, style: .any, tag: nil, anchor: nil) }
   
   public static func box(_ float: Float, encoder: Encoder) throws -> YAML {
     guard !float.isInfinite, !float.isNaN else {
@@ -158,13 +158,13 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
       }
       
       if float == Float.infinity {
-        return .string(posInfString, style: .doubleQuoted, tag: nil, anchor: nil)
+        return .string(posInfString, style: .any, tag: nil, anchor: nil)
       }
       else if float == -Float.infinity {
-        return .string(negInfString, style: .doubleQuoted, tag: nil, anchor: nil)
+        return .string(negInfString, style: .any, tag: nil, anchor: nil)
       }
       else {
-        return .string(nanString, style: .doubleQuoted, tag: nil, anchor: nil)
+        return .string(nanString, style: .any, tag: nil, anchor: nil)
       }
     }
     
@@ -180,13 +180,13 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
       }
       
       if double == Double.infinity {
-        return .string(posInfString, style: .doubleQuoted, tag: nil, anchor: nil)
+        return .string(posInfString, style: .any, tag: nil, anchor: nil)
       }
       else if double == -Double.infinity {
-        return .string(negInfString, style: .doubleQuoted, tag: nil, anchor: nil)
+        return .string(negInfString, style: .any, tag: nil, anchor: nil)
       }
       else {
-        return .string(nanString, style: .doubleQuoted, tag: nil, anchor: nil)
+        return .string(nanString, style: .any, tag: nil, anchor: nil)
       }
     }
     
@@ -202,13 +202,13 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
       }
       
       if decimal.isInfinite, decimal.sign == .plus {
-        return .string(posInfString, style: .doubleQuoted, tag: nil, anchor: nil)
+        return .string(posInfString, style: .any, tag: nil, anchor: nil)
       }
       else if decimal.isInfinite, decimal.sign == .minus {
-        return .string(negInfString, style: .doubleQuoted, tag: nil, anchor: nil)
+        return .string(negInfString, style: .any, tag: nil, anchor: nil)
       }
       else {
-        return .string(nanString, style: .doubleQuoted, tag: nil, anchor: nil)
+        return .string(nanString, style: .any, tag: nil, anchor: nil)
       }
     }
     
@@ -224,7 +224,7 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
       return try encoder.subEncode { try value.encode(to: $0) } ?? emptyKeyedContainer
       
     case .base64:
-      return .string(value.base64EncodedString(), style: .plain, tag: nil, anchor: nil)
+      return .string(value.base64EncodedString(), style: .any, tag: nil, anchor: nil)
       
     case .custom(let closure):
       return try encoder.subEncode { try closure(value, $0) } ?? emptyKeyedContainer
@@ -243,10 +243,10 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
       return .integer(.init((1000.0 * value.timeIntervalSince1970).description), anchor: nil)
       
     case .iso8601:
-      return .string(_iso8601Formatter.string(from: value), style: .doubleQuoted, tag: nil, anchor: nil)
+      return .string(_iso8601Formatter.string(from: value), style: .any, tag: nil, anchor: nil)
       
     case .formatted(let formatter):
-      return .string(formatter.string(from: value), style: .doubleQuoted, tag: nil, anchor: nil)
+      return .string(formatter.string(from: value), style: .any, tag: nil, anchor: nil)
       
     case .custom(let closure):
       return try encoder.subEncode { try closure(value, $0) } ?? emptyKeyedContainer
@@ -254,11 +254,11 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
   }
   
   public static func unkeyedValuesToValue(_ values: [YAML], encoder: Encoder) -> YAML {
-    return .sequence(values, style: .block, tag: nil, anchor: nil)
+    return .sequence(values, style: .any, tag: nil, anchor: nil)
   }
   
   public static func keyedValuesToValue(_ values: [String: YAML], encoder: Encoder) -> YAML {
-    return .mapping(values.map { (.init(key: .string($0.key, style: .plain, tag: nil, anchor: nil), value: $0.value)) }, style: .block, tag: nil, anchor: nil)
+    return .mapping(values.map { (.init(key: .string($0.key, style: .any, tag: nil, anchor: nil), value: $0.value)) }, style: .any, tag: nil, anchor: nil)
   }
   
   public static func data(from value: YAML, options: Options) throws -> Data {

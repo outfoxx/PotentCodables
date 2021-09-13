@@ -27,6 +27,7 @@ The package provides multiple libraries corresponding to the core library and ea
 * `PotentJSON` provides JSON format support
 * `PotentCBOR` provide CBOR format support
 * `PotentASN1` provides ASN.1 support
+* `PotentYAML` provides YAML 1.2 support
 
 
 ## Usage
@@ -43,6 +44,11 @@ For example encoding to CBOR is essentially the same as encoding with Swift's st
 let data = try CBOREncoder.default.encode(myValue)
 ```
 #### Provided Formats
+
+- YAML - `YAMLEncoder`/`YAMLDecoder` or `YAML.Encoder`/`YAML.Decoder`
+  A conformant [YAML 1.2](https://yaml.org/spec/1.2.1/) implementation implemented via
+  [libfyaml](https://github.com/pantoniou/libfyaml). Due to the fact that JSON is a subset of YAML 1.2 the decoder
+  can parse and decode YAML & JSON documents.
 
 - JSON - `JSONEncoder`/`JSONDecoder` or `JSON.Encoder`/`JSON.Decoder`
   A conformant [JSON](https://tools.ietf.org/html/rfc8259) implementation that is a drop-in replacement for Swift's JSON encoder and
