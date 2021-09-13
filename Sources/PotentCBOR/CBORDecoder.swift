@@ -296,7 +296,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     switch value {
     case .null: return nil
     case .utf8String(let string):
-      return _iso8601Formatter.date(from: string)
+      return _iso8601Formatter.date(from: string)?.utcDate
     case .double(let double):
       return decodeUntaggedNumericDate(from: double, unitsPerSeconds: 1.0)
     case .float(let float):
@@ -311,10 +311,10 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       guard case .utf8String(let string) = tagged else {
         throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: tagged)
       }
-      guard let date = _iso8601Formatter.date(from: string) else {
+      guard let zonedDate = _iso8601Formatter.date(from: string) else {
         throw DecodingError.dataCorruptedError(in: decoder, debugDescription: "Invalid ISO8601 Date/Time")
       }
-      return date
+      return zonedDate.utcDate
     case .tagged(.epochDateTime, let tagged):
       guard tagged.isNumber else {
         throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: tagged)
@@ -375,14 +375,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
 }
 
 
-private let _iso8601Formatter: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
-  return formatter
-}()
+private let _iso8601Formatter = ISO8601SuffixedDateFormatter(basePattern: "yyyy-MM-dd'T'HH:mm:ss")
 
 
 #if canImport(Combine)
