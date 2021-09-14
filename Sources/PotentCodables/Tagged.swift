@@ -1,12 +1,26 @@
-//
-//  Tagged.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 
@@ -41,8 +55,10 @@ public extension KeyedDecodingContainerProtocol where Key == TaggedItemKeys {
     let foundTag = try decode(Tag.self, forKey: .tag)
     guard foundTag == tag else {
       let desc = "Expected \(tag), found \(foundTag)"
-      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(codingPath: codingPath,
-                                                                        debugDescription: desc))
+      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
+        codingPath: codingPath,
+        debugDescription: desc
+      ))
     }
     return try decode(type, forKey: .value)
   }
@@ -51,13 +67,18 @@ public extension KeyedDecodingContainerProtocol where Key == TaggedItemKeys {
   ///
   /// Decodes a tag value and throws an error if the tag is not of the expected value.
   ///
-  func decode<D: Decodable, Tag: Equatable & Decodable & RawRepresentable>(_ type: D.Type, expectingTag tag: Tag) throws -> D where Tag.RawValue: Equatable & Decodable {
+  func decode<D: Decodable, Tag: Equatable & Decodable & RawRepresentable>(
+    _ type: D.Type,
+    expectingTag tag: Tag
+  ) throws -> D where Tag.RawValue: Equatable & Decodable {
     let foundTagValue = try decode(Tag.RawValue.self, forKey: .tag)
     guard foundTagValue == tag.rawValue else {
       let foundTagName = Tag(rawValue: foundTagValue).map { String(describing: $0) } ?? "\(tag)"
       let desc = "Expected \(tag), found \(foundTagName)"
-      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(codingPath: codingPath,
-                                                                        debugDescription: desc))
+      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
+        codingPath: codingPath,
+        debugDescription: desc
+      ))
     }
     return try decode(type, forKey: .value)
   }
@@ -66,7 +87,11 @@ public extension KeyedDecodingContainerProtocol where Key == TaggedItemKeys {
   ///
   /// Decodes a tag value and throws an error if the tag is not of the expected value.
   ///
-  func decodeIfPresent<D: Decodable, Tag: Equatable & Decodable>(_ type: D.Type, expectingTag tag: Tag, nullTag: Tag) throws -> D? {
+  func decodeIfPresent<D: Decodable, Tag: Equatable & Decodable>(
+    _ type: D.Type,
+    expectingTag tag: Tag,
+    nullTag: Tag
+  ) throws -> D? {
     let foundTag = try decode(Tag.self, forKey: .tag)
     if foundTag == nullTag {
       return nil
@@ -78,7 +103,11 @@ public extension KeyedDecodingContainerProtocol where Key == TaggedItemKeys {
   ///
   /// Decodes a tag value and throws an error if the tag is not of the expected value.
   ///
-  func decodeIfPresent<D: Decodable, Tag: Equatable & Decodable & RawRepresentable>(_ type: D.Type, expectingTag tag: Tag, nullTag: Tag) throws -> D? where Tag.RawValue: Equatable & Decodable {
+  func decodeIfPresent<D: Decodable, Tag: Equatable & Decodable & RawRepresentable>(
+    _ type: D.Type,
+    expectingTag tag: Tag,
+    nullTag: Tag
+  ) throws -> D? where Tag.RawValue: Equatable & Decodable {
     let foundTag = try decode(Tag.self, forKey: .tag)
     if foundTag == nullTag {
       return nil
@@ -88,25 +117,35 @@ public extension KeyedDecodingContainerProtocol where Key == TaggedItemKeys {
 
   /// Retrieves a nested keyed container for an expected tag value.
   ///
-  func nestedContainer<Key: CodingKey, Tag: Equatable & Decodable>(keyedBy type: Key.Type, expectingTag tag: Tag) throws -> KeyedDecodingContainer<Key> {
+  func nestedContainer<Key: CodingKey, Tag: Equatable & Decodable>(
+    keyedBy type: Key.Type,
+    expectingTag tag: Tag
+  ) throws -> KeyedDecodingContainer<Key> {
     let foundTag = try decode(Tag.self, forKey: .tag)
     guard foundTag == tag else {
       let desc = "Expected \(tag), found \(foundTag)"
-      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(codingPath: codingPath,
-                                                                        debugDescription: desc))
+      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
+        codingPath: codingPath,
+        debugDescription: desc
+      ))
     }
     return try nestedContainer(keyedBy: type, forKey: .value)
   }
 
   /// Retrieves a nested keyed container for an expected tag value.
   ///
-  func nestedContainer<Key: CodingKey, Tag: Equatable & Decodable & RawRepresentable>(keyedBy type: Key.Type, expectingTag tag: Tag) throws -> KeyedDecodingContainer<Key> where Tag.RawValue: Equatable & Decodable {
+  func nestedContainer<Key: CodingKey, Tag: Equatable & Decodable & RawRepresentable>(
+    keyedBy type: Key.Type,
+    expectingTag tag: Tag
+  ) throws -> KeyedDecodingContainer<Key> where Tag.RawValue: Equatable & Decodable {
     let foundTagValue = try decode(Tag.RawValue.self, forKey: .tag)
     guard foundTagValue == tag.rawValue else {
       let foundTagName = Tag(rawValue: foundTagValue).map { String(describing: $0) } ?? "\(tag)"
       let desc = "Expected \(tag), found \(foundTagName)"
-      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(codingPath: codingPath,
-                                                                        debugDescription: desc))
+      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
+        codingPath: codingPath,
+        debugDescription: desc
+      ))
     }
     return try nestedContainer(keyedBy: type, forKey: .value)
   }
@@ -117,21 +156,26 @@ public extension KeyedDecodingContainerProtocol where Key == TaggedItemKeys {
     let foundTag = try decode(Tag.self, forKey: .tag)
     guard foundTag == tag else {
       let desc = "Expected \(tag), found \(foundTag)"
-      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(codingPath: codingPath,
-                                                                        debugDescription: desc))
+      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
+        codingPath: codingPath,
+        debugDescription: desc
+      ))
     }
     return try nestedUnkeyedContainer(forKey: .value)
   }
 
   /// Retrieves a nested unkeyed container for an expected tag value.
   ///
-  func nestedUnkeyedContainer<Tag: Equatable & Decodable & RawRepresentable>(expectingTag tag: Tag) throws -> UnkeyedDecodingContainer where Tag.RawValue: Equatable & Decodable {
+  func nestedUnkeyedContainer<Tag: Equatable & Decodable & RawRepresentable>(expectingTag tag: Tag) throws
+    -> UnkeyedDecodingContainer where Tag.RawValue: Equatable & Decodable {
     let foundTagValue = try decode(Tag.RawValue.self, forKey: .tag)
     guard foundTagValue == tag.rawValue else {
       let foundTagName = Tag(rawValue: foundTagValue).map { String(describing: $0) } ?? "\(tag)"
       let desc = "Expected \(tag), found \(foundTagName)"
-      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(codingPath: codingPath,
-                                                                        debugDescription: desc))
+      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
+        codingPath: codingPath,
+        debugDescription: desc
+      ))
     }
     return try nestedUnkeyedContainer(forKey: .value)
   }
@@ -151,35 +195,47 @@ public extension KeyedEncodingContainerProtocol where Key == TaggedItemKeys {
 
   /// Encodes a value with an associated tag value.
   ///
-  mutating func encode<E: Encodable, Tag: Encodable & RawRepresentable>(_ value: E, withTag tag: Tag) throws where Tag.RawValue: Encodable {
+  mutating func encode<E: Encodable, Tag: Encodable & RawRepresentable>(_ value: E, withTag tag: Tag) throws
+    where Tag.RawValue: Encodable {
     try encode(tag.rawValue, forKey: .tag)
     try encode(value, forKey: .value)
   }
 
   /// Retrieves a nested keyed container for an expected tag value.
   ///
-  mutating func nestedContainer<NestedKey: CodingKey, Tag: Equatable & Encodable>(keyedBy type: NestedKey.Type, withTag tag: Tag) throws -> KeyedEncodingContainer<NestedKey> {
+  mutating func nestedContainer<NestedKey: CodingKey, Tag: Equatable & Encodable>(
+    keyedBy type: NestedKey.Type,
+    withTag tag: Tag
+  ) throws -> KeyedEncodingContainer<NestedKey> {
     try encode(tag, forKey: .tag)
     return nestedContainer(keyedBy: type, forKey: .value)
   }
 
   /// Retrieves a nested keyed container for an expected tag value.
   ///
-  mutating func nestedContainer<NestedKey: CodingKey, Tag: Equatable & Encodable & RawRepresentable>(keyedBy type: NestedKey.Type, withTag tag: Tag) throws -> KeyedEncodingContainer<NestedKey> where Tag.RawValue: Equatable & Encodable {
+  mutating func nestedContainer<
+    NestedKey: CodingKey,
+    Tag: Equatable & Encodable & RawRepresentable
+  >(
+    keyedBy type: NestedKey.Type,
+    withTag tag: Tag
+  ) throws -> KeyedEncodingContainer<NestedKey> where Tag.RawValue: Equatable & Encodable {
     try encode(tag.rawValue, forKey: .tag)
     return nestedContainer(keyedBy: type, forKey: .value)
   }
 
   /// Retrieves a nested unkeyed container for an expected tag value.
   ///
-  mutating func nestedUnkeyedContainer<Tag: Equatable & Encodable>(withTag tag: Tag) throws -> UnkeyedEncodingContainer {
+  mutating func nestedUnkeyedContainer<Tag: Equatable & Encodable>(withTag tag: Tag) throws
+    -> UnkeyedEncodingContainer {
     try encode(tag, forKey: .tag)
     return nestedUnkeyedContainer(forKey: .value)
   }
 
   /// Retrieves a nested unkeyed container for an expected tag value.
   ///
-  mutating func nestedUnkeyedContainer<Tag: Equatable & Encodable & RawRepresentable>(withTag tag: Tag) throws -> UnkeyedEncodingContainer where Tag.RawValue: Equatable & Encodable {
+  mutating func nestedUnkeyedContainer<Tag: Equatable & Encodable & RawRepresentable>(withTag tag: Tag) throws
+    -> UnkeyedEncodingContainer where Tag.RawValue: Equatable & Encodable {
     try encode(tag, forKey: .tag)
     return nestedUnkeyedContainer(forKey: .value)
   }

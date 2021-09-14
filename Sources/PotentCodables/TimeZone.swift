@@ -1,24 +1,41 @@
-//
-//  TimeZone.swift
-//  PotentCodables
-//
-//  Created by Kevin Wooten on 9/12/21.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 
-extension TimeZone {
+public extension TimeZone {
 
-  public static let utc = TimeZone(identifier: "UTC")!
+  static let utc = TimeZone(identifier: "UTC")!
 
-  public static func timeZone(from date: String) -> TimeZone? {
+  static func timeZone(from date: String) -> TimeZone? {
     guard let offset = offset(from: date) else {
       return nil
     }
     return TimeZone(secondsFromGMT: offset)
   }
 
-  public static func offset(from date: String) -> Int? {
+  static func offset(from date: String) -> Int? {
     guard let start = date.firstIndex(of: "+") ?? date.firstIndex(of: "-") ?? date.firstIndex(of: "Z") else {
       return nil
     }
@@ -31,30 +48,30 @@ extension TimeZone {
       return seconds * sign
     }
 
-    let tz = date[date.index(after: start) ..< date.endIndex]
+    let timeZone = date[date.index(after: start) ..< date.endIndex]
 
-    if tz.count == 2 { // assume HH
-      if let hour = Int(tz) {
+    if timeZone.count == 2 { // assume HH
+      if let hour = Int(timeZone) {
         return build(seconds: hour * 3600)
       }
     }
-    else if tz.count == 4 { // assume HHMM
-      if let hour = Int(tz.dropLast(2)), let min = Int(tz.dropFirst(2)) {
+    else if timeZone.count == 4 { // assume HHMM
+      if let hour = Int(timeZone.dropLast(2)), let min = Int(timeZone.dropFirst(2)) {
         return build(seconds: (hour * 60 + min) * 60)
       }
     }
-    else if tz.count == 5 { // assime HH:MM
-      if let hour = Int(tz.dropLast(3)), let min = Int(tz.dropFirst(3)) {
+    else if timeZone.count == 5 { // assime HH:MM
+      if let hour = Int(timeZone.dropLast(3)), let min = Int(timeZone.dropFirst(3)) {
         return build(seconds: (hour * 60 + min) * 60)
       }
     }
-    else if tz.count == 6 { // assume HHMMSS
-      if let hour = Int(tz.dropLast(4)), let min = Int(tz.dropFirst(2).dropLast(2)), let sec = Int(tz.dropFirst(4)) {
+    else if timeZone.count == 6 { // assume HHMMSS
+      if let hour = Int(timeZone.dropLast(4)), let min = Int(timeZone.dropFirst(2).dropLast(2)), let sec = Int(timeZone.dropFirst(4)) {
         return build(seconds: (hour * 60 + min) * 60 + sec)
       }
     }
-    else if tz.count == 8 { // assime HH:MM:SS
-      if let hour = Int(tz.dropLast(6)), let min = Int(tz.dropFirst(3).dropLast(3)), let sec = Int(tz.dropFirst(6)) {
+    else if timeZone.count == 8 { // assime HH:MM:SS
+      if let hour = Int(timeZone.dropLast(6)), let min = Int(timeZone.dropFirst(3).dropLast(3)), let sec = Int(timeZone.dropFirst(6)) {
         return build(seconds: (hour * 60 + min) * 60 + sec)
       }
     }

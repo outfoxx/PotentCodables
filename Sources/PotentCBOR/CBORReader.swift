@@ -1,12 +1,26 @@
-//
-//  CBORReader.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 
@@ -32,10 +46,10 @@ public struct CBORReader {
     return Float64(bitPattern: try stream.readInt(UInt64.self))
   }
 
-  private func readVarUInt(_ v: UInt8, base: UInt8) throws -> UInt64 {
-    guard v > base + 0x17 else { return UInt64(v - base) }
+  private func readVarUInt(_ initByte: UInt8, base: UInt8) throws -> UInt64 {
+    guard initByte > base + 0x17 else { return UInt64(initByte - base) }
 
-    switch VarUIntSize(rawValue: v) {
+    switch VarUIntSize(rawValue: initByte) {
     case .uint8: return UInt64(try stream.readInt(UInt8.self))
     case .uint16: return UInt64(try stream.readInt(UInt16.self))
     case .uint32: return UInt64(try stream.readInt(UInt32.self))
@@ -43,14 +57,14 @@ public struct CBORReader {
     }
   }
 
-  private func readLength(_ v: UInt8, base: UInt8) throws -> Int {
-    let n = try readVarUInt(v, base: base)
+  private func readLength(_ initByte: UInt8, base: UInt8) throws -> Int {
+    let length = try readVarUInt(initByte, base: base)
 
-    guard n <= Int.max else {
+    guard length <= Int.max else {
       throw CBORError.sequenceTooLong
     }
 
-    return Int(n)
+    return Int(length)
   }
 
   /// Decodes `count` CBOR items.
@@ -141,20 +155,20 @@ public struct CBORReader {
   ///     - `CBORSerialization.Error`: If corrupted data is encountered
   ///     - `Swift.Error`: If any I/O error occurs
   public func decodeItem() throws -> CBOR? {
-    let b = try stream.readByte()
+    let initByte = try stream.readByte()
 
-    switch b {
+    switch initByte {
     // positive integers
     case 0x00 ... 0x1B:
-      return .unsignedInt(try readVarUInt(b, base: 0x00))
+      return .unsignedInt(try readVarUInt(initByte, base: 0x00))
 
     // negative integers
     case 0x20 ... 0x3B:
-      return .negativeInt(try readVarUInt(b, base: 0x20))
+      return .negativeInt(try readVarUInt(initByte, base: 0x20))
 
     // byte strings
     case 0x40 ... 0x5B:
-      let numBytes = try readLength(b, base: 0x40)
+      let numBytes = try readLength(initByte, base: 0x40)
       return .byteString(try stream.readBytes(count: numBytes))
     case 0x5F:
       let values = try decodeItemsUntilBreak().map { cbor -> Data in
@@ -168,38 +182,38 @@ public struct CBORReader {
 
     // utf-8 strings
     case 0x60 ... 0x7B:
-      let numBytes = try readLength(b, base: 0x60)
+      let numBytes = try readLength(initByte, base: 0x60)
       guard let string = String(data: try stream.readBytes(count: numBytes), encoding: .utf8) else {
         throw CBORError.invalidUTF8String
       }
       return .utf8String(string)
     case 0x7F:
-      return .utf8String(try decodeItemsUntilBreak().map { x -> String in
-        guard case .utf8String(let r) = x else { throw CBORError.invalidIndefiniteElement }
-        return r
+      return .utf8String(try decodeItemsUntilBreak().map { item -> String in
+        guard case .utf8String(let string) = item else { throw CBORError.invalidIndefiniteElement }
+        return string
       }.joined(separator: ""))
 
     // arrays
     case 0x80 ... 0x9B:
-      let itemCount = try readLength(b, base: 0x80)
+      let itemCount = try readLength(initByte, base: 0x80)
       return .array(try decodeItems(count: itemCount))
     case 0x9F:
       return .array(try decodeItemsUntilBreak())
 
     // pairs
     case 0xA0 ... 0xBB:
-      let itemPairCount = try readLength(b, base: 0xA0)
+      let itemPairCount = try readLength(initByte, base: 0xA0)
       return .map(try decodeItemPairs(count: itemPairCount))
     case 0xBF:
       return .map(try decodeItemPairsUntilBreak())
 
     // tagged values
     case 0xC0 ... 0xDB:
-      let tag = try readVarUInt(b, base: 0xC0)
+      let tag = try readVarUInt(initByte, base: 0xC0)
       let item = try decodeRequiredItem()
       return .tagged(CBOR.Tag(rawValue: tag), item)
 
-    case 0xE0 ... 0xF3: return .simple(b - 0xE0)
+    case 0xE0 ... 0xF3: return .simple(initByte - 0xE0)
     case 0xF4: return .boolean(false)
     case 0xF5: return .boolean(true)
     case 0xF6: return .null
@@ -236,4 +250,3 @@ private enum VarUIntSize: UInt8 {
     }
   }
 }
-

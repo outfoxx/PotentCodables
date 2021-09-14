@@ -1,12 +1,26 @@
-//
-//  CBOREncoder.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 import PotentCodables
@@ -33,13 +47,15 @@ public class CBOREncoder: ValueEncoder<CBOR, CBOREncoderTransform>, EncodesToDat
   open var dateEncodingStrategy: DateEncodingStrategy = .iso8601
 
   /// The options set on the top-level encoder.
-  public override var options: CBOREncoderTransform.Options {
-    return CBOREncoderTransform.Options(dateEncodingStrategy: dateEncodingStrategy,
-                                        keyEncodingStrategy: keyEncodingStrategy,
-                                        userInfo: userInfo)
+  override public var options: CBOREncoderTransform.Options {
+    return CBOREncoderTransform.Options(
+      dateEncodingStrategy: dateEncodingStrategy,
+      keyEncodingStrategy: keyEncodingStrategy,
+      userInfo: userInfo
+    )
   }
 
-  public override init() {
+  override public init() {
     super.init()
   }
 
@@ -77,9 +93,15 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
   public static func box(_ value: String, encoder: Encoder) throws -> CBOR { return CBOR(value) }
   public static func box(_ value: Float, encoder: Encoder) throws -> CBOR { return CBOR(value) }
   public static func box(_ value: Double, encoder: Encoder) throws -> CBOR { return CBOR(value) }
-  public static func box(_ value: Decimal, encoder: Encoder) throws -> CBOR { return CBOR((value as NSDecimalNumber).doubleValue) }
+  public static func box(
+    _ value: Decimal,
+    encoder: Encoder
+  ) throws -> CBOR { return CBOR((value as NSDecimalNumber).doubleValue) }
   public static func box(_ value: Data, encoder: Encoder) throws -> CBOR { return CBOR(value) }
-  public static func box(_ value: URL, encoder: Encoder) throws -> CBOR { return .tagged(.uri, .utf8String(value.absoluteString)) }
+  public static func box(
+    _ value: URL,
+    encoder: Encoder
+  ) throws -> CBOR { return .tagged(.uri, .utf8String(value.absoluteString)) }
 
   public static func box(_ value: UUID, encoder: Encoder) throws -> CBOR {
     return withUnsafeBytes(of: value) { ptr in
@@ -123,10 +145,10 @@ private let _iso8601Formatter: DateFormatter = {
 
 #if canImport(Combine)
 
-import Combine
+  import Combine
 
-extension CBOREncoder : TopLevelEncoder {
-  public typealias Output = Data
-}
+  extension CBOREncoder: TopLevelEncoder {
+    public typealias Output = Data
+  }
 
 #endif

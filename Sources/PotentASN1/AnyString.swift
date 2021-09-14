@@ -1,12 +1,26 @@
-//
-//  AnyString.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 import PotentCodables
@@ -75,7 +89,8 @@ extension AnyString: StringProtocol {
     storage = value
   }
 
-  public init<C, Encoding>(decoding codeUnits: C, as sourceEncoding: Encoding.Type) where C: Collection, Encoding: _UnicodeEncoding, C.Element == Encoding.CodeUnit {
+  public init<C, Encoding>(decoding codeUnits: C, as sourceEncoding: Encoding.Type) where C: Collection,
+    Encoding: _UnicodeEncoding, C.Element == Encoding.CodeUnit {
     kind = nil
     storage = String(decoding: codeUnits, as: sourceEncoding)
   }
@@ -85,7 +100,10 @@ extension AnyString: StringProtocol {
     storage = String(cString: nullTerminatedUTF8)
   }
 
-  public init<Encoding>(decodingCString nullTerminatedCodeUnits: UnsafePointer<Encoding.CodeUnit>, as sourceEncoding: Encoding.Type) where Encoding: _UnicodeEncoding {
+  public init<Encoding>(
+    decodingCString nullTerminatedCodeUnits: UnsafePointer<Encoding.CodeUnit>,
+    as sourceEncoding: Encoding.Type
+  ) where Encoding: _UnicodeEncoding {
     kind = nil
     storage = String(decodingCString: nullTerminatedCodeUnits, as: sourceEncoding)
   }
@@ -114,24 +132,27 @@ extension AnyString: StringProtocol {
     return try storage.withCString(body)
   }
 
-  public func withCString<Result, Encoding>(encodedAs targetEncoding: Encoding.Type, _ body: (UnsafePointer<Encoding.CodeUnit>) throws -> Result) rethrows -> Result where Encoding: _UnicodeEncoding {
+  public func withCString<Result, Encoding>(
+    encodedAs targetEncoding: Encoding.Type,
+    _ body: (UnsafePointer<Encoding.CodeUnit>) throws -> Result
+  ) rethrows -> Result where Encoding: _UnicodeEncoding {
     return try storage.withCString(encodedAs: targetEncoding, body)
   }
 
   public subscript(position: String.Index) -> Character {
     return storage[position]
   }
-  
+
   public subscript(bounds: Range<String.Index>) -> Substring {
     return storage[bounds]
   }
 
-  public func index(before i: String.Index) -> String.Index {
-    return storage.index(before: i)
+  public func index(before index: String.Index) -> String.Index {
+    return storage.index(before: index)
   }
 
-  public func index(after i: String.Index) -> String.Index {
-    return storage.index(after: i)
+  public func index(after index: String.Index) -> String.Index {
+    return storage.index(after: index)
   }
 
   public var startIndex: String.Index {

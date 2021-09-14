@@ -1,12 +1,26 @@
-//
-//  JSONDecoder.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 import PotentCodables
@@ -72,15 +86,17 @@ public class JSONDecoder: ValueDecoder<JSON, JSONDecoderTransform>, DecodesFromS
   open var nonConformingFloatDecodingStrategy: NonConformingFloatDecodingStrategy = .throw
 
   /// The options set on the top-level decoder.
-  public override var options: JSONDecoderTransform.Options {
-    return JSONDecoderTransform.Options(dateDecodingStrategy: dateDecodingStrategy,
-                                        dataDecodingStrategy: dataDecodingStrategy,
-                                        nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
-                                        keyDecodingStrategy: keyDecodingStrategy,
-                                        userInfo: userInfo)
+  override public var options: JSONDecoderTransform.Options {
+    return JSONDecoderTransform.Options(
+      dateDecodingStrategy: dateDecodingStrategy,
+      dataDecodingStrategy: dataDecodingStrategy,
+      nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
+      keyDecodingStrategy: keyDecodingStrategy,
+      userInfo: userInfo
+    )
   }
 
-  public override init() {
+  override public init() {
     super.init()
   }
 
@@ -119,14 +135,16 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     return DecodingError.typeMismatch(type, context)
   }
 
-  static func coerce<T>(_ from: JSON.Number, at codingPath: [CodingKey]) throws -> T where T: BinaryInteger & FixedWidthInteger {
+  static func coerce<T>(_ from: JSON.Number, at codingPath: [CodingKey]) throws -> T
+    where T: BinaryInteger & FixedWidthInteger {
     guard let result = T(from.value) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
   }
 
-  static func coerce<T>(_ from: JSON.Number, at codingPath: [CodingKey]) throws -> T where T: BinaryFloatingPoint & LosslessStringConvertible {
+  static func coerce<T>(_ from: JSON.Number, at codingPath: [CodingKey]) throws -> T
+    where T: BinaryFloatingPoint & LosslessStringConvertible {
     guard let result = T(from.value) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
@@ -288,16 +306,20 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .iso8601:
       let string = try unbox(value, as: String.self, decoder: decoder)!
       guard let zonedDate = _iso8601Formatter.date(from: string) else {
-        throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
-                                                debugDescription: "Expected date string to be ISO8601-formatted."))
+        throw DecodingError.dataCorrupted(.init(
+          codingPath: decoder.codingPath,
+          debugDescription: "Expected date string to be ISO8601-formatted."
+        ))
       }
       return zonedDate.utcDate
 
     case .formatted(let formatter):
       let string = try unbox(value, as: String.self, decoder: decoder)!
       guard let date = formatter.date(from: string) else {
-        throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
-                                                debugDescription: "Date string does not match format expected by formatter."))
+        throw DecodingError.dataCorrupted(.init(
+          codingPath: decoder.codingPath,
+          debugDescription: "Date string does not match format expected by formatter."
+        ))
       }
       return date
 
@@ -319,8 +341,10 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       }
 
       guard let data = Data(base64Encoded: string) else {
-        throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
-                                                debugDescription: "Encountered Data is not valid Base64."))
+        throw DecodingError.dataCorrupted(.init(
+          codingPath: decoder.codingPath,
+          debugDescription: "Encountered Data is not valid Base64."
+        ))
       }
 
       return data
@@ -356,10 +380,10 @@ private let _iso8601Formatter = ISO8601SuffixedDateFormatter(basePattern: "yyyy-
 
 #if canImport(Combine)
 
-import Combine
+  import Combine
 
-extension JSONDecoder : TopLevelDecoder {
-  public typealias Input = Data
-}
+  extension JSONDecoder: TopLevelDecoder {
+    public typealias Input = Data
+  }
 
 #endif

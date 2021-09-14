@@ -1,12 +1,26 @@
-//
-//  CBORWriter.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 
@@ -34,33 +48,33 @@ public struct CBORWriter {
     switch value {
     case .null: try encodeNull()
     case .undefined: try encodeUndefined()
-    case .unsignedInt(let ui): try encodeVarUInt(ui)
-    case .negativeInt(let ni): try encodeNegativeInt(~Int64(bitPattern: ni))
-    case .byteString(let bs): try encodeByteString(bs)
+    case .unsignedInt(let uint): try encodeVarUInt(uint)
+    case .negativeInt(let nint): try encodeNegativeInt(~Int64(bitPattern: nint))
+    case .byteString(let str): try encodeByteString(str)
     case .utf8String(let str): try encodeString(str)
-    case .array(let a): try encodeArray(a)
-    case .map(let m): try encodeMap(m)
-    case .tagged(let t, let l): try encodeTagged(tag: t, value: l)
-    case .simple(let s): try encodeSimpleValue(s)
-    case .boolean(let b): try encodeBool(b)
-    case .half(let h): try encodeHalf(h)
-    case .float(let f): try encodeFloat(f)
-    case .double(let d): try encodeDouble(d)
+    case .array(let array): try encodeArray(array)
+    case .map(let map): try encodeMap(map)
+    case .tagged(let tag, let value): try encodeTagged(tag: tag, value: value)
+    case .simple(let value): try encodeSimpleValue(value)
+    case .boolean(let bool): try encodeBool(bool)
+    case .half(let half): try encodeHalf(half)
+    case .float(let float): try encodeFloat(float)
+    case .double(let double): try encodeDouble(double)
     }
   }
 
   /// Encodes any signed/unsigned integer, `or`ing `majorType` and `additional` data with first byte
-  private func encodeInt(_ x: Int, majorType: UInt8, additional: UInt8 = 0) throws {
-    try encodeInt(x, modifier: (majorType << 5) | (additional & 0x1F))
+  private func encodeInt(_ val: Int, majorType: UInt8, additional: UInt8 = 0) throws {
+    try encodeInt(val, modifier: (majorType << 5) | (additional & 0x1F))
   }
 
   /// Encodes any signed/unsigned integer, `or`ing `modifier` with first byte
-  private func encodeInt<T>(_ x: T, modifier: UInt8) throws where T: FixedWidthInteger, T: SignedInteger {
-    if x < 0 {
-      try encodeNegativeInt(Int64(x), modifier: modifier)
+  private func encodeInt<T>(_ val: T, modifier: UInt8) throws where T: FixedWidthInteger, T: SignedInteger {
+    if val < 0 {
+      try encodeNegativeInt(Int64(val), modifier: modifier)
     }
     else {
-      try encodeVarUInt(UInt64(x), modifier: modifier)
+      try encodeVarUInt(UInt64(val), modifier: modifier)
     }
   }
 
@@ -68,61 +82,61 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeInt<T>(_ x: T) throws where T: FixedWidthInteger, T: SignedInteger {
-    try encodeInt(x, modifier: 0)
+  public func encodeInt<T>(_ val: T) throws where T: FixedWidthInteger, T: SignedInteger {
+    try encodeInt(val, modifier: 0)
   }
 
   // MARK: - major 0: unsigned integer
 
   /// Encodes an 8bit unsigned integer, `or`ing `modifier` with first byte
-  private func encodeUInt8(_ x: UInt8, modifier: UInt8 = 0) throws {
-    if x < 24 {
-      try stream.writeByte(x | modifier)
+  private func encodeUInt8(_ val: UInt8, modifier: UInt8 = 0) throws {
+    if val < 24 {
+      try stream.writeByte(val | modifier)
     }
     else {
       try stream.writeByte(0x18 | modifier)
-      try stream.writeByte(x)
+      try stream.writeByte(val)
     }
   }
 
   /// Encodes a 16bit unsigned integer, `or`ing `modifier` with first byte
-  private func encodeUInt16(_ x: UInt16, modifier: UInt8 = 0) throws {
+  private func encodeUInt16(_ val: UInt16, modifier: UInt8 = 0) throws {
     try stream.writeByte(0x19 | modifier)
-    try stream.writeInt(x)
+    try stream.writeInt(val)
   }
 
   /// Encodes a 32bit unsigned integer, `or`ing `modifier` with first byte
-  private func encodeUInt32(_ x: UInt32, modifier: UInt8 = 0) throws {
+  private func encodeUInt32(_ val: UInt32, modifier: UInt8 = 0) throws {
     try stream.writeByte(0x1A | modifier)
-    try stream.writeInt(x)
+    try stream.writeInt(val)
   }
 
   /// Encodes a 64bit unsigned integer, `or`ing `modifier` with first byte
-  private func encodeUInt64(_ x: UInt64, modifier: UInt8 = 0) throws {
+  private func encodeUInt64(_ val: UInt64, modifier: UInt8 = 0) throws {
     try stream.writeByte(0x1B | modifier)
-    try stream.writeInt(x)
+    try stream.writeInt(val)
   }
 
   /// Encodes any standard unsigned integer item.
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeUInt<T>(_ x: T) throws where T: FixedWidthInteger, T: UnsignedInteger {
-    try encodeUInt(x, modifier: 0)
+  public func encodeUInt<T>(_ val: T) throws where T: FixedWidthInteger, T: UnsignedInteger {
+    try encodeUInt(val, modifier: 0)
   }
 
   /// Encodes any unsigned integer, `or`ing `modifier` with first byte
-  private func encodeUInt<T>(_ x: T, modifier: UInt8) throws where T: FixedWidthInteger, T: UnsignedInteger {
-    try encodeVarUInt(UInt64(exactly: x)!, modifier: modifier)
+  private func encodeUInt<T>(_ val: T, modifier: UInt8) throws where T: FixedWidthInteger, T: UnsignedInteger {
+    try encodeVarUInt(UInt64(exactly: val)!, modifier: modifier)
   }
 
   /// Encodes any unsigned integer, `or`ing `modifier` with first byte
-  private func encodeVarUInt(_ x: UInt64, modifier: UInt8 = 0) throws {
-    switch x {
-    case let x where x <= UInt8.max: try encodeUInt8(UInt8(x), modifier: modifier)
-    case let x where x <= UInt16.max: try encodeUInt16(UInt16(x), modifier: modifier)
-    case let x where x <= UInt32.max: try encodeUInt32(UInt32(x), modifier: modifier)
-    default: try encodeUInt64(x, modifier: modifier)
+  private func encodeVarUInt(_ val: UInt64, modifier: UInt8 = 0) throws {
+    switch val {
+    case let val where val <= UInt8.max: try encodeUInt8(UInt8(val), modifier: modifier)
+    case let val where val <= UInt16.max: try encodeUInt16(UInt16(val), modifier: modifier)
+    case let val where val <= UInt32.max: try encodeUInt32(UInt32(val), modifier: modifier)
+    default: try encodeUInt64(val, modifier: modifier)
     }
   }
 
@@ -132,13 +146,13 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeNegativeInt(_ x: Int64) throws {
-    try encodeNegativeInt(x, modifier: 0)
+  public func encodeNegativeInt(_ val: Int64) throws {
+    try encodeNegativeInt(val, modifier: 0)
   }
 
-  private func encodeNegativeInt(_ x: Int64, modifier: UInt8) throws {
-    assert(x < 0)
-    try encodeVarUInt(~UInt64(bitPattern: x), modifier: 0b00100000 | modifier)
+  private func encodeNegativeInt(_ val: Int64, modifier: UInt8) throws {
+    assert(val < 0)
+    try encodeVarUInt(~UInt64(bitPattern: val), modifier: 0b0010_0000 | modifier)
   }
 
   // MARK: - major 2: bytestring
@@ -147,9 +161,9 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeByteString(_ bs: Data) throws {
-    try encodeInt(bs.count, majorType: 0b010)
-    try stream.writeBytes(bs)
+  public func encodeByteString(_ str: Data) throws {
+    try encodeInt(str.count, majorType: 0b010)
+    try stream.writeBytes(str)
   }
 
   // MARK: - major 3: UTF8 string
@@ -174,9 +188,9 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeArray(_ arr: [CBOR]) throws {
-    try encodeInt(arr.count, majorType: 0b100)
-    try encodeArrayChunk(arr)
+  public func encodeArray(_ array: [CBOR]) throws {
+    try encodeInt(array.count, majorType: 0b100)
+    try encodeArrayChunk(array)
   }
 
   /// Encodes an array chunk of CBOR items.
@@ -213,9 +227,9 @@ public struct CBORWriter {
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
   public func encodeMapChunk(_ map: [CBOR: CBOR]) throws {
-    for (k, v) in map {
-      try encode(k)
-      try encode(v)
+    for (key, value) in map {
+      try encode(key)
+      try encode(value)
     }
   }
 
@@ -226,19 +240,19 @@ public struct CBORWriter {
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
   public func encodeTagged(tag: CBOR.Tag, value: CBOR) throws {
-    try encodeVarUInt(tag.rawValue, modifier: 0b11000000)
+    try encodeVarUInt(tag.rawValue, modifier: 0b1100_0000)
     try encode(value)
   }
 
   // MARK: - major 7: floats, simple values, the 'break' stop code
 
-  public func encodeSimpleValue(_ x: UInt8) throws {
-    if x < 24 {
-      try stream.writeByte(0b11100000 | x)
+  public func encodeSimpleValue(_ val: UInt8) throws {
+    if val < 24 {
+      try stream.writeByte(0b1110_0000 | val)
     }
     else {
       try stream.writeByte(0xF8)
-      try stream.writeByte(x)
+      try stream.writeByte(val)
     }
   }
 
@@ -262,35 +276,35 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeHalf(_ x: Half) throws {
+  public func encodeHalf(_ val: Half) throws {
     try stream.writeByte(0xFA)
-    try stream.writeInt(x.bitPattern)
+    try stream.writeInt(val.bitPattern)
   }
 
   /// Encodes Float32 item.
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeFloat(_ x: Float) throws {
+  public func encodeFloat(_ val: Float) throws {
     try stream.writeByte(0xFA)
-    try stream.writeInt(x.bitPattern)
+    try stream.writeInt(val.bitPattern)
   }
 
   /// Encodes Float64 item.
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeDouble(_ x: Double) throws {
+  public func encodeDouble(_ val: Double) throws {
     try stream.writeByte(0xFB)
-    try stream.writeInt(x.bitPattern)
+    try stream.writeInt(val.bitPattern)
   }
 
   /// Encodes Bool item.
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeBool(_ x: Bool) throws {
-    try stream.writeByte(x ? 0xF5 : 0xF4)
+  public func encodeBool(_ val: Bool) throws {
+    try stream.writeByte(val ? 0xF5 : 0xF4)
   }
 
   // MARK: - Indefinite length items
@@ -322,4 +336,3 @@ public struct CBORWriter {
   }
 
 }
-

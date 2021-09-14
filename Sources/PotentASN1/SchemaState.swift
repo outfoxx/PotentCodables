@@ -1,12 +1,26 @@
-//
-//  SchemaState.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 import PotentCodables
@@ -76,15 +90,15 @@ public struct SchemaState {
   }
 
   func container(forCodingPath codingPath: [CodingKey]) -> Any? {
-    return containers[codingPath.map { $0.stringValue }] ?? nil
+    return containers[codingPath.map(\.stringValue)] ?? nil
   }
 
   mutating func save(container: Any?, forCodingPath codingPath: [CodingKey]) {
-    containers[codingPath.map { $0.stringValue }] = container
+    containers[codingPath.map(\.stringValue)] = container
   }
 
   private var nearestScope: Scope? {
-    var path = keyStack.map { $0.stringValue }
+    var path = keyStack.map(\.stringValue)
     while let _ = path.popLast() {
       if let scope = scopes[path] {
         return scope
@@ -94,14 +108,14 @@ public struct SchemaState {
   }
 
   mutating func save(scope container: KeyedContainer, forCodingPath codingPath: [CodingKey]) {
-    let path = codingPath.map { $0.stringValue }
+    let path = codingPath.map(\.stringValue)
     guard !scopes.keys.contains(path) else { return }
 
     scopes[path] = Scope(container: container)
   }
 
   mutating func removeScope(forCodingPath codingPath: [CodingKey]) {
-    scopes.removeValue(forKey: codingPath.map { $0.stringValue })
+    scopes.removeValue(forKey: codingPath.map(\.stringValue))
   }
 
   mutating func step(into container: Any?, key: CodingKey) throws {

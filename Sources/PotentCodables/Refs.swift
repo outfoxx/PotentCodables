@@ -1,12 +1,26 @@
-//
-//  Refs.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 
@@ -65,22 +79,24 @@ public protocol TypeIndex {
 /// - See Also: `TypeIndex`
 ///
 public struct DefaultTypeIndex: TypeIndex {
-  
+
   fileprivate static var allowedTypes: [String: Decodable.Type] = [:]
-  
+
   // Set the allowed types to the given array after mapping them using `mapAllowedTypes(:)`.
   public static func setAllowedTypes(_ types: [Decodable.Type]) {
     Self.allowedTypes = mapAllowedTypes(types)
   }
-  
+
   // Maps the given array of types to their generated type id and returns the dictionary.
   public static func mapAllowedTypes(_ types: [Decodable.Type]) -> [String: Decodable.Type] {
     return Dictionary(uniqueKeysWithValues: types.map { (key: Self.typeId(of: $0), value: $0) })
   }
-  
+
   public static func findType(id: String) -> Decodable.Type? { allowedTypes[id] }
-  public static func typeId(of type: Any.Type) -> String { "\(type)".split(separator: ".").last.map { String($0) }  ?? "\(type)" }
-  
+  public static func typeId(of type: Any.Type) -> String { "\(type)".split(separator: ".").last
+    .map { String($0) } ?? "\(type)"
+  }
+
 }
 
 
@@ -218,7 +234,7 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
 
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: AnyCodingKey.self)
-      try container.encode(TI.self.typeId(of: EncodedValue.self), forKey: TKP.typeKey)
+      try container.encode(TI.typeId(of: EncodedValue.self), forKey: TKP.typeKey)
       try container.encode(value, forKey: VKP.valueKey)
     }
 
@@ -368,7 +384,7 @@ public struct CustomEmbeddedRef<TKP: TypeKeyProvider, TI: TypeIndex>: Decodable 
 
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: AnyCodingKey.self)
-      try container.encode(TI.self.typeId(of: EncodedValue.self), forKey: TKP.typeKey)
+      try container.encode(TI.typeId(of: EncodedValue.self), forKey: TKP.typeKey)
       try value.encode(to: encoder)
     }
 
@@ -379,7 +395,7 @@ public struct CustomEmbeddedRef<TKP: TypeKeyProvider, TI: TypeIndex>: Decodable 
 
 /// Utilities support `Ref` and `EmbeddedRef`
 ///
-public struct Refs {
+public enum Refs {
 
   enum Error: Swift.Error {
     case typeNotFound(String)
@@ -394,7 +410,11 @@ public struct Refs {
   ///   - using: Type index to use for type lookup
   /// - Returns: A `Decodable` type reference
   ///
-  public static func decodeType(from decoder: Decoder, forKey key: AnyCodingKey, using index: TypeIndex.Type) throws -> Decodable.Type {
+  public static func decodeType(
+    from decoder: Decoder,
+    forKey key: AnyCodingKey,
+    using index: TypeIndex.Type
+  ) throws -> Decodable.Type {
     let container = try decoder.container(keyedBy: AnyCodingKey.self)
     let typeId = try container.decode(String.self, forKey: key)
     guard let type = index.findType(id: typeId) else {

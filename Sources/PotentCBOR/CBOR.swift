@@ -1,12 +1,26 @@
-//
-//  CBOR.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 import PotentCodables
@@ -40,10 +54,6 @@ public indirect enum CBOR: Equatable, Hashable {
 
     public init(rawValue: UInt64) {
       self.rawValue = rawValue
-    }
-
-    public var hashValue: Int {
-      return rawValue.hashValue
     }
   }
 
@@ -185,19 +195,19 @@ public indirect enum CBOR: Equatable, Hashable {
   public subscript(position: CBOR) -> CBOR? {
     get {
       switch (self, position) {
-      case (let .array(l), .unsignedInt(let i)): return l[Int(i)]
-      case (let .map(l), let i): return l[i]
+      case (let .array(array), .unsignedInt(let index)): return array[Int(index)]
+      case (let .map(map), let key): return map[key]
       default: return nil
       }
     }
-    set(x) {
+    set {
       switch (self, position) {
-      case (var .array(l), .unsignedInt(let i)):
-        l[Int(i)] = x!
-        self = .array(l)
-      case (var .map(l), let i):
-        l[i] = x!
-        self = .map(l)
+      case (var .array(array), .unsignedInt(let index)):
+        array[Int(index)] = newValue ?? .null
+        self = .array(array)
+      case (var .map(map), let key):
+        map[key] = newValue ?? .null
+        self = .map(map)
       default: break
       }
     }
@@ -264,33 +274,33 @@ extension CBOR: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, Expressibl
 
 }
 
-extension CBOR.Tag {
-  public static let iso8601DateTime = CBOR.Tag(rawValue: 0)
-  public static let epochDateTime = CBOR.Tag(rawValue: 1)
-  public static let positiveBignum = CBOR.Tag(rawValue: 2)
-  public static let negativeBignum = CBOR.Tag(rawValue: 3)
-  public static let decimalFraction = CBOR.Tag(rawValue: 4)
-  public static let bigfloat = CBOR.Tag(rawValue: 5)
+public extension CBOR.Tag {
+  static let iso8601DateTime = CBOR.Tag(rawValue: 0)
+  static let epochDateTime = CBOR.Tag(rawValue: 1)
+  static let positiveBignum = CBOR.Tag(rawValue: 2)
+  static let negativeBignum = CBOR.Tag(rawValue: 3)
+  static let decimalFraction = CBOR.Tag(rawValue: 4)
+  static let bigfloat = CBOR.Tag(rawValue: 5)
 
   // 6...20 unassigned
 
-  public static let expectedConversionToBase64URLEncoding = CBOR.Tag(rawValue: 21)
-  public static let expectedConversionToBase64Encoding = CBOR.Tag(rawValue: 22)
-  public static let expectedConversionToBase16Encoding = CBOR.Tag(rawValue: 23)
-  public static let encodedCBORDataItem = CBOR.Tag(rawValue: 24)
+  static let expectedConversionToBase64URLEncoding = CBOR.Tag(rawValue: 21)
+  static let expectedConversionToBase64Encoding = CBOR.Tag(rawValue: 22)
+  static let expectedConversionToBase16Encoding = CBOR.Tag(rawValue: 23)
+  static let encodedCBORDataItem = CBOR.Tag(rawValue: 24)
 
   // 25...31 unassigned
 
-  public static let uri = CBOR.Tag(rawValue: 32)
-  public static let base64Url = CBOR.Tag(rawValue: 33)
-  public static let base64 = CBOR.Tag(rawValue: 34)
-  public static let regularExpression = CBOR.Tag(rawValue: 35)
-  public static let mimeMessage = CBOR.Tag(rawValue: 36)
-  public static let uuid = CBOR.Tag(rawValue: 37)
+  static let uri = CBOR.Tag(rawValue: 32)
+  static let base64Url = CBOR.Tag(rawValue: 33)
+  static let base64 = CBOR.Tag(rawValue: 34)
+  static let regularExpression = CBOR.Tag(rawValue: 35)
+  static let mimeMessage = CBOR.Tag(rawValue: 36)
+  static let uuid = CBOR.Tag(rawValue: 37)
 
   // 38...55798 unassigned
 
-  public static let selfDescribeCBOR = CBOR.Tag(rawValue: 55799)
+  static let selfDescribeCBOR = CBOR.Tag(rawValue: 55799)
 }
 
 extension CBOR: Value {
@@ -308,8 +318,10 @@ extension CBOR: Value {
     case .float(let value): return value
     case .half(let value): return value.floatValue
     case .double(let value): return value
-    case .array(let value): return Array(value.map { $0.unwrapped })
-    case .map(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in (key.unwrapped as! String, value.unwrapped) })
+    case .array(let value): return Array(value.map(\.unwrapped))
+    case .map(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in
+        (key.unwrapped as? AnyHashable, value.unwrapped)
+      })
     case .tagged(_, let value): return value.unwrapped
     }
   }

@@ -1,12 +1,26 @@
-//
-//  ASN1Decoder.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import BigInt
 import Foundation
@@ -21,10 +35,12 @@ public class ASN1Decoder: ValueDecoder<ASN1, ASN1DecoderTransform>, DecodesFromD
   public let schema: Schema
 
   /// The options set on the top-level decoder.
-  public override var options: ASN1DecoderTransform.Options {
-    return ASN1DecoderTransform.Options(schema: schema,
-                                        keyDecodingStrategy: .useDefaultKeys,
-                                        userInfo: userInfo)
+  override public var options: ASN1DecoderTransform.Options {
+    return ASN1DecoderTransform.Options(
+      schema: schema,
+      keyDecodingStrategy: .useDefaultKeys,
+      userInfo: userInfo
+    )
   }
 
   public required init(schema: Schema) {
@@ -86,9 +102,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bool as Bool: return bool
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -97,14 +115,16 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     return DecodingError.typeMismatch(type, context)
   }
 
-  static func coerce<T>(_ from: BigInt, at codingPath: [CodingKey]) throws -> T where T: BinaryInteger & FixedWidthInteger {
+  static func coerce<T>(_ from: BigInt, at codingPath: [CodingKey]) throws -> T
+    where T: BinaryInteger & FixedWidthInteger {
     guard let result = from.integerValue.map({ T($0) }) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
   }
 
-  static func coerce<T>(_ from: Decimal, at codingPath: [CodingKey]) throws -> T where T: BinaryFloatingPoint & LosslessStringConvertible {
+  static func coerce<T>(_ from: Decimal, at codingPath: [CodingKey]) throws -> T
+    where T: BinaryFloatingPoint & LosslessStringConvertible {
     guard let result = T(from.description) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
@@ -117,9 +137,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.integer(Int.self)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -129,9 +151,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.integer(Int8.self)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -141,9 +165,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.integer(Int16.self)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -153,9 +179,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.integer(Int32.self)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -165,9 +193,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.integer(Int64.self)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -177,9 +207,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.integer(UInt.self)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -189,9 +221,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.integer(UInt8.self)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -201,9 +235,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.integer(UInt16.self)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -213,9 +249,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.integer(UInt32.self)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -225,9 +263,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.integer(UInt64.self)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -236,9 +276,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let number as Decimal: return try coerce(number, at: decoder.codingPath)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -247,9 +289,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let number as Decimal: return try coerce(number, at: decoder.codingPath)
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -258,9 +302,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let number as Decimal: return number
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -269,9 +315,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let string as AnyString: return string.storage
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -282,9 +330,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
       return UUID(uuid: data.withUnsafeBytes { $0.bindMemory(to: uuid_t.self).first ?? UUID_NULL })
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -293,9 +343,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let date as Date: return date
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -305,9 +357,11 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     case let bitString as BitString: return bitString.bytes
     case .none: return nil
     case let invalid:
-      throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                       expectation: type,
-                                       reality: invalid!)
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid!
+      )
     }
   }
 
@@ -322,29 +376,35 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     if interceptedType == ASN1.self {
       return value
     }
-    
+
     guard let decoded = try decode(value, decoder: decoder) else { return nil }
     if interceptedType == BigInt.self {
       guard let int = decoded as? BigInt else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                         expectation: interceptedType,
-                                         reality: decoded)
+        throw DecodingError.typeMismatch(
+          at: decoder.codingPath,
+          expectation: interceptedType,
+          reality: decoded
+        )
       }
       return int
     }
     else if interceptedType == AnyString.self {
       guard let string = decoded as? AnyString else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                         expectation: interceptedType,
-                                         reality: decoded)
+        throw DecodingError.typeMismatch(
+          at: decoder.codingPath,
+          expectation: interceptedType,
+          reality: decoded
+        )
       }
       return string
     }
     else if interceptedType == AnyTime.self {
       guard let time = decoded as? AnyTime else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                         expectation: interceptedType,
-                                         reality: decoded)
+        throw DecodingError.typeMismatch(
+          at: decoder.codingPath,
+          expectation: interceptedType,
+          reality: decoded
+        )
       }
       return time
     }
@@ -353,16 +413,20 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
       case let bitString as BitString: return bitString
       case let data as Data: return BitString(length: data.count * 8, bytes: data)
       default:
-        throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                         expectation: interceptedType,
-                                         reality: decoded)
+        throw DecodingError.typeMismatch(
+          at: decoder.codingPath,
+          expectation: interceptedType,
+          reality: decoded
+        )
       }
     }
     else if interceptedType == ObjectIdentifier.self {
       guard let oid = decoded as? ObjectIdentifier else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath,
-                                         expectation: interceptedType,
-                                         reality: decoded)
+        throw DecodingError.typeMismatch(
+          at: decoder.codingPath,
+          expectation: interceptedType,
+          reality: decoded
+        )
       }
       return oid
     }
@@ -628,7 +692,11 @@ extension SchemaState {
 
       case .implicit(let schemaTag, in: let schemaTagClass, let implicitSchema):
 
-        guard let (tag, bytes) = value.taggedValue, ASN1.Tag.tag(from: schemaTag, in: schemaTagClass, constructed: implicitSchema.isCollection) == tag else {
+        guard let (tag, bytes) = value.taggedValue, ASN1.Tag.tag(
+          from: schemaTag,
+          in: schemaTagClass,
+          constructed: implicitSchema.isCollection
+        ) == tag else {
           // try next possible schema
           continue
         }
@@ -653,10 +721,12 @@ extension SchemaState {
 
       case .explicit(let schemaTag, in: let schemaTagClass, let explicitSchema):
 
-        guard let (tag, bytes) = value.taggedValue, ASN1.Tag.tag(from: schemaTag, in: schemaTagClass, constructed: true) == tag else {
+        guard let (tag, bytes) = value.taggedValue,
+              ASN1.Tag.tag(from: schemaTag, in: schemaTagClass, constructed: true) == tag
+        else {
           // try next possible schema
           continue
-        }        
+        }
 
         let items = try DERReader.parse(data: bytes)
         guard items.count == 1 else {
@@ -675,7 +745,10 @@ extension SchemaState {
 
     }
 
-    throw DecodingError.badValue(value.unwrapped as Any, errorContext("No schemas \(currentPossibleStates) match value"))
+    throw DecodingError.badValue(
+      value.unwrapped as Any,
+      errorContext("No schemas \(currentPossibleStates) match value")
+    )
   }
 
 }
@@ -683,10 +756,10 @@ extension SchemaState {
 
 #if canImport(Combine)
 
-import Combine
+  import Combine
 
-extension ASN1Decoder : TopLevelDecoder {
-  public typealias Input = Data
-}
+  extension ASN1Decoder: TopLevelDecoder {
+    public typealias Input = Data
+  }
 
 #endif
