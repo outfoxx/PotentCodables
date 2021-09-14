@@ -7,21 +7,56 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@v1
+    - name: GitHub Action for SwiftLint
+      uses: norio-nomura/action-swiftlint@3.2.1
+      with:
+        args: --strict
+
+
+  build-test-coverage:
 
     runs-on: macos-11
+
+    needs: [check]
+
     strategy:
       matrix:
-        platform: [macOS, iOS, tvOS]
-        xcode:
-        - '/Applications/Xcode_11.7.app/Contents/Developer'
-        - '/Applications/Xcode_12.5.1.app/Contents/Developer'
-        - '/Applications/Xcode_13.0.app/Contents/Developer'        
+        platform: [macos, ios, tvos]
+        xcode: ["12.5.1", "13.0"]
+
     steps:
+      
     - uses: actions/checkout@v2
+    
     - name: Select Xcode
-      run: sudo xcode-select -s ${{matrix.xcode}}
-    - name: Install xcodegen
-      run: brew install xcodegen
-    - name: Build & Test
-      run: make build-test-${{matrix.platform}}
+      run: sudo xcode-select -s /Applications/Xcode_${{matrix.xcode}}.app/Contents/Developer
+
+    - name: Build/Test
+      run: make build-test-${{ matrix.platform }}
+
+    - name: Test Coverage
+      uses: maxep/spm-lcov-action@0.3.0
+      if: ${{ matrix.platform == 'macos' && matrix.xcode == '12.5.1' }}
+      with:
+        output-file: ./coverage/lcov.info
+
+    - name: Report Coverage
+      uses: romeovs/lcov-reporter-action@v0.2.21
+      if: ${{ matrix.platform == 'macos' && matrix.xcode == '12.5.1' }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        lcov-file: ./coverage/lcov.info
+
+    - name: Updload Reports
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: reports
+        path: TestResults
