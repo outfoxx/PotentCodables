@@ -64,20 +64,11 @@ class BigIntTests: XCTestCase {
   }
 
   func testConversion() {
-    if BigUInt.Word.bitWidth == 32 {
-      XCTAssertEqual(String(BigInt(0xFFFF).integerValue!, radix: 16), "ffff")
-      XCTAssertEqual(String(BigInt(0x7FFF_FFFF).integerValue!, radix: 16), "7fffffff")
-      XCTAssertEqual(BigInt(0xFFFF).integerValue, 0xFFFF)
-      XCTAssertEqual(BigInt(0x7FFF_FFFF).integerValue, 0x7FFF_FFFF)
-      XCTAssertNil(BigInt("ffffffff", radix: 16)!.integerValue)
-    }
-    else {
-      XCTAssertEqual(String(BigInt(0xFFFF_FFFF).integerValue!, radix: 16), "ffffffff")
-      XCTAssertEqual(String(BigInt(0x7FFF_FFFF_FFFF_FFFF).integerValue!, radix: 16), "7fffffffffffffff")
-      XCTAssertEqual(BigInt(0xFFFF_FFFF).integerValue, 0xFFFF_FFFF)
-      XCTAssertEqual(BigInt(0x7FFF_FFFF_FFFF_FFFF).integerValue, 0x7FFF_FFFF_FFFF_FFFF)
-      XCTAssertNil(BigInt("ffffffffffffffff", radix: 16)!.integerValue)
-    }
+    XCTAssertEqual(String(BigInt(0xFFFF_FFFF).integerValue!, radix: 16), "ffffffff")
+    XCTAssertEqual(String(BigInt(0x7FFF_FFFF_FFFF_FFFF).integerValue!, radix: 16), "7fffffffffffffff")
+    XCTAssertEqual(BigInt(0xFFFF_FFFF).integerValue, 0xFFFF_FFFF)
+    XCTAssertEqual(BigInt(0x7FFF_FFFF_FFFF_FFFF).integerValue, 0x7FFF_FFFF_FFFF_FFFF)
+    XCTAssertNil(BigInt("ffffffffffffffff", radix: 16)!.integerValue)
   }
 
 }
