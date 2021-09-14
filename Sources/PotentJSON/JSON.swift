@@ -1,12 +1,26 @@
-//
-//  JSON.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 import PotentCodables
@@ -49,7 +63,7 @@ public enum JSON {
 
     public init(_ value: String) {
       self.value = value
-      isInteger = value.allSatisfy { $0.isNumber }
+      isInteger = value.allSatisfy(\.isNumber)
       isNegative = value.hasPrefix("-")
     }
 
@@ -184,7 +198,7 @@ public enum JSON {
 }
 
 extension JSON: CustomStringConvertible {
-  
+
   public var description: String {
     var output = ""
     var writer = JSONWriter(pretty: true, sortedKeys: true) { output += $0 ?? "" }
@@ -210,7 +224,7 @@ extension JSON: Value {
     case .bool(let value): return value
     case .string(let value): return value
     case .number(let value): return value.numberValue
-    case .array(let value): return Array(value.map { $0.unwrapped })
+    case .array(let value): return Array(value.map(\.unwrapped))
     case .object(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in (key, value.unwrapped) })
     }
   }
@@ -284,9 +298,9 @@ extension JSON.Number: ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, E
  * easy to compare different complex values that have been encoded
  * to text
  **/
-extension JSON {
+public extension JSON {
 
-  public var stableText: String {
+  var stableText: String {
     var output = ""
     var writer = JSONWriter(pretty: false, sortedKeys: true) { output += $0 ?? "" }
     do {

@@ -1,12 +1,26 @@
-//
-//  ASN1Tests.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 import PotentASN1
@@ -17,13 +31,13 @@ import XCTest
 class ASN1Tests: XCTestCase {
 
   func testExplicitSchema() throws {
-    
+
     struct TestStruct: Codable, Equatable {
       let a: Int
       let b: String
       let c: [Bool]
     }
-    
+
     let TestStructSchema: Schema =
       .sequence([
         "a": .integer(),
@@ -31,31 +45,31 @@ class ASN1Tests: XCTestCase {
         "c": .setOf(.boolean()),
       ])
 
-    
+
     let src = TestStruct(a: 5, b: "BBB", c: [false, true, false])
     let srcData = try ASN1Encoder(schema: TestStructSchema).encode(src)
     let dst = try ASN1Decoder(schema: TestStructSchema).decode(TestStruct.self, from: srcData)
 
     XCTAssertEqual(src, dst)
   }
-  
+
   func testDecodeASN1Null() throws {
-    
+
     struct TestStruct: Codable, Equatable {
       let a: String
       let b: ASN1
     }
-    
+
     let TestStructSchema: Schema =
       .sequence([
         "a": .string(kind: .utf8),
-        "b": .choiceOf([.integer(), .null])
+        "b": .choiceOf([.integer(), .null]),
       ])
 
     let src = TestStruct(a: "test", b: .null)
     let srcData = try ASN1Encoder(schema: TestStructSchema).encode(src)
     let dst = try ASN1Decoder(schema: TestStructSchema).decode(TestStruct.self, from: srcData)
-    
+
     XCTAssertEqual(src, dst)
   }
 
@@ -119,56 +133,56 @@ class ASN1Tests: XCTestCase {
     func tz(_ index: Int) -> TimeZone { values[index].generalizedTimeValue!.timeZone }
     func offset(_ index: Int) -> Int { values[index].generalizedTimeValue!.timeZone.secondsFromGMT() }
 
-    XCTAssertEqual(date(0), 7979553224.0)
+    XCTAssertEqual(date(0), 7_979_553_224.0)
     XCTAssertEqual(tz(0), .current)
-    XCTAssertEqual(date(1), 7979553224.567)
+    XCTAssertEqual(date(1), 7_979_553_224.567)
     XCTAssertEqual(tz(1), .current)
 
-    XCTAssertEqual(date(2), 7979553224)
+    XCTAssertEqual(date(2), 7_979_553_224)
     XCTAssertEqual(tz(2), .utc)
-    XCTAssertEqual(date(3), 7979553224.567)
+    XCTAssertEqual(date(3), 7_979_553_224.567)
     XCTAssertEqual(tz(3), .utc)
 
-    XCTAssertEqual(date(4), 7979553224-40953)
+    XCTAssertEqual(date(4), 7_979_553_224 - 40953)
     XCTAssertEqual(offset(4), 40980)
-    XCTAssertEqual(date(5), 7979553224.567-40953)
+    XCTAssertEqual(date(5), 7_979_553_224.567 - 40953)
     XCTAssertEqual(offset(5), 40980)
-    XCTAssertEqual(date(6), 7979553224-40953)
+    XCTAssertEqual(date(6), 7_979_553_224 - 40953)
     XCTAssertEqual(offset(6), 40980)
-    XCTAssertEqual(date(7), 7979553224.567-40953)
+    XCTAssertEqual(date(7), 7_979_553_224.567 - 40953)
     XCTAssertEqual(offset(7), 40980)
-    XCTAssertEqual(date(8), 7979553224-40920)
+    XCTAssertEqual(date(8), 7_979_553_224 - 40920)
     XCTAssertEqual(offset(8), 40920)
-    XCTAssertEqual(date(9), 7979553224.567-40920)
+    XCTAssertEqual(date(9), 7_979_553_224.567 - 40920)
     XCTAssertEqual(offset(9), 40920)
-    XCTAssertEqual(date(10), 7979553224-40920)
+    XCTAssertEqual(date(10), 7_979_553_224 - 40920)
     XCTAssertEqual(offset(10), 40920)
-    XCTAssertEqual(date(11), 7979553224.567-40920)
+    XCTAssertEqual(date(11), 7_979_553_224.567 - 40920)
     XCTAssertEqual(offset(11), 40920)
-    XCTAssertEqual(date(12), 7979553224-39600)
+    XCTAssertEqual(date(12), 7_979_553_224 - 39600)
     XCTAssertEqual(offset(12), 39600)
-    XCTAssertEqual(date(13), 7979553224.567-39600)
+    XCTAssertEqual(date(13), 7_979_553_224.567 - 39600)
     XCTAssertEqual(offset(13), 39600)
 
-    XCTAssertEqual(date(14), 7979553224+40953)
+    XCTAssertEqual(date(14), 7_979_553_224 + 40953)
     XCTAssertEqual(offset(14), -40980)
-    XCTAssertEqual(date(15), 7979553224.567+40953)
+    XCTAssertEqual(date(15), 7_979_553_224.567 + 40953)
     XCTAssertEqual(offset(15), -40980)
-    XCTAssertEqual(date(16), 7979553224+40953)
+    XCTAssertEqual(date(16), 7_979_553_224 + 40953)
     XCTAssertEqual(offset(16), -40980)
-    XCTAssertEqual(date(17), 7979553224.567+40953)
+    XCTAssertEqual(date(17), 7_979_553_224.567 + 40953)
     XCTAssertEqual(offset(17), -40980)
-    XCTAssertEqual(date(18), 7979553224+40920)
+    XCTAssertEqual(date(18), 7_979_553_224 + 40920)
     XCTAssertEqual(offset(18), -40920)
-    XCTAssertEqual(date(19), 7979553224.567+40920)
+    XCTAssertEqual(date(19), 7_979_553_224.567 + 40920)
     XCTAssertEqual(offset(19), -40920)
-    XCTAssertEqual(date(20), 7979553224+40920)
+    XCTAssertEqual(date(20), 7_979_553_224 + 40920)
     XCTAssertEqual(offset(20), -40920)
-    XCTAssertEqual(date(21), 7979553224.567+40920)
+    XCTAssertEqual(date(21), 7_979_553_224.567 + 40920)
     XCTAssertEqual(offset(21), -40920)
-    XCTAssertEqual(date(22), 7979553224+39600)
+    XCTAssertEqual(date(22), 7_979_553_224 + 39600)
     XCTAssertEqual(offset(22), -39600)
-    XCTAssertEqual(date(23), 7979553224.567+39600)
+    XCTAssertEqual(date(23), 7_979_553_224.567 + 39600)
     XCTAssertEqual(offset(23), -39600)
   }
 

@@ -1,12 +1,26 @@
-//
-//  CBORDecoder.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 import PotentCodables
@@ -36,13 +50,15 @@ public class CBORDecoder: ValueDecoder<CBOR, CBORDecoderTransform>, DecodesFromD
   public var untaggedDateDecodingStrategy: UntaggedDateDecodingStrategy = .unitsSince1970
 
   /// The options set on the top-level decoder.
-  public override var options: CBORDecoderTransform.Options {
-    return CBORDecoderTransform.Options(untaggedDateDecodingStrategy: untaggedDateDecodingStrategy,
-                                        keyDecodingStrategy: keyDecodingStrategy,
-                                        userInfo: userInfo)
+  override public var options: CBORDecoderTransform.Options {
+    return CBORDecoderTransform.Options(
+      untaggedDateDecodingStrategy: untaggedDateDecodingStrategy,
+      keyDecodingStrategy: keyDecodingStrategy,
+      userInfo: userInfo
+    )
   }
 
-  public override init() {
+  override public init() {
     super.init()
   }
 
@@ -86,21 +102,24 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     return result
   }
 
-  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T: BinaryInteger, F: BinaryFloatingPoint {
+  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T: BinaryInteger,
+    F: BinaryFloatingPoint {
     guard let result = T(exactly: round(from)) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
   }
 
-  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T: BinaryFloatingPoint, F: BinaryInteger {
+  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T: BinaryFloatingPoint,
+    F: BinaryInteger {
     guard let result = T(exactly: from) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
   }
 
-  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T: BinaryFloatingPoint, F: BinaryFloatingPoint {
+  static func coerce<T, F>(_ from: F, at codingPath: [CodingKey]) throws -> T where T: BinaryFloatingPoint,
+    F: BinaryFloatingPoint {
     return T(from)
   }
 
@@ -354,18 +373,22 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
   }
 
   public static func mapToKeyedValues(_ map: [CBOR: CBOR], decoder: Decoder) throws -> [String: CBOR] {
-    return try Dictionary(map.compactMap { key, value in
-      switch key.untagged {
-      case .utf8String(let str): return (str, value)
-      case .unsignedInt(let uint): return (String(uint), value)
-      case .negativeInt(let nint): return (String(-1 - Int(nint)), value)
-      default: return nil
+    return try Dictionary(
+      map.compactMap { key, value in
+        switch key.untagged {
+        case .utf8String(let str): return (str, value)
+        case .unsignedInt(let uint): return (String(uint), value)
+        case .negativeInt(let nint): return (String(-1 - Int(nint)), value)
+        default: return nil
+        }
+      },
+      uniquingKeysWith: { _, _ in
+        throw DecodingError.dataCorrupted(.init(
+          codingPath: decoder.codingPath,
+          debugDescription: "Map contains duplicate keys"
+        ))
       }
-    },
-                          uniquingKeysWith: { _, _ in
-      throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
-                                              debugDescription: "Map contains duplicate keys"))
-    })
+    )
   }
 
   public static func value(from data: Data, options: Options) throws -> CBOR {
@@ -380,10 +403,10 @@ private let _iso8601Formatter = ISO8601SuffixedDateFormatter(basePattern: "yyyy-
 
 #if canImport(Combine)
 
-import Combine
+  import Combine
 
-extension CBORDecoder : TopLevelDecoder {
-  public typealias Input = Data
-}
+  extension CBORDecoder: TopLevelDecoder {
+    public typealias Input = Data
+  }
 
 #endif

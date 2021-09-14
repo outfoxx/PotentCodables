@@ -1,19 +1,33 @@
-//
-//  ASN1Reader.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import BigInt
 import Foundation
 import PotentCodables
 
 
-public class DERReader {
+public enum DERReader {
 
   public enum Error: Swift.Error {
     case unexpectedEOF
@@ -38,7 +52,8 @@ public class DERReader {
     }
   }
 
-  public static func parseTagged(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> (tag: ASN1.AnyTag, data: UnsafeBufferPointer<UInt8>) {
+  public static func parseTagged(_ buffer: inout UnsafeBufferPointer<UInt8>) throws
+    -> (tag: ASN1.AnyTag, data: UnsafeBufferPointer<UInt8>) {
     return (try buffer.pop(), try buffer.pop(count: parseLength(&buffer)))
   }
 
@@ -76,7 +91,10 @@ public class DERReader {
     }
   }
 
-  public static func parseItem(_ itemBuffer: inout UnsafeBufferPointer<UInt8>, as tagValue: ASN1.AnyTag) throws -> ASN1 {
+  public static func parseItem(
+    _ itemBuffer: inout UnsafeBufferPointer<UInt8>,
+    as tagValue: ASN1.AnyTag
+  ) throws -> ASN1 {
     defer {
       assert(itemBuffer.isEmpty)
     }
@@ -191,8 +209,12 @@ public class DERReader {
     }
   }
 
-  private static func parseString(_ buffer: inout UnsafeBufferPointer<UInt8>, tag: ASN1.Tag,
-                                  encoding: String.Encoding, characterSet: CharacterSet? = nil) throws -> String {
+  private static func parseString(
+    _ buffer: inout UnsafeBufferPointer<UInt8>,
+    tag: ASN1.Tag,
+    encoding: String.Encoding,
+    characterSet: CharacterSet? = nil
+  ) throws -> String {
 
     guard let string = String(data: Data(buffer.popAll()), encoding: encoding) else {
       throw Error.invalidStringEncoding
@@ -207,6 +229,9 @@ public class DERReader {
     return string
   }
 
+  private static let oidLeadingMultiplier = UInt64(40)
+  private static let oidLeadingMultiplierDouble = oidLeadingMultiplier * 2
+
   private static func parseOID(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> [UInt64] {
 
     var ids = [UInt64]()
@@ -214,16 +239,16 @@ public class DERReader {
 
       var val = try parseBase128(&buffer)
       if ids.isEmpty {
-        if val < 40 {
+        if val < oidLeadingMultiplier {
           ids.append(0)
         }
-        else if val < 80 {
+        else if val < oidLeadingMultiplierDouble {
           ids.append(1)
-          val = val - 40
+          val -= oidLeadingMultiplier
         }
         else {
           ids.append(2)
-          val = val - 80
+          val -= oidLeadingMultiplierDouble
         }
 
       }
@@ -241,7 +266,7 @@ public class DERReader {
     while true {
       let byte = try buffer.pop()
       val = val << 7
-      val = val + UInt64(byte & 0x7F)
+      val += UInt64(byte & 0x7F)
       if byte & 0x80 == 0 {
         break
       }

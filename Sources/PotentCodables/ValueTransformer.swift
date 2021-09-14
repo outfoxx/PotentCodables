@@ -1,12 +1,26 @@
-//
-//  ValueTransformer.swift
-//  PotentCodables
-//
-//  Copyright © 2019 Outfox, inc.
-//
-//
-//  Distributed under the MIT License, See LICENSE for details.
-//
+/*
+ * MIT License
+ *
+ * Copyright 2021 Outfox, inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import Foundation
 
@@ -25,299 +39,390 @@ public protocol ValueDecodingTransformer {
 
 }
 
-extension KeyedDecodingContainer {
+public extension KeyedDecodingContainer {
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Bool {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == Bool {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == String {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == String {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int8 {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == Int8 {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int16 {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == Int16 {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int32 {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == Int32 {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int64 {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == Int64 {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt8 {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == UInt8 {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt16 {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == UInt16 {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt32 {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == UInt32 {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt64 {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == UInt64 {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Float {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == Float {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Double {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source == Double {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decode<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                            using transformer: Transformer) throws -> Transformer.Target where Transformer.Source: Decodable {
+  func decode<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target where Transformer.Source: Decodable {
     return try transformer.decode(decode(Transformer.Source.self, forKey: key))
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Bool {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == Bool {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == String {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == String {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Int8 {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == Int8 {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Int16 {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == Int16 {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Int32 {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == Int32 {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Int64 {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == Int64 {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == UInt8 {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == UInt8 {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == UInt16 {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == UInt16 {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == UInt32 {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == UInt32 {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == UInt64 {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == UInt64 {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Float {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == Float {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Double {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source == Double {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
-  public func decodeIfPresent<Transformer: ValueDecodingTransformer>(forKey key: Key,
-                                                                     using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source: Decodable {
+  func decodeIfPresent<Transformer: ValueDecodingTransformer>(
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws -> Transformer.Target? where Transformer.Source: Decodable {
     try decodeIfPresent(Transformer.Source.self, forKey: key).flatMap { try transformer.decode($0) }
   }
 
 }
 
-extension UnkeyedDecodingContainer {
+public extension UnkeyedDecodingContainer {
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Bool {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Bool {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == String {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == String {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int8 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Int8 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int16 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Int16 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int32 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Int32 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int64 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Int64 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt8 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == UInt8 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt16 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == UInt16 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt32 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == UInt32 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt64 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == UInt64 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Float {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Float {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Double {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Double {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source: Decodable {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source: Decodable {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Bool {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == Bool {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == String {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == String {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Int8 {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == Int8 {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Int16 {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == Int16 {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Int32 {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == Int32 {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Int64 {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == Int64 {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == UInt8 {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == UInt8 {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == UInt16 {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == UInt16 {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == UInt32 {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == UInt32 {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == UInt64 {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == UInt64 {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Float {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == Float {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source == Double {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source == Double {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
-  public mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target? where Transformer.Source: Decodable {
+  mutating func decodeIfPresent<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+    -> Transformer.Target? where Transformer.Source: Decodable {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
 }
 
-extension SingleValueDecodingContainer {
+public extension SingleValueDecodingContainer {
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Bool {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Bool {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == String {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == String {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int8 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Int8 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int16 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Int16 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int32 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Int32 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Int64 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Int64 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt8 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == UInt8 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt16 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == UInt16 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt32 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == UInt32 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == UInt64 {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == UInt64 {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Float {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Float {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source == Double {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source == Double {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
-  public mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer.Target where Transformer.Source: Decodable {
+  mutating func decode<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws -> Transformer
+    .Target where Transformer.Source: Decodable {
     return try transformer.decode(decode(Transformer.Source.self))
   }
 
@@ -337,95 +442,125 @@ public protocol ValueEncodingTransformer {
 }
 
 
-extension KeyedEncodingContainer {
+public extension KeyedEncodingContainer {
 
-  public mutating func encodeConditional<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                                forKey key: Key,
-                                                                                using transformer: Transformer) throws where Transformer.Target: AnyObject, Transformer.Source: AnyObject & Encodable {
+  mutating func encodeConditional<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Target: AnyObject, Transformer.Source: AnyObject & Encodable {
     try encodeConditional(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Bool {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Bool {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == String {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == String {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int8 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int8 {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int16 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int16 {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int32 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int32 {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int64 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int64 {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt8 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt8 {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt16 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt16 {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt32 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt32 {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt64 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt64 {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Float {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Float {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Double {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Double {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     forKey key: Key,
-                                                                     using transformer: Transformer) throws where Transformer.Source: Encodable {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source: Encodable {
     try encode(transformer.encode(value), forKey: key)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == Bool {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Bool {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -434,9 +569,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == String {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == String {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -445,9 +582,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == Int8 {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int8 {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -456,9 +595,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == Int16 {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int16 {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -467,9 +608,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == Int32 {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int32 {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -478,9 +621,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == Int64 {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int64 {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -489,9 +634,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == UInt8 {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt8 {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -500,9 +647,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == UInt16 {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt16 {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -511,9 +660,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == UInt32 {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt32 {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -522,9 +673,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == UInt64 {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt64 {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -533,9 +686,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == Float {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Float {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -544,9 +699,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source == Double {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Double {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -555,9 +712,11 @@ extension KeyedEncodingContainer {
     try encode(value, forKey: key, using: transformer)
   }
 
-  public mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target?,
-                                                                              forKey key: Key,
-                                                                              using transformer: Transformer) throws where Transformer.Source: Encodable {
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source: Encodable {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -568,209 +727,289 @@ extension KeyedEncodingContainer {
 
 }
 
-extension UnkeyedEncodingContainer {
+public extension UnkeyedEncodingContainer {
 
-  public mutating func encodeConditional<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                                using transformer: Transformer) throws where Transformer.Target: AnyObject, Transformer.Source: AnyObject & Encodable {
+  mutating func encodeConditional<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Target: AnyObject, Transformer.Source: AnyObject & Encodable {
     try encodeConditional(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Bool {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Bool {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == String {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == String {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int8 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int8 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int16 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int16 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int32 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int32 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int64 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int64 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt8 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt8 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt16 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt16 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt32 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt32 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt64 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt64 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Float {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Float {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Double {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Double {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source: Encodable {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source: Encodable {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == Bool {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == Bool {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == String {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == String {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int8 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int8 {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int16 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int16 {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int32 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int32 {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int64 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int64 {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt8 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt8 {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt16 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt16 {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt32 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt32 {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt64 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt64 {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == Float {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == Float {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source == Double {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == Double {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(contentsOf values: [Transformer.Target],
-                                                                     using transformer: Transformer) throws where Transformer.Source: Encodable {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source: Encodable {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
 }
 
-extension SingleValueEncodingContainer {
+public extension SingleValueEncodingContainer {
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Bool {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Bool {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     transformer: Transformer) throws where Transformer.Source == String {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    transformer: Transformer
+  ) throws where Transformer.Source == String {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int8 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int8 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int16 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int16 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int32 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int32 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Int64 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int64 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt8 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt8 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt16 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt16 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt32 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt32 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == UInt64 {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt64 {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Float {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Float {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source == Double {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Double {
     try encode(transformer.encode(value))
   }
 
-  public mutating func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target,
-                                                                     using transformer: Transformer) throws where Transformer.Source: Encodable {
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source: Encodable {
     try encode(transformer.encode(value))
   }
 
