@@ -1,26 +1,12 @@
-/*
- * MIT License
- *
- * Copyright 2021 Outfox, inc.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+//
+//  CBORDecoderTests.swift
+//  PotentCodables
+//
+//  Copyright © 2021 Outfox, inc.
+//
+//
+//  Distributed under the MIT License, See LICENSE for details.
+//
 
 @testable import PotentCBOR
 @testable import PotentCodables
@@ -71,7 +57,7 @@ class CBORDecoderTests: XCTestCase {
 
     // Biggest
     XCTAssertEqual(
-      try CBORDecoder().decode(UInt64.self, from: Data([0x1b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff])),
+      try CBORDecoder().decode(UInt64.self, from: Data([0x1B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])),
       18_446_744_073_709_551_615
     )
   }
@@ -90,7 +76,7 @@ class CBORDecoderTests: XCTestCase {
 
     // Biggest
     XCTAssertEqual(
-      try CBORDecoder().decode(Int64.self, from: Data([0x3b, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff])),
+      try CBORDecoder().decode(Int64.self, from: Data([0x3B, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF])),
       -9_223_372_036_854_775_808
     )
   }
