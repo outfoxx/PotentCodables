@@ -113,24 +113,19 @@ public struct SchemaState {
 
     keyStack.append(key)
 
-    do {
-      var nextPossibleStates: [State] = []
+    var nextPossibleStates: [State] = []
 
-      for possibleState in currentPossibleStates {
-        guard case .schema(let possibleSchema) = possibleState else {
-          nextPossibleStates.append(possibleState)
-          continue
-        }
-
-        let expandedPossibleStates = try step(into: possibleSchema)
-        nextPossibleStates.append(contentsOf: expandedPossibleStates)
+    for possibleState in currentPossibleStates {
+      guard case .schema(let possibleSchema) = possibleState else {
+        nextPossibleStates.append(possibleState)
+        continue
       }
 
-      stateStack.append(nextPossibleStates)
+      let expandedPossibleStates = try step(into: possibleSchema)
+      nextPossibleStates.append(contentsOf: expandedPossibleStates)
     }
-    catch {
-      keyStack.removeLast()
-    }
+
+    stateStack.append(nextPossibleStates)
   }
 
   private func step(into schema: Schema) throws -> [State] {
