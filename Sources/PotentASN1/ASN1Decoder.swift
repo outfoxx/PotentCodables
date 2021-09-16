@@ -724,7 +724,7 @@ extension SchemaState {
         return items[0].unwrapped
 
 
-      case .choiceOf, .optional, .version, .versioned, .type, .dynamic:
+      case .choiceOf, .optional, .version, .versioned, .type, .dynamic, .nothing:
         fatalError("corrupt schema, should have been expanded")
       }
 

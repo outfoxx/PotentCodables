@@ -562,7 +562,7 @@ extension SchemaState {
         return .tagged(ASN1.Tag.tag(from: tag, in: tagClass, constructed: true), encodedData)
 
 
-      case .choiceOf, .optional, .version, .versioned, .type, .dynamic:
+      case .choiceOf, .optional, .version, .versioned, .type, .dynamic, .nothing:
         fatalError("corrupt schema, should have been expanded")
       }
 

@@ -175,6 +175,8 @@ public struct SchemaState {
   private func expand(schema: Schema) throws -> [State] {
 
     switch schema {
+    case .nothing:
+      return []
 
     case .choiceOf(let options):
       return try options.flatMap { option in try expand(schema: option) }

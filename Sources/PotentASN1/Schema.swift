@@ -76,6 +76,7 @@ public indirect enum Schema {
   case string(kind: AnyString.Kind, size: Size? = nil)
   case time(kind: AnyTime.Kind)
   case null
+  case nothing
 
   public var possibleTags: [ASN1.AnyTag]? {
     switch self {
@@ -115,7 +116,7 @@ public indirect enum Schema {
       case .generalized: return [ASN1.Tag.generalizedTime.universal]
       }
     case .null: return [ASN1.Tag.null.universal]
-    case .any, .dynamic: return nil
+    case .any, .dynamic, .nothing: return nil
     }
   }
 
@@ -241,6 +242,9 @@ extension Schema: CustomDebugStringConvertible {
     }
 
     switch self {
+    case .nothing:
+      break
+
     case .sequence(let fields):
       indent += "  "
       defer {
