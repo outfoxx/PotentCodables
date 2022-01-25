@@ -95,7 +95,7 @@ public indirect enum ASN1: Value {
   case teletexString(String)
   case videotexString(String)
   case ia5String(String)
-  case utcTime(Date)
+  case utcTime(ZonedDate)
   case generalizedTime(ZonedDate)
   case graphicString(String)
   case visibleString(String)
@@ -170,7 +170,7 @@ public indirect enum ASN1: Value {
     case .teletexString(let value): return AnyString(value, kind: .teletex)
     case .videotexString(let value): return AnyString(value, kind: .videotex)
     case .ia5String(let value): return AnyString(value, kind: .ia5)
-    case .utcTime(let value): return AnyTime(date: value, timeZone: .utc, kind: .utc)
+    case .utcTime(let value): return AnyTime(value, kind: .utc)
     case .generalizedTime(let value): return AnyTime(value, kind: .generalized)
     case .graphicString(let value): return AnyString(value, kind: .graphic)
     case .visibleString(let value): return AnyString(value, kind: .visible)
@@ -312,7 +312,7 @@ public extension ASN1 {
     return value
   }
 
-  var utcTimeValue: Date? {
+  var utcTimeValue: ZonedDate? {
     guard case .utcTime(let value) = absolute else { return nil }
     return value
   }
@@ -372,7 +372,7 @@ public extension ASN1 {
 
   var timeValue: (ZonedDate, AnyTime.Kind)? {
     switch absolute {
-    case .utcTime(let date): return (ZonedDate(date: date, timeZone: .utc), .utc)
+    case .utcTime(let date): return (date, .utc)
     case .generalizedTime(let date): return (date, .generalized)
     default: return nil
     }
@@ -447,7 +447,7 @@ extension ASN1: Codable {
     case .ia5String:
       self = .ia5String(try container.decode(String.self))
     case .utcTime:
-      self = .utcTime(try container.decode(Date.self))
+      self = .utcTime(try container.decode(ZonedDate.self))
     case .generalizedTime:
       self = .generalizedTime(try container.decode(ZonedDate.self))
     case .graphicString:

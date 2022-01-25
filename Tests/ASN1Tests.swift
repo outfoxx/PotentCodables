@@ -172,6 +172,64 @@ class ASN1Tests: XCTestCase {
     XCTAssertEqual(offset(23), -39600)
   }
 
+  func testUTCTimeEncodingDecoding() throws {
+
+    struct TestStruct: Codable, Equatable {
+      let a: AnyTime
+      let b: AnyTime
+    }
+
+    let TestStructSchema: Schema =
+      .sequence([
+        "a": .time(kind: .utc),
+        "b": .time(kind: .utc),
+      ])
+
+    let src = TestStruct(
+      a: AnyTime(date: Date().truncatedToSecs, timeZone: .utc, kind: .utc),
+      b: AnyTime(date: Date().truncatedToSecs, timeZone: .timeZone(from: "+1122")!, kind: .utc)
+    )
+    let srcData = try ASN1Encoder(schema: TestStructSchema).encode(src)
+    let dst = try ASN1Decoder(schema: TestStructSchema).decode(TestStruct.self, from: srcData)
+
+    XCTAssertEqual(src, dst)
+  }
+
+  func testUTCTimeReadingWriting() throws {
+
+    let writer = DERWriter()
+
+    try writer.write(ASN1.tagged(23, "2211112233Z".data(using: .ascii)!))
+    try writer.write(ASN1.tagged(23, "221111223344Z".data(using: .ascii)!))
+
+    try writer.write(ASN1.tagged(23, "2211112233+1122".data(using: .ascii)!))
+    try writer.write(ASN1.tagged(23, "221111223344+1122".data(using: .ascii)!))
+
+    try writer.write(ASN1.tagged(23, "2211112233-1122".data(using: .ascii)!))
+    try writer.write(ASN1.tagged(23, "221111223344-1122".data(using: .ascii)!))
+
+    let values = try DERReader.parse(data: writer.data)
+
+    func date(_ index: Int) -> TimeInterval { values[index].utcTimeValue!.date.timeIntervalSince1970 }
+    func tz(_ index: Int) -> TimeZone { values[index].utcTimeValue!.timeZone }
+    func offset(_ index: Int) -> Int { values[index].utcTimeValue!.timeZone.secondsFromGMT() }
+
+    XCTAssertEqual(date(0), 1_668_205_980.0)
+    XCTAssertEqual(tz(0), .utc)
+    XCTAssertEqual(date(1), 1_668_206_024.0)
+    XCTAssertEqual(tz(1), .utc)
+
+    XCTAssertEqual(date(2), 1_668_165_060.0)
+    XCTAssertEqual(offset(2), 40920)
+    XCTAssertEqual(date(3), 1_668_165_104.0)
+    XCTAssertEqual(offset(3), 40920)
+
+    XCTAssertEqual(date(4), 1_668_246_900.0)
+    XCTAssertEqual(offset(4), -40920)
+    XCTAssertEqual(date(5), 1_668_246_944.0)
+    XCTAssertEqual(offset(5), -40920)
+  }
+
 }
 
 

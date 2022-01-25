@@ -195,13 +195,14 @@ public class DERWriter {
       append(data: ascii)
 
     case .utcTime(let value):
-      let ascii = utcDateFormatter.string(from: value).data(using: String.Encoding.ascii)!
+      let formatter = UTCFormatters.for(timeZone: value.timeZone)
+      let ascii = formatter.string(from: value.date).data(using: .ascii)!
       append(tag: .utcTime, length: ascii.count)
       append(data: ascii)
 
     case .generalizedTime(let value):
       let formatter = GeneralizedFormatters.for(timeZone: value.timeZone)
-      let ascii = formatter.string(from: value.date).data(using: String.Encoding.ascii)!
+      let ascii = formatter.string(from: value.date).data(using: .ascii)!
       append(tag: .generalizedTime, length: ascii.count)
       append(data: ascii)
 
@@ -247,14 +248,31 @@ public class DERWriter {
 
 }
 
+private enum UTCFormatters {
 
-private let utcDateFormatter: DateFormatter = {
-  let fmt = DateFormatter()
-  fmt.locale = Locale(identifier: "en_US_POSIX")
-  fmt.timeZone = .utc
-  fmt.dateFormat = "yyMMddHHmmss'Z'"
-  return fmt
-}()
+  private static var utcFormatters: [TimeZone: DateFormatter] = [:]
+  private static let utcFormattersLock = NSLock()
+
+  static func `for`(timeZone: TimeZone) -> DateFormatter {
+    utcFormattersLock.lock()
+    defer { utcFormattersLock.unlock() }
+
+    if let found = utcFormatters[timeZone] {
+      return found
+    }
+
+    let formatter = DateFormatter()
+    formatter.calendar = Calendar(identifier: .iso8601)
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = timeZone
+    formatter.dateFormat = timeZone == .utc ? "yyMMddHHmmss'Z'" : "yyMMddHHmmssZ"
+
+    utcFormatters[timeZone] = formatter
+
+    return formatter
+  }
+
+}
 
 private enum GeneralizedFormatters {
 
