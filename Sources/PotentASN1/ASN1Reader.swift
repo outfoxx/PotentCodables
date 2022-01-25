@@ -20,6 +20,7 @@ public enum DERReader {
     case invalidStringEncoding
     case invalidStringCharacters
     case nonConstructedCollection
+    case invalidUTCTime
     case invalidGeneralizedTime
   }
 
@@ -143,7 +144,10 @@ public enum DERReader {
 
     case .utcTime:
       let string = try parseString(&itemBuffer, tag: tag, encoding: .ascii)
-      return .utcTime(utcDateFormatter.date(from: string)!)
+      guard let date = utcDateFormatter.date(from: string) else {
+        throw Error.invalidUTCTime
+      }
+      return .utcTime(date)
 
     case .generalizedTime:
       let string = try parseString(&itemBuffer, tag: tag, encoding: .ascii)
