@@ -361,7 +361,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
 }
 
 
-private let _iso8601Formatter = ISO8601SuffixedDateFormatter(basePattern: "yyyy-MM-dd'T'HH:mm:ss")
+private let _iso8601Formatter = SuffixedDateFormatter.optionalFractionalSeconds(basePattern: "yyyy-MM-dd'T'HH:mm:ss")
 
 
 #if canImport(Combine)

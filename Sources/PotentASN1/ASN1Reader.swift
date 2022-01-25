@@ -20,6 +20,7 @@ public enum DERReader {
     case invalidStringEncoding
     case invalidStringCharacters
     case nonConstructedCollection
+    case invalidUTCTime
     case invalidGeneralizedTime
   }
 
@@ -143,7 +144,10 @@ public enum DERReader {
 
     case .utcTime:
       let string = try parseString(&itemBuffer, tag: tag, encoding: .ascii)
-      return .utcTime(utcDateFormatter.date(from: string)!)
+      guard let zonedDate = utcFormatter.date(from: string) else {
+        throw Error.invalidUTCTime
+      }
+      return .utcTime(zonedDate)
 
     case .generalizedTime:
       let string = try parseString(&itemBuffer, tag: tag, encoding: .ascii)
@@ -320,17 +324,10 @@ private extension UnsafeBufferPointer {
 }
 
 
-private let utcDateFormatter: DateFormatter = {
-  let fmt = DateFormatter()
-  fmt.timeZone = TimeZone(abbreviation: "UTC")
-  fmt.dateFormat = "yyMMddHHmmss'Z'"
-  return fmt
-}()
-
-
 private extension String {
   var hasFractionalSeconds: Bool { contains(".") }
   var hasZone: Bool { contains("+") || contains("-") || contains("Z") }
 }
 
-private let generalizedFormatter = ISO8601SuffixedDateFormatter(basePattern: "yyyyMMddHHmmss")
+private let utcFormatter = SuffixedDateFormatter(basePattern: "yyMMddHHmm", secondsPattern: "ss") { $0.count > 10 }
+private let generalizedFormatter = SuffixedDateFormatter.optionalFractionalSeconds(basePattern: "yyyyMMddHHmmss")

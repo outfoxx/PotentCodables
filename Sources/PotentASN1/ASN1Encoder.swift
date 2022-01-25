@@ -426,7 +426,7 @@ extension SchemaState {
         func asn1Time(_ zonedDate: ZonedDate) -> ASN1 {
           switch requiredKind {
           case .generalized: return .generalizedTime(zonedDate)
-          case .utc: return .utcTime(zonedDate.utcDate)
+          case .utc: return .utcTime(zonedDate)
           }
         }
 
