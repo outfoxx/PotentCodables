@@ -326,6 +326,7 @@ private extension UnsafeBufferPointer {
 
 private let utcDateFormatter: DateFormatter = {
   let fmt = DateFormatter()
+  fmt.locale = Locale(identifier: "en_US_POSIX")
   fmt.timeZone = TimeZone(abbreviation: "UTC")
   fmt.dateFormat = "yyMMddHHmmss'Z'"
   return fmt
