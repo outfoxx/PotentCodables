@@ -47,12 +47,12 @@ jobs:
       with:
         output-file: ./coverage/lcov.info
 
-    - name: Report Coverage
-      uses: romeovs/lcov-reporter-action@v0.2.21
-      if: ${{ matrix.platform == 'macos' && matrix.xcode == '12.5.1' }}
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        lcov-file: ./coverage/lcov.info
+    # - name: Report Coverage
+    #   uses: romeovs/lcov-reporter-action@v0.2.21
+    #   if: ${{ matrix.platform == 'macos' && matrix.xcode == '12.5.1' }}
+    #   with:
+    #     github-token: ${{ secrets.GITHUB_TOKEN }}
+    #     lcov-file: ./coverage/lcov.info
 
     - name: Updload Reports
       uses: actions/upload-artifact@v2
