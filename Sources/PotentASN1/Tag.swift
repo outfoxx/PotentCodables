@@ -13,7 +13,11 @@ import Foundation
 
 public protocol TaggedValue {
 
-  var tagAndValue: (ASN1.AnyTag, Any?) { get }
+  var tag: ASN1.AnyTag { get }
+  var value: Any? { get }
+
+  /// Encode the value accroding to the schema
+  func encode(schema: Schema) throws -> ASN1
 
   init?(tag: ASN1.AnyTag, value: Any?)
 

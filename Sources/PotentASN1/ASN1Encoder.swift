@@ -521,21 +521,20 @@ extension SchemaState {
 
       case .implicit(let tag, in: let tagClass, let implicitSchema):
         var implicitSchemaState = try SchemaState(initial: implicitSchema)
-        var source: Any?
+        let encoded: ASN1
         if let taggedValue = value as? TaggedValue {
-          let (tvTag, tvValue) = taggedValue.tagAndValue
-          guard tvTag == tag else {
+          guard taggedValue.tag == tag else {
+            // try next possible schema
+              continue
+          }
+          encoded = try taggedValue.encode(schema: implicitSchema)
+        }
+        else {
+          guard let value = try implicitSchemaState.tryEncode(value) else {
             // try next possible schema
             continue
           }
-          source = tvValue
-        }
-        else {
-          source = value
-        }
-        guard let encoded = try implicitSchemaState.tryEncode(source) else {
-          // try next possible schema
-          continue
+          encoded = value
         }
         let encodedData = try DERReader.parseTagged(data: DERWriter.write(encoded)).data
         return .tagged(ASN1.Tag.tag(from: tag, in: tagClass, constructed: implicitSchema.isCollection), encodedData)
@@ -543,20 +542,19 @@ extension SchemaState {
 
       case .explicit(let tag, in: let tagClass, let explicitSchema):
         var explicitSchemaState = try SchemaState(initial: explicitSchema)
-        var source: Any?
+        let encoded: ASN1
         if let taggedValue = value as? TaggedValue {
-          let (tvTag, tvValue) = taggedValue.tagAndValue
-          guard tvTag == tag else {
+          guard taggedValue.tag == tag else {
             // try next possible schema
             continue
           }
-          source = tvValue
+          encoded = try taggedValue.encode(schema: explicitSchema)
         }
         else {
-          source = value
-        }
-        guard let encoded = try explicitSchemaState.tryEncode(source) else {
-          continue
+          guard let value = try explicitSchemaState.tryEncode(value) else {
+            continue
+          }
+          encoded = value
         }
         let encodedData = try DERWriter.write(encoded)
         return .tagged(ASN1.Tag.tag(from: tag, in: tagClass, constructed: true), encodedData)
