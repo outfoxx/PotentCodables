@@ -80,8 +80,7 @@ public struct JSONSerialization {
   public static func string(from json: JSON, options: WritingOptions = []) throws -> String {
     var output = String()
     var writer = JSONWriter(pretty: options.contains(.prettyPrinted), sortedKeys: options.contains(.sortedKeys)) {
-      guard let str = $0 else { return }
-      output.append(str)
+      output.append($0)
     }
 
     try writer.serialize(json)
