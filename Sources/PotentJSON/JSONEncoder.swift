@@ -269,7 +269,7 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
   }
 
   public static func keyedValuesToValue(_ values: [String: JSON], encoder: Encoder) -> JSON {
-    return .object(values)
+    return .object(JSON.Object(uniqueKeysWithValues: values))
   }
 
   public static func data(from value: JSON, options: Options) throws -> Data {

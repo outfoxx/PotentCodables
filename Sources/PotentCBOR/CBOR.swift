@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import OrderedCollections
 import PotentCodables
 
 
@@ -43,12 +44,15 @@ public indirect enum CBOR: Equatable, Hashable {
     }
   }
 
+  public typealias Array = [CBOR]
+  public typealias Map = OrderedDictionary<CBOR, CBOR>
+
   case unsignedInt(UInt64)
   case negativeInt(UInt64)
   case byteString(Data)
   case utf8String(String)
-  case array([CBOR])
-  case map([CBOR: CBOR])
+  case array(Array)
+  case map(Map)
   case tagged(Tag, CBOR)
   case simple(UInt8)
   case boolean(Bool)
@@ -78,12 +82,12 @@ public indirect enum CBOR: Equatable, Hashable {
     return string
   }
 
-  public var arrayValue: [CBOR]? {
+  public var arrayValue: Array? {
     guard case .array(let array) = untagged else { return nil }
     return array
   }
 
-  public var mapValue: [CBOR: CBOR]? {
+  public var mapValue: Map? {
     guard case .map(let map) = untagged else { return nil }
     return map
   }
@@ -243,11 +247,7 @@ extension CBOR: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, Expressibl
   }
 
   public init(dictionaryLiteral elements: (CBOR, CBOR)...) {
-    var result = [CBOR: CBOR]()
-    for (key, value) in elements {
-      result[key] = value
-    }
-    self = .map(result)
+    self = .map(Map(uniqueKeysWithValues: elements))
   }
 
   public init(booleanLiteral value: Bool) {
@@ -304,7 +304,7 @@ extension CBOR: Value {
     case .float(let value): return value
     case .half(let value): return value.floatValue
     case .double(let value): return value
-    case .array(let value): return Array(value.map(\.unwrapped))
+    case .array(let value): return Swift.Array(value.map(\.unwrapped))
     case .map(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in
         (key.unwrapped as? AnyHashable, value.unwrapped)
       })

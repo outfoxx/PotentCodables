@@ -134,6 +134,15 @@ public enum YAML {
     }
   }
 
+  public typealias Array = [YAML]
+
+  public struct MappingEntry: Equatable, Hashable {
+    var key: YAML
+    var value: YAML
+  }
+
+  public typealias Mapping = [MappingEntry]
+
   public enum StringStyle: Int32 {
     case any = -1
     case plain = 0
@@ -149,18 +158,13 @@ public enum YAML {
     case block
   }
 
-  public struct MapEntry: Equatable, Hashable {
-    let key: YAML
-    let value: YAML
-  }
-
   case null(anchor: Anchor?)
   case string(String, style: StringStyle, tag: Tag?, anchor: Anchor?)
   case integer(Number, anchor: Anchor?)
   case float(Number, anchor: Anchor?)
   case bool(Bool, anchor: Anchor?)
   case sequence([YAML], style: CollectionStyle, tag: Tag?, anchor: Anchor?)
-  case mapping([MapEntry], style: CollectionStyle, tag: Tag?, anchor: Anchor?)
+  case mapping(Mapping, style: CollectionStyle, tag: Tag?, anchor: Anchor?)
   case alias(String)
 
   public var isNull: Bool {
@@ -224,12 +228,12 @@ public enum YAML {
     return value
   }
 
-  public var sequenceValue: [YAML]? {
+  public var sequenceValue: Array? {
     guard case .sequence(let value, _, _, _) = self else { return nil }
     return value
   }
 
-  public var mappingValue: [YAML.MapEntry]? {
+  public var mappingValue: Mapping? {
     guard case .mapping(let value, _, _, _) = self else { return nil }
     return value
   }
@@ -320,7 +324,7 @@ extension YAML: Value {
     case .string(let value, _, _, _): return value
     case .integer(let value, _): return value.numberValue
     case .float(let value, _): return value.numberValue
-    case .sequence(let value, _, _, _): return Array(value.map(\.unwrapped))
+    case .sequence(let value, _, _, _): return Swift.Array(value.map(\.unwrapped))
     case .mapping(let value, _, _, _): return Dictionary(uniqueKeysWithValues: value.map { entry in
         (entry.key.stringValue!, entry.value.unwrapped)
       })
@@ -382,7 +386,7 @@ extension YAML: ExpressibleByArrayLiteral {
 extension YAML: ExpressibleByDictionaryLiteral {
 
   public init(dictionaryLiteral elements: (YAML, YAML)...) {
-    self = .mapping(elements.map { MapEntry(key: $0, value: $1) }, style: .any, tag: nil, anchor: nil)
+    self = .mapping(elements.map { MappingEntry(key: $0, value: $1) }, style: .any, tag: nil, anchor: nil)
   }
 
 }

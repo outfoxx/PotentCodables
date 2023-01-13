@@ -109,7 +109,7 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
   }
 
   public static func keyedValuesToValue(_ values: [String: CBOR], encoder: Encoder) -> CBOR {
-    return .map(Dictionary(uniqueKeysWithValues: values.map { key, value in (CBOR(key), value) }))
+    return .map(CBOR.Map(uniqueKeysWithValues: values.map { key, value in (CBOR(key), value) }))
   }
 
   public static func data(from value: CBOR, options: Options) throws -> Data {

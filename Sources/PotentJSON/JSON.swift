@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import OrderedCollections
 import PotentCodables
 
 
@@ -101,12 +102,15 @@ public enum JSON {
 
   }
 
+  public typealias Array = [JSON]
+  public typealias Object = OrderedDictionary<String, JSON>
+
   case null
   case string(String)
   case number(Number)
   case bool(Bool)
-  case array([JSON])
-  case object([String: JSON])
+  case array(Array)
+  case object(Object)
 
   public var isNull: Bool {
     if case .null = self {
@@ -150,12 +154,12 @@ public enum JSON {
     return value
   }
 
-  public var arrayValue: [JSON]? {
+  public var arrayValue: Array? {
     guard case .array(let value) = self else { return nil }
     return value
   }
 
-  public var objectValue: [String: JSON]? {
+  public var objectValue: Object? {
     guard case .object(let value) = self else { return nil }
     return value
   }
@@ -187,7 +191,7 @@ extension JSON: CustomStringConvertible {
 
   public var description: String {
     var output = ""
-    var writer = JSONWriter(pretty: true, sortedKeys: true) { output += $0 ?? "" }
+    var writer = JSONWriter(pretty: true) { output += $0 ?? "" }
 
     do {
       try writer.serialize(self)
@@ -210,7 +214,7 @@ extension JSON: Value {
     case .bool(let value): return value
     case .string(let value): return value
     case .number(let value): return value.numberValue
-    case .array(let value): return Array(value.map(\.unwrapped))
+    case .array(let value): return Swift.Array(value.map(\.unwrapped))
     case .object(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in (key, value.unwrapped) })
     }
   }
@@ -256,7 +260,7 @@ extension JSON: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expressibl
   public typealias Value = JSON
 
   public init(dictionaryLiteral elements: (Key, Value)...) {
-    self = .object(Dictionary(elements, uniquingKeysWith: { _, last in last }))
+    self = .object(Object(uniqueKeysWithValues: elements))
   }
 
 }
@@ -276,30 +280,6 @@ extension JSON.Number: ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, E
   }
 
 }
-
-/**
- * "Stable" encoding of JSON to text
- *
- * Encodes values in a stable (aka repeatable) manner making it
- * easy to compare different complex values that have been encoded
- * to text
- **/
-public extension JSON {
-
-  var stableText: String {
-    var output = ""
-    var writer = JSONWriter(pretty: false, sortedKeys: true) { output += $0 ?? "" }
-    do {
-      try writer.serialize(self)
-    }
-    catch {
-      output = "Invalid JSON: \(error)"
-    }
-    return output
-  }
-
-}
-
 
 /// Make encoders/decoders available in JSON namespace
 ///

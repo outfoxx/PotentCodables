@@ -26,8 +26,8 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/attaswift/BigInt.git", from: "5.0.0"),
-    .package(url: "https://github.com/lukaskubanek/OrderedDictionary.git", from: "2.2.2")
+    .package(url: "https://github.com/attaswift/BigInt.git", .upToNextMinor(from: "5.3.0")),
+    .package(url: "https://github.com/apple/swift-collections.git", .upToNextMinor(from: "1.0.4"))
   ],
   targets: [
     .target(
@@ -35,15 +35,25 @@ let package = Package(
     ),
     .target(
       name: "PotentJSON",
-      dependencies: ["PotentCodables"]
+      dependencies: [
+        "PotentCodables",
+        .product(name: "Collections", package: "swift-collections")
+      ]
     ),
     .target(
       name: "PotentCBOR",
-      dependencies: ["PotentCodables"]
+      dependencies: [
+        "PotentCodables",
+        .product(name: "Collections", package: "swift-collections")
+      ]
     ),
     .target(
       name: "PotentASN1",
-      dependencies: ["PotentCodables", "BigInt", "OrderedDictionary"]
+      dependencies: [
+        "PotentCodables",
+        "BigInt",
+        .product(name: "Collections", package: "swift-collections")
+      ]
     ),
     .target(    
       name: "Cfyaml",
