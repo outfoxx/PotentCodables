@@ -85,7 +85,7 @@ public struct SchemaState {
 
   private var nearestScope: Scope? {
     var path = keyStack.map(\.stringValue)
-    while let _ = path.popLast() {
+    while path.popLast() != nil {
       if let scope = scopes[path] {
         return scope
       }

@@ -611,7 +611,7 @@ extension SchemaState {
         return data
 
 
-      case .boolean(default: _):
+      case .boolean:
 
         guard let value = value.booleanValue else {
           // try next possible schema
