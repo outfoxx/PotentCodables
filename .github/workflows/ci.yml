@@ -22,14 +22,14 @@ jobs:
 
   build-test-coverage:
 
-    runs-on: macos-11
+    runs-on: macos-12
 
     needs: [check]
 
     strategy:
       matrix:
         platform: [macos, ios, tvos]
-        xcode: ["12.5.1", "13.0"]
+        xcode: ["14.1"]
 
     steps:
       

@@ -16,7 +16,7 @@ build-test-macos:
 	swift test --enable-code-coverage
 
 build-test-ios:
-	$(call buildtest,iOS,platform=iOS Simulator$(comma)name=iPhone 12)
+	$(call buildtest,iOS,platform=iOS Simulator$(comma)name=iPhone 13)
 
 build-test-tvos:
 	$(call buildtest,tvOS,platform=tvOS Simulator$(comma)name=Apple TV)
