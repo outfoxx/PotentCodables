@@ -199,7 +199,7 @@ extension AnyValue: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expres
   public typealias Value = AnyValue
 
   public init(dictionaryLiteral elements: (Key, Value)...) {
-    self = .dictionary(Dictionary(elements, uniquingKeysWith: { _, last in last }))
+    self = .dictionary(Dictionary(uniqueKeysWithValues: elements))
   }
 
 }

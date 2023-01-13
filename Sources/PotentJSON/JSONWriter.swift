@@ -93,7 +93,7 @@ struct JSONWriter {
     writer(str)
   }
 
-  mutating func serializeArray(_ array: [JSON]) throws {
+  mutating func serializeArray(_ array: JSON.Array) throws {
     writer("[")
     if pretty {
       writer("\n")
@@ -121,7 +121,7 @@ struct JSONWriter {
     writer("]")
   }
 
-  mutating func serializeDictionary(_ dict: [String: JSON]) throws {
+  mutating func serializeDictionary(_ dict: JSON.Object) throws {
     writer("{")
     if pretty {
       writer("\n")

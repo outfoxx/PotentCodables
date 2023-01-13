@@ -20,7 +20,7 @@ struct YAMLWriter {
 
   typealias Writer = (String?) -> Void
 
-  public static func write(_ documents: [YAML], sortedKeys: Bool = false, writer: @escaping Writer) throws {
+  public static func write(_ documents: YAML.Array, sortedKeys: Bool = false, writer: @escaping Writer) throws {
 
     func output(
       emitter: OpaquePointer?,

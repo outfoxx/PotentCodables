@@ -392,12 +392,12 @@ struct JSONReader {
 
   // MARK: - Object parsing
 
-  func parseObject(_ input: Index, options opt: JSONSerialization.ReadingOptions) throws -> ([String: JSON], Index)? {
+  func parseObject(_ input: Index, options opt: JSONSerialization.ReadingOptions) throws -> (JSON.Object, Index)? {
     guard let beginIndex = try consumeStructure(Structure.beginObject, input: input) else {
       return nil
     }
     var index = beginIndex
-    var output: [String: JSON] = [:]
+    var output: JSON.Object = [:]
     while true {
       if let finalIndex = try consumeStructure(Structure.endObject, input: index) {
         return (output, finalIndex)
@@ -440,12 +440,12 @@ struct JSONReader {
 
   // MARK: - Array parsing
 
-  func parseArray(_ input: Index, options opt: JSONSerialization.ReadingOptions) throws -> ([JSON], Index)? {
+  func parseArray(_ input: Index, options opt: JSONSerialization.ReadingOptions) throws -> (JSON.Array, Index)? {
     guard let beginIndex = try consumeStructure(Structure.beginArray, input: input) else {
       return nil
     }
     var index = beginIndex
-    var output: [JSON] = []
+    var output: JSON.Array = []
     while true {
       if let finalIndex = try consumeStructure(Structure.endArray, input: index) {
         return (output, finalIndex)

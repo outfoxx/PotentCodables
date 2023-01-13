@@ -174,7 +174,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeArray(_ array: [CBOR]) throws {
+  public func encodeArray(_ array: CBOR.Array) throws {
     try encodeInt(array.count, majorType: 0b100)
     try encodeArrayChunk(array)
   }
@@ -187,7 +187,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeArrayChunk(_ chunk: [CBOR]) throws {
+  public func encodeArrayChunk(_ chunk: CBOR.Array) throws {
     for item in chunk {
       try encode(item)
     }
@@ -199,7 +199,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeMap(_ map: [CBOR: CBOR]) throws {
+  public func encodeMap(_ map: CBOR.Map) throws {
     try encodeInt(map.count, majorType: 0b101)
     try encodeMapChunk(map)
   }
@@ -212,7 +212,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeMapChunk(_ map: [CBOR: CBOR]) throws {
+  public func encodeMapChunk(_ map: CBOR.Map) throws {
     for (key, value) in map {
       try encode(key)
       try encode(value)

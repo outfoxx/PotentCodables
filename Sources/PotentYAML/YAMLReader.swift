@@ -13,7 +13,7 @@ import Foundation
 
 public enum YAMLReader {
 
-  public static func read(data: Data) throws -> [YAML] {
+  public static func read(data: Data) throws -> YAML.Array {
 
     var parseCfg = fy_parse_cfg(search_path: nil, flags: fy_parse_cfg_flags(rawValue: 0), userdata: nil, diag: nil)
 
@@ -35,9 +35,9 @@ public enum YAMLReader {
   }
 
 
-  static func stream(parser: Parser) throws -> [YAML] {
+  static func stream(parser: Parser) throws -> YAML.Array {
 
-    var documents: [YAML] = []
+    var documents: YAML.Array = []
 
     while true {
 
@@ -73,9 +73,9 @@ public enum YAMLReader {
   }
 
 
-  static func mapping(parser: Parser) throws -> [YAML.MapEntry] {
+  static func mapping(parser: Parser) throws -> YAML.Mapping {
 
-    var result: [YAML.MapEntry] = []
+    var result: YAML.Mapping = []
 
     while true {
 
@@ -93,15 +93,15 @@ public enum YAMLReader {
 
       let val = try value(event: valEvent, parser: parser)
 
-      result.append(YAML.MapEntry(key: key, value: val))
+      result.append(YAML.Mapping.Element(key: key, value: val))
     }
 
   }
 
 
-  static func sequence(parser: Parser) throws -> [YAML] {
+  static func sequence(parser: Parser) throws -> YAML.Array {
 
-    var result: [YAML] = []
+    var result: YAML.Array = []
 
     while true {
 

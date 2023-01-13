@@ -299,7 +299,7 @@ public class InternalValueDecoder<Value, Transform>: Decoder where Transform: In
       )
     }
 
-    let container = ValueKeyedDecodingContainer<Key, Value, Transform>(referencing: self, wrapping: topContainer)
+    let container = try ValueKeyedDecodingContainer<Key, Value, Transform>(referencing: self, wrapping: topContainer)
     return KeyedDecodingContainer(container)
   }
 
@@ -387,21 +387,32 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
   // MARK: - Initialization
 
   /// Initializes `self` by referencing the given decoder and container.
-  fileprivate init(referencing decoder: InternalValueDecoder, wrapping container: [String: Value]) {
+  fileprivate init(referencing decoder: InternalValueDecoder, wrapping container: [String: Value]) throws {
     self.decoder = decoder
     switch decoder.options.keyDecodingStrategy {
     case .convertFromSnakeCase:
       // Convert the snake case keys in the container to camel case.
       // If we hit a duplicate key after conversion, then we'll use the first one we saw. Effectively an undefined behavior with dictionaries.
-      self.container = Dictionary(container.map {
-        (KeyDecodingStrategy.convertFromSnakeCase($0.key), $0.value)
-      }, uniquingKeysWith: { first, _ in first })
+      self.container = try Dictionary(
+        container.map {
+          (KeyDecodingStrategy.convertFromSnakeCase($0.key), $0.value)
+        }, uniquingKeysWith: { _, _ in
+          throw DecodingError.dataCorrupted(.init(
+            codingPath: decoder.codingPath,
+            debugDescription: "Container has duplicate keys"
+          ))
+        })
     case .custom(let converter):
-      self.container = Dictionary(container.map { key, value in (
+      self.container = try Dictionary(
+        container.map { key, value in (
           converter(decoder.codingPath + [AnyCodingKey(stringValue: key, intValue: nil)]).stringValue,
-          value
-        )
-      }, uniquingKeysWith: { first, _ in first })
+          value)
+        }, uniquingKeysWith: { _, _ in
+          throw DecodingError.dataCorrupted(.init(
+            codingPath: decoder.codingPath,
+            debugDescription: "Container has duplicate keys"
+          ))
+        })
     case .useDefaultKeys:
       fallthrough
     @unknown default:
@@ -502,7 +513,7 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
     }
 
     let nestedDecoder = InternalValueDecoder(referencing: value, from: decoder)
-    let container = ValueKeyedDecodingContainer<NestedKey, Value, Transform>(
+    let container = try ValueKeyedDecodingContainer<NestedKey, Value, Transform>(
       referencing: nestedDecoder,
       wrapping: dictionary
     )
@@ -1087,7 +1098,7 @@ private struct ValueUnkeyedDecodingContainer<Value, Transform>: UnkeyedDecodingC
 
     currentIndex += 1
     let nestedDecoder = InternalValueDecoder(referencing: value, from: decoder)
-    let container = ValueKeyedDecodingContainer<NestedKey, Value, Transform>(
+    let container = try ValueKeyedDecodingContainer<NestedKey, Value, Transform>(
       referencing: nestedDecoder,
       wrapping: dictionary
     )

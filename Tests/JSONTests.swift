@@ -110,6 +110,39 @@ class JSONTests: XCTestCase {
     XCTAssertEqual(json, values.stableText)
   }
 
+  func testObjectKeySerializationExplicitOrder() throws {
+
+    let json = try JSONSerialization.string(from: [
+      "c": 1,
+      "a": 2,
+      "b": 3,
+    ])
+
+    XCTAssertEqual(json, #"{"c":1,"a":2,"b":3}"#)
+  }
+
+  func testObjectKeySerializationSortedOrder() throws {
+
+    let json = try JSONSerialization.string(from: [
+      "c": 1,
+      "a": 2,
+      "b": 3,
+    ], options: .sortedKeys)
+
+    XCTAssertEqual(json, #"{"a":2,"b":3,"c":1}"#)
+  }
+
+  func testObjectKeyDeserializationOrder() throws {
+
+    let object: JSON = [
+      "c": 1,
+      "a": 2,
+      "b": 3,
+    ]
+
+    XCTAssertEqual(object, try JSONSerialization.json(from: #"{"c":1,"a":2,"b":3}"#))
+  }
+
 }
 
 

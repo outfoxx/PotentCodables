@@ -347,7 +347,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func valueToKeyedValues(_ value: JSON, decoder: Decoder) throws -> [String: JSON]? {
     guard case .object(let dict) = value else { return nil }
-    return dict
+    return Dictionary(uniqueKeysWithValues: Array(dict.elements))
   }
 
   public static func value(from data: Data, options: Options) throws -> JSON {

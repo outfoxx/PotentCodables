@@ -10,6 +10,7 @@
 
 import Foundation
 
+
 private typealias CBORError = CBORSerialization.Error
 
 public struct CBORReader {
@@ -61,8 +62,8 @@ public struct CBORReader {
   ///     including `.invalidBreak` if a break indicator is encountered in
   ///     an item slot
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItems(count: Int) throws -> [CBOR] {
-    var result: [CBOR] = []
+  public func decodeItems(count: Int) throws -> CBOR.Array {
+    var result: CBOR.Array = []
     for _ in 0 ..< count {
       let item = try decodeRequiredItem()
       result.append(item)
@@ -77,8 +78,8 @@ public struct CBORReader {
   /// - Throws:
   ///     - `CBORSerialization.Error`: If corrupted data is encountered
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItemsUntilBreak() throws -> [CBOR] {
-    var result: [CBOR] = []
+  public func decodeItemsUntilBreak() throws -> CBOR.Array {
+    var result: CBOR.Array = []
     while let item = try decodeItem() {
       result.append(item)
     }
@@ -93,8 +94,8 @@ public struct CBORReader {
   ///     including `.invalidBreak` if a break indicator is encountered in
   ///     the either the key or value slot
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItemPairs(count: Int) throws -> [CBOR: CBOR] {
-    var result: [CBOR: CBOR] = [:]
+  public func decodeItemPairs(count: Int) throws -> CBOR.Map {
+    var result: CBOR.Map = [:]
     for _ in 0 ..< count {
       let key = try decodeRequiredItem()
       let val = try decodeRequiredItem()
@@ -112,8 +113,8 @@ public struct CBORReader {
   ///     including `.invalidBreak` if a break indicator is encountered in
   ///     the value slot
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItemPairsUntilBreak() throws -> [CBOR: CBOR] {
-    var result: [CBOR: CBOR] = [:]
+  public func decodeItemPairsUntilBreak() throws -> CBOR.Map {
+    var result: CBOR.Map = [:]
     while let key = try decodeItem() {
       let val = try decodeRequiredItem()
       result[key] = val

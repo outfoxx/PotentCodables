@@ -61,7 +61,7 @@ class CBORTests: XCTestCase {
       ],
     ]
 
-    let nestedMap: [CBOR: CBOR] = [
+    let nestedMap: CBOR.Map = [
       "joe": "schmoe",
       "age": 56,
     ]
@@ -69,4 +69,27 @@ class CBORTests: XCTestCase {
     cbor["tags"]?[2] = CBOR.map(nestedMap)
     XCTAssertEqual(cbor["tags"]?[2], CBOR.map(nestedMap))
   }
+
+  func testMapKeySerializationOrder() throws {
+
+    let cbor = try CBORSerialization.data(with: [
+      "c": 1,
+      "a": 2,
+      "b": 3,
+    ])
+
+    XCTAssertEqual(cbor, Data([0xA3, 0x61, 0x63, 0x01, 0x61, 0x61, 0x02, 0x61, 0x62, 0x03]))
+  }
+
+  func testMapKeyDeserializationOrder() throws {
+
+    let map: CBOR = [
+      "c": 1,
+      "a": 2,
+      "b": 3,
+    ]
+
+    XCTAssertEqual(map, try CBORSerialization.cbor(from: Data([0xA3, 0x61, 0x63, 0x01, 0x61, 0x61, 0x02, 0x61, 0x62, 0x03])))
+  }
+
 }

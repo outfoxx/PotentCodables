@@ -358,7 +358,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     return try mapToKeyedValues(map, decoder: decoder)
   }
 
-  public static func mapToKeyedValues(_ map: [CBOR: CBOR], decoder: Decoder) throws -> [String: CBOR] {
+  public static func mapToKeyedValues(_ map: CBOR.Map, decoder: Decoder) throws -> [String: CBOR] {
     return try Dictionary(
       map.compactMap { key, value in
         switch key.untagged {

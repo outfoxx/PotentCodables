@@ -11,6 +11,7 @@
 import BigInt
 import Foundation
 
+
 public extension BigUInt {
 
   var integerValue: Int? {
