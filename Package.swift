@@ -47,11 +47,18 @@ let package = Package(
     ),
     .target(    
       name: "Cfyaml",
+      sources: [
+        "src/lib/",
+        "src/xxhash/"
+      ],
       cSettings: [
-        .headerSearchPath("config"),
-        .headerSearchPath("lib"),
-        .headerSearchPath("valgrind"),
-        .define("HAVE_CONFIG_H")
+        .headerSearchPath("."),
+        .headerSearchPath("include"),
+        .headerSearchPath("src/lib"),
+        .headerSearchPath("src/valgrind"),
+        .headerSearchPath("src/xxhash"),
+        .define("HAVE_CONFIG_H"),
+        .unsafeFlags(["-w"])
       ]
     ),
     .target(
