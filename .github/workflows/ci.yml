@@ -29,14 +29,17 @@ jobs:
     strategy:
       matrix:
         platform: [macos, ios, tvos]
-        xcode: ["14.1"]
+        xcode: ["14.2"]
 
     steps:
       
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     
     - name: Select Xcode
       run: sudo xcode-select -s /Applications/Xcode_${{matrix.xcode}}.app/Contents/Developer
+
+    - name: Select Swift
+      uses: swift-actions/setup-swift@v1
 
     - name: Build/Test
       run: make build-test-${{ matrix.platform }}

@@ -11,6 +11,9 @@
 import Foundation
 import OrderedCollections
 import PotentCodables
+#if arch(x86_64)
+import Float16
+#endif
 
 
 /// General CBOR value.
@@ -44,6 +47,15 @@ public indirect enum CBOR: Equatable, Hashable {
     }
   }
 
+
+#if arch(x86_64)
+  public typealias Half = float16
+#else
+  public typealias Half = Float16
+#endif
+  public typealias Float = Float32
+  public typealias Double = Float64
+
   public typealias Array = [CBOR]
   public typealias Map = OrderedDictionary<CBOR, CBOR>
 
@@ -58,9 +70,9 @@ public indirect enum CBOR: Equatable, Hashable {
   case boolean(Bool)
   case null
   case undefined
-  case half(Float16)
-  case float(Float32)
-  case double(Float64)
+  case half(Half)
+  case float(Float)
+  case double(Double)
 
   public var isNull: Bool {
     if case .null = self { return true }
@@ -92,17 +104,17 @@ public indirect enum CBOR: Equatable, Hashable {
     return map
   }
 
-  public var halfValue: Float16? {
+  public var halfValue: Half? {
     guard case .half(let half) = untagged else { return nil }
     return half
   }
 
-  public var floatValue: Float32? {
+  public var floatValue: Float? {
     guard case .float(let float) = untagged else { return nil }
     return float
   }
 
-  public var doubleValue: Float64? {
+  public var doubleValue: Double? {
     guard case .double(let double) = untagged else { return nil }
     return double
   }
@@ -123,7 +135,7 @@ public indirect enum CBOR: Equatable, Hashable {
     switch untagged {
     case .unsignedInt(let uint): return Double(exactly: uint)
     case .negativeInt(let nint): return Double(exactly: nint).map { -1 - $0 }
-    case .half(let half): return Double(half.floatValue)
+    case .half(let half): return Double(half)
     case .float(let float): return Double(float)
     case .double(let double): return double
     default: return nil
@@ -167,11 +179,11 @@ public indirect enum CBOR: Equatable, Hashable {
     self = .half(value)
   }
 
-  public init(_ value: Float) {
+  public init(_ value: Swift.Float) {
     self = .float(value)
   }
 
-  public init(_ value: Double) {
+  public init(_ value: Swift.Double) {
     self = .double(value)
   }
 
@@ -302,7 +314,7 @@ extension CBOR: Value {
     case .unsignedInt(let value): return value
     case .negativeInt(let value): return -1 - Int(value)
     case .float(let value): return value
-    case .half(let value): return value.floatValue
+    case .half(let value): return value
     case .double(let value): return value
     case .array(let value): return Swift.Array(value.map(\.unwrapped))
     case .map(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in
