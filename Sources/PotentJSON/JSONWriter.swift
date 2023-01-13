@@ -26,12 +26,12 @@ struct JSONWriter {
     case invalidNumber(Double)
   }
 
-  var indent = 0
-  let pretty: Bool
-  let sortedKeys: Bool
-  let writer: (String?) -> Void
+  private var indent = 0
+  private let pretty: Bool
+  private let sortedKeys: Bool
+  private let writer: (String) -> Void
 
-  init(pretty: Bool = false, sortedKeys: Bool = false, writer: @escaping (String?) -> Void) {
+  init(pretty: Bool = false, sortedKeys: Bool = false, writer: @escaping (String) -> Void) {
     self.pretty = pretty
     self.sortedKeys = sortedKeys
     self.writer = writer
@@ -50,7 +50,7 @@ struct JSONWriter {
     case .array(let array):
       try serializeArray(array)
     case .object(let dict):
-      try serializeDictionary(dict)
+      try serializeObject(dict)
     }
   }
 
@@ -121,7 +121,7 @@ struct JSONWriter {
     writer("]")
   }
 
-  mutating func serializeDictionary(_ dict: JSON.Object) throws {
+  mutating func serializeObject(_ dict: JSON.Object) throws {
     writer("{")
     if pretty {
       writer("\n")
@@ -130,7 +130,7 @@ struct JSONWriter {
 
     var first = true
 
-    func serializeDictionaryElement(key: String, value: JSON) throws {
+    func serializeObjectElement(key: String, value: JSON) throws {
       if first {
         first = false
       }
@@ -157,12 +157,12 @@ struct JSONWriter {
         return $0.key.compare($1.key, options: options, range: range, locale: NSLocale.system) == .orderedAscending
       })
       for elem in elems {
-        try serializeDictionaryElement(key: elem.key, value: elem.value)
+        try serializeObjectElement(key: elem.key, value: elem.value)
       }
     }
     else {
       for (key, value) in dict {
-        try serializeDictionaryElement(key: key, value: value)
+        try serializeObjectElement(key: key, value: value)
       }
     }
 

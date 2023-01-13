@@ -191,7 +191,7 @@ extension JSON: CustomStringConvertible {
 
   public var description: String {
     var output = ""
-    var writer = JSONWriter(pretty: true) { output += $0 ?? "" }
+    var writer = JSONWriter(pretty: true) { output += $0 }
 
     do {
       try writer.serialize(self)
