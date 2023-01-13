@@ -144,7 +144,7 @@ struct JSONWriter {
 
       try serializeString(key)
 
-      pretty ? writer(" : ") : writer(":")
+      writer(pretty ? " : " : ":")
 
       try serialize(value)
     }

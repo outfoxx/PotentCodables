@@ -139,7 +139,7 @@ extension ValueEncoder where Transform: InternalValueSerializer {
   ///           value is encountered during encoding, and the encoding strategy
   ///           is `.throw`.
   /// - throws: An error if any value throws an error during encoding.
-  open func encode<T: Encodable>(_ value: T) throws -> Data {
+  public func encode<T: Encodable>(_ value: T) throws -> Data {
     let tree = try encodeTree(value)
     return try Transform.data(from: tree, options: options)
   }
@@ -156,7 +156,7 @@ extension ValueEncoder where Transform: InternalValueStringifier {
   ///           value is encountered during encoding, and the encoding strategy
   ///           is `.throw`.
   /// - throws: An error if any value throws an error during encoding.
-  open func encodeString<T: Encodable>(_ value: T) throws -> String {
+  public func encodeString<T: Encodable>(_ value: T) throws -> String {
     let tree = try encodeTree(value)
     return try Transform.string(from: tree, options: options)
   }

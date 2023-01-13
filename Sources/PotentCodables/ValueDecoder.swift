@@ -158,7 +158,7 @@ extension ValueDecoder where Transform: InternalValueDeserializer {
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
   /// - throws: An error if any value throws an error during decoding.
-  open func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+  public func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
     let value = try Transform.value(from: data, options: options)
     guard let result = try decodeTreeIfPresent(type, from: value) as T? else {
       throw DecodingError.valueNotFound(
@@ -180,7 +180,7 @@ extension ValueDecoder where Transform: InternalValueDeserializer {
   /// - returns: A value of the requested type or nil.
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: An error if any value throws an error during decoding.
-  open func decodeIfPresent<T: Decodable>(_ type: T.Type, from data: Data) throws -> T? {
+  public func decodeIfPresent<T: Decodable>(_ type: T.Type, from data: Data) throws -> T? {
     let value = try Transform.value(from: data, options: options)
     guard !value.isNull else { return nil }
     let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)
@@ -205,7 +205,7 @@ extension ValueDecoder where Transform: InternalValueParser {
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
   /// - throws: An error if any value throws an error during decoding.
-  open func decode<T: Decodable>(_ type: T.Type, from data: String) throws -> T {
+  public func decode<T: Decodable>(_ type: T.Type, from data: String) throws -> T {
     let value = try Transform.value(from: data, options: options)
     guard let result = try decodeTreeIfPresent(type, from: value) as T? else {
       throw DecodingError.valueNotFound(
@@ -227,7 +227,7 @@ extension ValueDecoder where Transform: InternalValueParser {
   /// - returns: A value of the requested type or nil.
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: An error if any value throws an error during decoding.
-  open func decodeIfPresent<T: Decodable>(_ type: T.Type, from data: String) throws -> T? {
+  public func decodeIfPresent<T: Decodable>(_ type: T.Type, from data: String) throws -> T? {
     let value = try Transform.value(from: data, options: options)
     guard !value.isNull else { return nil }
     let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)
