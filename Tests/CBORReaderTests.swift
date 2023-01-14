@@ -310,9 +310,9 @@ class CBORReaderTests: XCTestCase {
 
   func testDecodeFloats() {
     XCTAssertEqual(try decode(0xF9, 0xC4, 0x00), .half(-4.0))
-    XCTAssertEqual(try decode(0xF9, 0xFC, 0x00), .half(Half(-Float.infinity)))
+    XCTAssertEqual(try decode(0xF9, 0xFC, 0x00), .half(-CBOR.Half.infinity))
     XCTAssertEqual(try decode(0xFA, 0x47, 0xC3, 0x50, 0x00), .float(100_000.0))
-    XCTAssertEqual(try decode(0xFA, 0x7F, 0x80, 0x00, 0x00), .float(Float.infinity))
+    XCTAssertEqual(try decode(0xFA, 0x7F, 0x80, 0x00, 0x00), .float(CBOR.Float.infinity))
     XCTAssertEqual(try decode(0xFB, 0xC0, 0x10, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66), .double(-4.1))
   }
 

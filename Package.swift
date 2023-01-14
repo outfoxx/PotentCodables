@@ -1,4 +1,4 @@
-// swift-tools-version:5.1
+// swift-tools-version:5.3
 //
 //  Package.swift
 //  PotentCodables
@@ -14,10 +14,10 @@ import PackageDescription
 let package = Package(
   name: "PotentCodables",
   platforms: [
-    .iOS(.v10),
-    .macOS(.v10_12),
-    .watchOS(.v3),
-    .tvOS(.v10),
+    .iOS(.v14),
+    .macOS(.v11),
+    .watchOS(.v7),
+    .tvOS(.v14),
   ],
   products: [
     .library(
@@ -27,6 +27,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/attaswift/BigInt.git", .upToNextMinor(from: "5.3.0")),
+    .package(url: "https://github.com/SusanDoggie/Float16.git", .upToNextMinor(from: "1.1.1")),
     .package(url: "https://github.com/apple/swift-collections.git", .upToNextMinor(from: "1.0.4"))
   ],
   targets: [
@@ -44,6 +45,7 @@ let package = Package(
       name: "PotentCBOR",
       dependencies: [
         "PotentCodables",
+        "Float16",
         .product(name: "Collections", package: "swift-collections")
       ]
     ),

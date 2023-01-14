@@ -258,29 +258,29 @@ public struct CBORWriter {
     try stream.writeByte(0xF7)
   }
 
-  /// Encodes Float16 item.
+  /// Encodes Half item.
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeHalf(_ val: Half) throws {
+  public func encodeHalf(_ val: CBOR.Half) throws {
     try stream.writeByte(0xFA)
     try stream.writeInt(val.bitPattern)
   }
 
-  /// Encodes Float32 item.
+  /// Encodes Float item.
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeFloat(_ val: Float) throws {
+  public func encodeFloat(_ val: CBOR.Float) throws {
     try stream.writeByte(0xFA)
     try stream.writeInt(val.bitPattern)
   }
 
-  /// Encodes Float64 item.
+  /// Encodes Double item.
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeDouble(_ val: Double) throws {
+  public func encodeDouble(_ val: CBOR.Double) throws {
     try stream.writeByte(0xFB)
     try stream.writeInt(val.bitPattern)
   }

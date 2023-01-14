@@ -12,7 +12,7 @@ import BigInt
 import Foundation
 
 
-public extension BigUInt {
+extension BigUInt {
 
   var integerValue: Int? {
     guard bitWidth < UInt.bitWidth else { return nil }
@@ -32,7 +32,7 @@ public extension BigUInt {
 
 }
 
-public extension BigInt {
+extension BigInt {
 
   var integerValue: Int? {
     guard bitWidth <= UInt.bitWidth else { return nil }

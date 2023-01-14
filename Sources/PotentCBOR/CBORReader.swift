@@ -21,16 +21,16 @@ public struct CBORReader {
     self.stream = stream
   }
 
-  private func readBinaryNumber(_ type: Float16.Type) throws -> Float16 {
-    return Float16(bitPattern: try stream.readInt(UInt16.self))
+  private func readBinaryNumber(_ type: CBOR.Half.Type) throws -> CBOR.Half {
+    return CBOR.Half(bitPattern: try stream.readInt(UInt16.self))
   }
 
-  private func readBinaryNumber(_ type: Float32.Type) throws -> Float32 {
-    return Float32(bitPattern: try stream.readInt(UInt32.self))
+  private func readBinaryNumber(_ type: CBOR.Float.Type) throws -> CBOR.Float {
+    return CBOR.Float(bitPattern: try stream.readInt(UInt32.self))
   }
 
-  private func readBinaryNumber(_ type: Float64.Type) throws -> Float64 {
-    return Float64(bitPattern: try stream.readInt(UInt64.self))
+  private func readBinaryNumber(_ type: CBOR.Double.Type) throws -> CBOR.Double {
+    return CBOR.Double(bitPattern: try stream.readInt(UInt64.self))
   }
 
   private func readVarUInt(_ initByte: UInt8, base: UInt8) throws -> UInt64 {
@@ -208,11 +208,11 @@ public struct CBORReader {
     case 0xF8: return .simple(try stream.readByte())
 
     case 0xF9:
-      return .half(try readBinaryNumber(Float16.self))
+      return .half(try readBinaryNumber(CBOR.Half.self))
     case 0xFA:
-      return .float(try readBinaryNumber(Float32.self))
+      return .float(try readBinaryNumber(CBOR.Float.self))
     case 0xFB:
-      return .double(try readBinaryNumber(Float64.self))
+      return .double(try readBinaryNumber(CBOR.Double.self))
 
     case 0xFF: return nil
     default: throw CBORError.invalidItemType

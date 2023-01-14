@@ -307,7 +307,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .float(let float):
       return decodeUntaggedNumericDate(from: Double(float), unitsPerSeconds: 1.0)
     case .half(let half):
-      return decodeUntaggedNumericDate(from: Double(half.floatValue), unitsPerSeconds: 1.0)
+      return decodeUntaggedNumericDate(from: Double(half), unitsPerSeconds: 1.0)
     case .unsignedInt(let uint):
       return decodeUntaggedNumericDate(from: Double(uint), unitsPerSeconds: 1000.0)
     case .negativeInt(let nint):
