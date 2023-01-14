@@ -18,10 +18,13 @@ build-test-macos:
 build-test-ios:
 	$(call buildtest,iOS,platform=iOS Simulator$(comma)name=iPhone 13)
 
+build-test-watchos:
+	$(call buildtest,watchOS,platform=watchOS Simulator$(comma)name=Apple Watch Series 5 (44mm))
+
 build-test-tvos:
 	$(call buildtest,tvOS,platform=tvOS Simulator$(comma)name=Apple TV)
 
-build-test-all: build-test-macos build-test-ios build-test-tvos
+build-test-all: build-test-macos build-test-ios build-test-watchos build-test-tvos
 
 format:	
 	swiftformat --config .swiftformat Sources/ Tests/
