@@ -8,6 +8,7 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
+import BigInt
 import Foundation
 import PotentCodables
 
@@ -231,17 +232,17 @@ public struct SchemaState {
         throw SchemaError.noVersion(errorContext("No version found"))
       }
 
-      let version: UInt?
+      let version: BigInt?
       if let taggedVersionValue = versionValue.taggedValue {
         if taggedVersionValue.bytes.isEmpty {
-          version = versionFieldSchema.defaultValue?.integerValue?.unsignedIntegerValue
+          version = versionFieldSchema.defaultValue?.integerValue
         }
         else {
-          version = try ASN1Decoder(schema: versionFieldSchema).decodeTree(UInt.self, from: versionValue)
+          version = try ASN1Decoder(schema: versionFieldSchema).decodeTree(BigInt.self, from: versionValue)
         }
       }
       else {
-        version = versionValue.integerValue?.unsignedIntegerValue
+        version = versionValue.integerValue
       }
 
       guard version != nil else {

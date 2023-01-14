@@ -60,7 +60,7 @@ public indirect enum Schema {
   case dynamic(unknownTypeSchema: Schema? = nil, DynamicMap)
 
   case version(Schema)
-  case versioned(range: ClosedRange<UInt>, Schema)
+  case versioned(range: ClosedRange<BigInt>, Schema)
 
   case optional(Schema)
 
@@ -68,7 +68,7 @@ public indirect enum Schema {
   case explicit(UInt8, in: ASN1.Tag.Class = .contextSpecific, Schema)
 
   case boolean(default: Bool? = nil)
-  case integer(allowed: Swift.Range<Int>? = nil, default: Int? = nil)
+  case integer(allowed: Swift.Range<BigInt>? = nil, default: BigInt? = nil)
   case real
   case bitString(size: Size? = nil)
   case octetString(size: Size? = nil)

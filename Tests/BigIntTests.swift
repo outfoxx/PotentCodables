@@ -49,12 +49,4 @@ class BigIntTests: XCTestCase {
     XCTAssertEqual(src8, dst8)
   }
 
-  func testConversion() {
-    XCTAssertEqual(String(BigInt(0xFFFF_FFFF).integerValue!, radix: 16), "ffffffff")
-    XCTAssertEqual(String(BigInt(0x7FFF_FFFF_FFFF_FFFF).integerValue!, radix: 16), "7fffffffffffffff")
-    XCTAssertEqual(BigInt(0xFFFF_FFFF).integerValue, 0xFFFF_FFFF)
-    XCTAssertEqual(BigInt(0x7FFF_FFFF_FFFF_FFFF).integerValue, 0x7FFF_FFFF_FFFF_FFFF)
-    XCTAssertNil(BigInt("ffffffffffffffff", radix: 16)!.integerValue)
-  }
-
 }
