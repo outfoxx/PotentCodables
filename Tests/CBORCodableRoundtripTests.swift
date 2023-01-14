@@ -154,7 +154,7 @@ class CBORCodableRoundtripTests: XCTestCase {
     XCTAssertEqual(minusThousandDecoded, -1000)
 
     // Biggest
-    let bigNum = try CBOREncoder().encode(-9_223_372_036_854_775_808)
+    let bigNum = try CBOREncoder().encode(Int64(-9_223_372_036_854_775_808))
     let bigNumDecoded = try CBORDecoder().decode(Int64.self, from: bigNum)
     XCTAssertEqual(bigNumDecoded, -9_223_372_036_854_775_808)
   }

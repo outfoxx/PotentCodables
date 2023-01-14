@@ -390,11 +390,11 @@ extension SchemaState {
 
         func check(_ int: BigInt) throws -> ASN1 {
           if let allowedValues = allowedValues {
-            guard let test = int.integerValue, allowedValues.contains(test) else {
+            guard allowedValues.contains(int) else {
               throw EncodingError.disallowedValue(value!, errorContext("INTEGER value not allowed by schema"))
             }
           }
-          if let defaultValue = defaultValue, int.integerValue == defaultValue {
+          if let defaultValue = defaultValue, int == defaultValue {
             return .default(.integer(int))
           }
           return .integer(int)

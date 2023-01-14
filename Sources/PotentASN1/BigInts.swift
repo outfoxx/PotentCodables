@@ -14,16 +14,6 @@ import Foundation
 
 extension BigUInt {
 
-  var integerValue: Int? {
-    guard bitWidth < UInt.bitWidth else { return nil }
-    return Int(words[0])
-  }
-
-  var unsignedIntegerValue: UInt? {
-    guard bitWidth <= UInt.bitWidth else { return nil }
-    return words[0]
-  }
-
   init(serialized data: Data) {
     self.init(data)
   }
@@ -33,19 +23,6 @@ extension BigUInt {
 }
 
 extension BigInt {
-
-  var integerValue: Int? {
-    guard bitWidth <= UInt.bitWidth else { return nil }
-    if sign == .minus {
-      return Int((~words[0]) + 1)
-    }
-    return Int(words[0])
-  }
-
-  var unsignedIntegerValue: UInt? {
-    guard bitWidth <= UInt.bitWidth else { return nil }
-    return words[0]
-  }
 
   /// Initializes an integer from the bits stored inside a piece of `Data`.
   /// The data is assumed to be the two's compliment base-256 representation, in network (big-endian) byte order.

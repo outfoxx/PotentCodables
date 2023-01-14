@@ -28,7 +28,7 @@ jobs:
 
     strategy:
       matrix:
-        platform: [macos, ios, tvos]
+        platform: [macos, ios, watchos, tvos]
         xcode: ["14.2"]
 
     steps:

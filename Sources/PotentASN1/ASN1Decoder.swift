@@ -102,7 +102,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   static func coerce<T>(_ from: BigInt, at codingPath: [CodingKey]) throws -> T
     where T: BinaryInteger & FixedWidthInteger {
-    guard let result = from.integerValue.map({ T($0) }) else {
+    guard let result = T(exactly: from) else {
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
@@ -629,7 +629,7 @@ extension SchemaState {
         }
 
         if let allowedValues = allowedValues {
-          guard let test = value.integerValue, allowedValues.contains(test) else {
+          guard allowedValues.contains(value) else {
             throw DecodingError.disallowedValue(value, errorContext("INTEGER value not allowed by schema"))
           }
         }

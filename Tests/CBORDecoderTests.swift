@@ -51,8 +51,8 @@ class CBORDecoderTests: XCTestCase {
     XCTAssertEqual(try CBORDecoder().decode(Int.self, from: Data([0x19, 0x03, 0xE8])), 1000)
     XCTAssertEqual(try CBORDecoder().decode(Int.self, from: Data([0x1A, 0x00, 0x0F, 0x42, 0x40])), 1_000_000)
     XCTAssertEqual(
-      try CBORDecoder().decode(Int.self, from: Data([0x1B, 0x00, 0x00, 0x00, 0xE8, 0xD4, 0xA5, 0x10, 0x00])),
-      1_000_000_000_000
+      try CBORDecoder().decode(Int64.self, from: Data([0x1B, 0x00, 0x00, 0x00, 0xE8, 0xD4, 0xA5, 0x10, 0x00])),
+      Int64(1_000_000_000_000)
     )
 
     // Biggest
