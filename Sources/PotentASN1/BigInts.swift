@@ -12,7 +12,7 @@ import BigInt
 import Foundation
 
 
-extension BigUInt {
+public extension BigUInt {
 
   init(serialized data: Data) {
     self.init(data)
@@ -22,7 +22,7 @@ extension BigUInt {
 
 }
 
-extension BigInt {
+public extension BigInt {
 
   /// Initializes an integer from the bits stored inside a piece of `Data`.
   /// The data is assumed to be the two's compliment base-256 representation, in network (big-endian) byte order.
