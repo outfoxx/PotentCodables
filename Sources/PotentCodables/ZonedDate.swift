@@ -10,11 +10,17 @@
 
 import Foundation
 
+
+/// Date and explicit specific time zone.
+///
 public struct ZonedDate: Equatable, Hashable, Codable {
 
+  /// Date in UTC time zone.
   public var date: Date
+  /// Explicit time zone .
   public var timeZone: TimeZone
 
+  /// Date adjusted to UTC time zone.
   public var utcDate: Date {
     if timeZone == .utc {
       return date
@@ -23,6 +29,8 @@ public struct ZonedDate: Equatable, Hashable, Codable {
     return Date(timeInterval: -offset, since: date)
   }
 
+  /// Initialize with a date in UTC time zone and explicit time zone.
+  ///
   public init(date: Date, timeZone: TimeZone) {
     self.date = date
     self.timeZone = timeZone
@@ -32,6 +40,7 @@ public struct ZonedDate: Equatable, Hashable, Codable {
 
 extension ZonedDate: CustomStringConvertible {
 
+  /// ISO8601 formatted date/time string.
   public var description: String {
     return Formatters.for(timeZone: timeZone).string(from: date)
   }

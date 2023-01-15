@@ -14,6 +14,8 @@ import OrderedCollections
 import PotentCodables
 
 
+/// ASN.1 schema specification.
+/// 
 public indirect enum Schema {
 
   public typealias DynamicMap = [ASN1: Schema]

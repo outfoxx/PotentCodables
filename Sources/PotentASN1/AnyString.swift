@@ -12,31 +12,70 @@ import Foundation
 import PotentCodables
 
 
-/// Allows encoding _any_ ASN.1 string value while controlling the specific ASN.1 type.
+/// Allows encoding _any_ ASN.1 string value while allowing control of the
+/// specific ASN.1 tag.
 ///
 public struct AnyString: Equatable, Hashable {
 
-
+  /// Kind of ASN.1 string.
+  ///
+  /// Controls the specific ASN.1 tag used in encoded form.
   public enum Kind: Int, Equatable, Hashable, Codable {
+    /// UTF-8 String.
     case utf8
+    /// ASCII subset with the following allowed characters:
+    /// * Digits (`0-9`)
+    /// * Space (` `)
     case numeric
+    /// ASCII subset with the following allowed characters:
+    /// * Latin Uppercase (`A-Z`)
+    /// * Latin Lowercase (`a-z`)
+    /// * Digits (`0-9`)
+    /// * Space (` `)
+    /// * Apostrophe (`'`)
+    /// * Parenthesis (`(`, `)`)
+    /// * Plus (`+`)
+    /// * Comma (`,`)
+    /// * Minus (`-`)
+    /// * Full Stop (aka Period) (`.`),
+    /// * Solidus (`/`)
+    /// * Colon (`:`)
+    /// * Equal (`=`)
+    /// * Question Mark (`?`)
     case printable
+    /// CCIT's T61 String character, space and delete.
     case teletex
+    /// CCIT's T.100/T.101 String character, space and delete.
     case videotex
+    /// Internation Alphabet 5 (Internaional ASCII).
     case ia5
+    /// All registered graphic character sets.
     case graphic
+    /// Printing character sets of international ASCII, and space.
     case visible
+    /// All registered graphic and character sets.
     case general
+    /// ISO646 character set.
     case universal
+    /// All registered graphic character sets.
     case character
+    /// BMP subset (aka UCS-2) codepoints 0-65535.
     case bmp
   }
 
-
+  /// Specifies the exact ``Kind`` of string.
+  ///
+  /// When encoding, selects the specific kind when the schema allows
+  /// for multiple kinds of strings.
+  ///
+  /// When decoding, reports the specific kind of string that was decoded.
+  ///
   public var kind: Kind?
+  /// String value
   public var storage: String
 
-  public init(_ value: String, kind: Kind) {
+  /// Initialize with a Swift String and explicit ASN.1 kind.
+  public init(_ value: String, kind: Kind? = nil) {
     self.kind = kind
     storage = value
   }

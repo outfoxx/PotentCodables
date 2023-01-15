@@ -8,12 +8,11 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-import BigInt
 import Foundation
 import PotentCodables
 
 
-/// `ASN1Encoder` facilitates the encoding of `Encodable` values into ASN1 values.
+/// Encoding of `Encodable` types into ``ASN1`` values.
 ///
 public class ASN1Encoder: ValueEncoder<ASN1, ASN1EncoderTransform>, EncodesToData {
 
@@ -104,9 +103,9 @@ public struct ASN1EncoderTransform: InternalEncoderTransform, InternalValueSeria
 
   public static func intercepts(_ type: Encodable.Type) -> Bool {
     return
-      type == ASN1.self || type is TaggedValue.Type ||
+      type == ASN1.self || type is Tagged.Type ||
       type == AnyString.self || type == AnyTime.self ||
-      type == BitString.self || type == ObjectIdentifier.self || type == BigInt.self
+      type == BitString.self || type == ObjectIdentifier.self || type == ASN1.Integer.self
   }
 
   public static func box(_ value: Any, interceptedType: Encodable.Type, encoder: Encoder) throws -> ASN1 {
@@ -200,7 +199,7 @@ extension SchemaState {
 
           /// HACK: Exclude explicitly/implicitly tagged default values... this should be handled
           /// in a more elegant fashion that is more explicit about what is intended.
-          if fieldValue.taggedValue?.bytes.isEmpty == true, fieldSchema.defaultValue != nil {
+          if fieldValue.taggedValue?.data.isEmpty == true, fieldSchema.defaultValue != nil {
             continue
           }
 
@@ -388,7 +387,7 @@ extension SchemaState {
 
       case .integer(allowed: let allowedValues, default: let defaultValue):
 
-        func check(_ int: BigInt) throws -> ASN1 {
+        func check(_ int: ASN1.Integer) throws -> ASN1 {
           if let allowedValues = allowedValues {
             guard allowedValues.contains(int) else {
               throw EncodingError.disallowedValue(value!, errorContext("INTEGER value not allowed by schema"))
@@ -401,20 +400,20 @@ extension SchemaState {
         }
 
         switch value {
-        case let int as BigInt: return try check(int)
-        case let int as Int8: return try check(BigInt(int))
-        case let int as Int16: return try check(BigInt(int))
-        case let int as Int32: return try check(BigInt(int))
-        case let int as Int64: return try check(BigInt(int))
-        case let int as Int: return try check(BigInt(int))
-        case let uint as UInt8: return try check(BigInt(uint))
-        case let uint as UInt16: return try check(BigInt(uint))
-        case let uint as UInt32: return try check(BigInt(uint))
-        case let uint as UInt64: return try check(BigInt(uint))
-        case let uint as UInt: return try check(BigInt(uint))
+        case let int as ASN1.Integer: return try check(int)
+        case let int as Int8: return try check(ASN1.Integer(int))
+        case let int as Int16: return try check(ASN1.Integer(int))
+        case let int as Int32: return try check(ASN1.Integer(int))
+        case let int as Int64: return try check(ASN1.Integer(int))
+        case let int as Int: return try check(ASN1.Integer(int))
+        case let uint as UInt8: return try check(ASN1.Integer(uint))
+        case let uint as UInt16: return try check(ASN1.Integer(uint))
+        case let uint as UInt32: return try check(ASN1.Integer(uint))
+        case let uint as UInt64: return try check(ASN1.Integer(uint))
+        case let uint as UInt: return try check(ASN1.Integer(uint))
         default:
           if let defaultValue = defaultValue {
-            return .default(.integer(BigInt(defaultValue)))
+            return .default(.integer(ASN1.Integer(defaultValue)))
           }
           // try next possible schema
           continue
@@ -522,7 +521,7 @@ extension SchemaState {
       case .implicit(let tag, in: let tagClass, let implicitSchema):
         var implicitSchemaState = try SchemaState(initial: implicitSchema)
         let encoded: ASN1
-        if let taggedValue = value as? TaggedValue {
+        if let taggedValue = value as? Tagged {
           guard taggedValue.tag == tag else {
             // try next possible schema
               continue
@@ -536,14 +535,14 @@ extension SchemaState {
           }
           encoded = value
         }
-        let encodedData = try DERReader.parseTagged(data: DERWriter.write(encoded)).data
+        let encodedData = try ASN1DERReader.parseTagged(data: ASN1DERWriter.write(encoded)).data
         return .tagged(ASN1.Tag.tag(from: tag, in: tagClass, constructed: implicitSchema.isCollection), encodedData)
 
 
       case .explicit(let tag, in: let tagClass, let explicitSchema):
         var explicitSchemaState = try SchemaState(initial: explicitSchema)
         let encoded: ASN1
-        if let taggedValue = value as? TaggedValue {
+        if let taggedValue = value as? Tagged {
           guard taggedValue.tag == tag else {
             // try next possible schema
             continue
@@ -556,7 +555,7 @@ extension SchemaState {
           }
           encoded = value
         }
-        let encodedData = try DERWriter.write(encoded)
+        let encodedData = try ASN1DERWriter.write(encoded)
         return .tagged(ASN1.Tag.tag(from: tag, in: tagClass, constructed: true), encodedData)
 
 

@@ -8,12 +8,11 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-import BigInt
 import Foundation
 import PotentCodables
 
 
-/// `ASN1Decoder` facilitates the decoding of ASN1 into semantic `Decodable` types.
+/// Decoding of ASN.1 values into `Decodable` types.
 ///
 public class ASN1Decoder: ValueDecoder<ASN1, ASN1DecoderTransform>, DecodesFromData {
 
@@ -100,7 +99,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     return DecodingError.typeMismatch(type, context)
   }
 
-  static func coerce<T>(_ from: BigInt, at codingPath: [CodingKey]) throws -> T
+  static func coerce<T>(_ from: ASN1.Integer, at codingPath: [CodingKey]) throws -> T
     where T: BinaryInteger & FixedWidthInteger {
     guard let result = T(exactly: from) else {
       throw overflow(T.self, value: from, at: codingPath)
@@ -118,7 +117,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: ASN1, as type: Int.Type, decoder: Decoder) throws -> Int? {
     switch try decode(value, decoder: decoder) {
-    case let integer as BigInt: return try coerce(integer, at: decoder.codingPath)
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(Int.self)
     case .none: return nil
     case let invalid:
@@ -132,7 +131,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: ASN1, as type: Int8.Type, decoder: Decoder) throws -> Int8? {
     switch try decode(value, decoder: decoder) {
-    case let integer as BigInt: return try coerce(integer, at: decoder.codingPath)
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(Int8.self)
     case .none: return nil
     case let invalid:
@@ -146,7 +145,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: ASN1, as type: Int16.Type, decoder: Decoder) throws -> Int16? {
     switch try decode(value, decoder: decoder) {
-    case let integer as BigInt: return try coerce(integer, at: decoder.codingPath)
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(Int16.self)
     case .none: return nil
     case let invalid:
@@ -160,7 +159,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: ASN1, as type: Int32.Type, decoder: Decoder) throws -> Int32? {
     switch try decode(value, decoder: decoder) {
-    case let integer as BigInt: return try coerce(integer, at: decoder.codingPath)
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(Int32.self)
     case .none: return nil
     case let invalid:
@@ -174,7 +173,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: ASN1, as type: Int64.Type, decoder: Decoder) throws -> Int64? {
     switch try decode(value, decoder: decoder) {
-    case let integer as BigInt: return try coerce(integer, at: decoder.codingPath)
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(Int64.self)
     case .none: return nil
     case let invalid:
@@ -188,7 +187,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: ASN1, as type: UInt.Type, decoder: Decoder) throws -> UInt? {
     switch try decode(value, decoder: decoder) {
-    case let integer as BigInt: return try coerce(integer, at: decoder.codingPath)
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(UInt.self)
     case .none: return nil
     case let invalid:
@@ -202,7 +201,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: ASN1, as type: UInt8.Type, decoder: Decoder) throws -> UInt8? {
     switch try decode(value, decoder: decoder) {
-    case let integer as BigInt: return try coerce(integer, at: decoder.codingPath)
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(UInt8.self)
     case .none: return nil
     case let invalid:
@@ -216,7 +215,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: ASN1, as type: UInt16.Type, decoder: Decoder) throws -> UInt16? {
     switch try decode(value, decoder: decoder) {
-    case let integer as BigInt: return try coerce(integer, at: decoder.codingPath)
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(UInt16.self)
     case .none: return nil
     case let invalid:
@@ -230,7 +229,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: ASN1, as type: UInt32.Type, decoder: Decoder) throws -> UInt32? {
     switch try decode(value, decoder: decoder) {
-    case let integer as BigInt: return try coerce(integer, at: decoder.codingPath)
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(UInt32.self)
     case .none: return nil
     case let invalid:
@@ -244,7 +243,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: ASN1, as type: UInt64.Type, decoder: Decoder) throws -> UInt64? {
     switch try decode(value, decoder: decoder) {
-    case let integer as BigInt: return try coerce(integer, at: decoder.codingPath)
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(UInt64.self)
     case .none: return nil
     case let invalid:
@@ -352,9 +351,9 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func intercepts(_ type: Decodable.Type) -> Bool {
     return
-      type == ASN1.self || type is TaggedValue.Type ||
+      type == ASN1.self || type is Tagged.Type ||
       type == AnyString.self || type == AnyTime.self ||
-      type == BitString.self || type == ObjectIdentifier.self || type == BigInt.self
+      type == BitString.self || type == ObjectIdentifier.self || type == ASN1.Integer.self
   }
 
   public static func unbox(_ value: ASN1, interceptedType: Decodable.Type, decoder: Decoder) throws -> Any? {
@@ -363,8 +362,8 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     }
 
     guard let decoded = try decode(value, decoder: decoder) else { return nil }
-    if interceptedType == BigInt.self {
-      guard let int = decoded as? BigInt else {
+    if interceptedType == ASN1.Integer.self {
+      guard let int = decoded as? ASN1.Integer else {
         throw DecodingError.typeMismatch(
           at: decoder.codingPath,
           expectation: interceptedType,
@@ -415,8 +414,8 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
       }
       return oid
     }
-    else if let taggedValueType = interceptedType as? TaggedValue.Type {
-      return taggedValueType.init(tag: value.anyTag, value: decoded)
+    else if let taggedType = interceptedType as? Tagged.Type {
+      return taggedType.init(tag: value.anyTag, value: decoded)
     }
     else {
       fatalError("Unhandled type")
@@ -571,7 +570,7 @@ extension SchemaState {
 
       case .objectIdentifier(allowed: let allowedOids):
 
-        guard let oid = value.objectIdentifierValue.map({ ObjectIdentifier($0) }) else {
+        guard let oid = value.objectIdentifierValue else {
           // try next possible schema
           continue
         }
@@ -639,17 +638,17 @@ extension SchemaState {
 
       case .time(kind: let requiredKind):
 
-        guard let (date, kind) = value.timeValue, requiredKind == kind else {
+        guard let time = value.timeValue, requiredKind == time.kind else {
           // try next possible schema
           continue
         }
 
-        return AnyTime(date, kind: kind)
+        return time
 
 
       case .string(kind: let requiredKind, size: let requiredSize):
 
-        guard let (string, kind) = value.stringValue, requiredKind == kind else {
+        guard let string = value.stringValue, let kind = string.kind, requiredKind == kind else {
           // try next possible schema
           continue
         }
@@ -658,7 +657,7 @@ extension SchemaState {
           throw DecodingError.valueOutOfRange(value, errorContext("\(kind)String length not allowed by schema"))
         }
 
-        return AnyString(string, kind: kind)
+        return string
 
 
       case .real:
@@ -672,27 +671,27 @@ extension SchemaState {
 
 
       case .any:
-        return value.unwrapped
+        return value.currentValue
 
 
       case .implicit(let schemaTag, in: let schemaTagClass, let implicitSchema):
 
-        guard let (tag, bytes) = value.taggedValue, ASN1.Tag.tag(
+        guard let tagged = value.taggedValue, ASN1.Tag.tag(
           from: schemaTag,
           in: schemaTagClass,
           constructed: implicitSchema.isCollection
-        ) == tag else {
+        ) == tagged.tag else {
           // try next possible schema
           continue
         }
 
         switch implicitSchema {
         case .sequence, .sequenceOf:
-          let item = try DERReader.parseItem(bytes, as: ASN1.Tag.sequence.constructed)
+          let item = try ASN1DERReader.parseItem(tagged.data, as: ASN1.Tag.sequence.constructed)
           return item.sequenceValue!
 
         case .setOf:
-          let item = try DERReader.parseItem(bytes, as: ASN1.Tag.set.constructed)
+          let item = try ASN1DERReader.parseItem(tagged.data, as: ASN1.Tag.set.constructed)
           return item.setValue!
 
         default:
@@ -700,28 +699,28 @@ extension SchemaState {
             throw SchemaError.ambiguousImplicitTag(errorContext("Implicit schema is ambiguous"))
           }
 
-          return try DERReader.parseItem(bytes, as: nextPossibleTags[0]).unwrapped
+          return try ASN1DERReader.parseItem(tagged.data, as: nextPossibleTags[0]).currentValue
         }
 
 
       case .explicit(let schemaTag, in: let schemaTagClass, let explicitSchema):
 
-        guard let (tag, bytes) = value.taggedValue,
-              ASN1.Tag.tag(from: schemaTag, in: schemaTagClass, constructed: true) == tag
+        guard let tagged = value.taggedValue,
+              ASN1.Tag.tag(from: schemaTag, in: schemaTagClass, constructed: true) == tagged.tag
         else {
           // try next possible schema
           continue
         }
 
-        let items = try DERReader.parse(data: bytes)
+        let items = try ASN1DERReader.parse(data: tagged.data)
         guard items.count == 1 else {
           if items.count == 0, let defaultValue = explicitSchema.defaultValue {
-            return defaultValue.unwrapped
+            return defaultValue.currentValue
           }
           throw DecodingError.badValue(value, errorContext("Explicit tagged value contains invalid data"))
         }
 
-        return items[0].unwrapped
+        return items[0].currentValue
 
 
       case .choiceOf, .optional, .version, .versioned, .type, .dynamic, .nothing:
@@ -731,7 +730,7 @@ extension SchemaState {
     }
 
     throw DecodingError.badValue(
-      value.unwrapped as Any,
+      value.currentValue as Any,
       errorContext("No schemas \(currentPossibleStates) match value")
     )
   }
