@@ -70,8 +70,7 @@ let package = Package(
         .headerSearchPath("src/lib"),
         .headerSearchPath("src/valgrind"),
         .headerSearchPath("src/xxhash"),
-        .define("HAVE_CONFIG_H"),
-        .unsafeFlags(["-w"])
+        .define("HAVE_CONFIG_H")
       ]
     ),
     .target(
