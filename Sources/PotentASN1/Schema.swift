@@ -14,8 +14,39 @@ import OrderedCollections
 import PotentCodables
 
 
-/// ASN.1 schema specification.
-/// 
+/// ASN.1 schema specification DSL.
+///
+/// The most common usage of ASN.1 encoding and decoding requires following a schema.
+/// ``Schema`` provides a simple DSL to specify ASN.1 schemas that provides the same
+/// capabilities as the official ASN.1 syntax.
+///
+/// For example, the following is the ``Schema`` for RFC-5280's `TBSCertificate`:
+/// ```swift
+///   let TBSCertificateSchema: Schema =
+///     .sequence([
+///       "version": .version(.explicit(0, Version)),
+///       "serialNumber": CertificateSerialNumber,
+///       "signature": AlgorithmIdentifier(SignatureAlgorithms),
+///       "issuer": Name,
+///       "validity": Validity,
+///       "subject": Name,
+///       "subjectPublicKeyInfo": SubjectPublicKeyInfo,
+///       "issuerUniqueID": .versioned(range: 1...2, .implicit(1, UniqueIdentifier)),
+///       "subjectUniqueID": .versioned(range: 1...2, .implicit(2, UniqueIdentifier)),
+///       "extensions": .versioned(range: 2...2, .explicit(3, Extensions))
+///     ])
+/// ```
+///
+/// When encoding an `Encodable` type to ASN.1, the ``ASN1Encoder`` is initialized with a
+/// ``Schema`` to direct its or encoding. Likewise, when decoding a `Decodable` type from ASN.1
+/// the ``ASN1Decoder`` is initialized with a ``Schema``.
+///
+/// Decode an example `TBSCertificate` type using the above schema as follows:
+/// ```swift
+/// ASNDecoder(schema: TBSCertificateSchema)
+///   .decode(TBSCertificate.self, from: data)
+/// ```
+///
 public indirect enum Schema {
 
   public typealias DynamicMap = [ASN1: Schema]

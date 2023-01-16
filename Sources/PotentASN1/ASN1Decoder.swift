@@ -12,7 +12,25 @@ import Foundation
 import PotentCodables
 
 
-/// Decoding of ASN.1 values into `Decodable` types.
+/// Decodes `Decodable` types from ASN.1/DER data or ``ASN1`` value trees using a ``Schema``.
+///
+/// When decoding a `Decodable` type from ASN.1, the ``ASN1Decoder`` is initialized with a
+/// ``Schema`` to direct decoding.
+///
+/// Decode an example `TBSCertificate` type with an associated `TBSCertificateSchema` as follows:
+/// ```swift
+/// ASN1Decoder(schema: TBSCertificateSchema)
+///   .decode(TBSCertificate.self, from: asn1Data)
+/// ```
+///
+/// See ``Schema`` to learn about defining ASN.1 schemas.
+///
+/// If the example `TBSCertificate` adopts the ``SchemaSpecified`` protocol, static utility
+/// functions can be used to decode types without having to initialize the decoder with a
+/// schema. This also ensures the correct schema is always provided to the decoder.
+/// ```swift
+/// ASN1Decoder.decode(TBSCertificate.self, from: asn1Data)
+/// ```
 ///
 public class ASN1Decoder: ValueDecoder<ASN1, ASN1DecoderTransform>, DecodesFromData {
 
@@ -27,15 +45,33 @@ public class ASN1Decoder: ValueDecoder<ASN1, ASN1DecoderTransform>, DecodesFromD
     )
   }
 
+  /// Initialize decoder with a specified ``schema``.
+  ///
+  /// - Parameter schema: Schema to use for decoding.
+  ///
   public required init(schema: Schema) {
     self.schema = schema
     super.init()
   }
 
+  /// Decode a `Decodable` & ``SchemaSpecified`` type from ASN.1/DER encoded data.
+  ///
+  /// - Parameters:
+  ///   - type: Type of value to decode.
+  ///   - data: ASN.1/DER encoded data.
+  /// - Returns: Decoded value of `type`.
+  /// - Throws:
   public static func decode<T: Decodable & SchemaSpecified>(_ type: T.Type, from data: Data) throws -> T {
     return try Self(schema: T.asn1Schema).decode(type, from: data)
   }
 
+  /// Decode a `Decodable` & ``SchemaSpecified`` type from an ``ASN1`` value tree.
+  ///
+  /// - Parameters:
+  ///   - type: Type of value to decode.
+  ///   - asn1: ASN1 value tree.
+  /// - Returns: Decoded value of `type`.
+  ///
   public static func decodeTree<T: Decodable & SchemaSpecified>(_ type: T.Type, from asn1: ASN1) throws -> T {
     return try Self(schema: T.asn1Schema).decodeTree(type, from: asn1)
   }
