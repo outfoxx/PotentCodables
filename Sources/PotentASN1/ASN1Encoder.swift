@@ -12,7 +12,25 @@ import Foundation
 import PotentCodables
 
 
-/// Encoding of `Encodable` types into ``ASN1`` values.
+/// Encodes `Encodable` types into ASN.1/DER data or ``ASN1`` value trees using a ``Schema``.
+///
+/// When encoding an `Encodable` value to ASN.1, the ``ASN1Encoder`` is initialized with a
+/// ``Schema`` to direct encoding.
+///
+/// Encode an example `TBSCertificate` type with an associated `TBSCertificateSchema` as follows:
+/// ```swift
+/// ASNEncoder(schema: TBSCertificateSchema)
+///   .encode(someCertificate)
+/// ```
+///
+/// See ``Schema`` to learn about defining ASN.1 schemas.
+///
+/// If the example `TBSCertificate` adopts the ``SchemaSpecified`` protocol, static utility
+/// functions can be used to encode values without having to initialize the encoder with a
+/// schema. This also ensures the correct schema is always provided to the encoder.
+/// ```swift
+/// ASN1Encoder.encode(someCertificate)
+/// ```
 ///
 public class ASN1Encoder: ValueEncoder<ASN1, ASN1EncoderTransform>, EncodesToData {
 
@@ -28,15 +46,28 @@ public class ASN1Encoder: ValueEncoder<ASN1, ASN1EncoderTransform>, EncodesToDat
     )
   }
 
+  /// Initialize encoder with a specified ``Schema``.
+  ///
+  /// - Parameters schema: 
   public required init(schema: Schema) {
     self.schema = schema
     super.init()
   }
 
+  /// Encode an `Encodeable` & ``SchemaSpecified`` value to ASN.1/DER encoded data.
+  ///
+  /// - Parameters value: Value to encode.
+  /// - Throws: `DecodingError` or ``ASN1DERWriter/Error``.
+  ///
   public static func encode<T: Encodable & SchemaSpecified>(_ value: T) throws -> Data {
     return try Self(schema: T.asn1Schema).encode(value)
   }
 
+  /// Encode an `Encodeable` & ``SchemaSpecified`` value to an ``ASN1`` value tree.
+  ///
+  /// - Parameters value: Value to encode.
+  /// - Throws: `DecodingError` or ``ASN1DERWriter/Error``.
+  ///
   public static func encodeTree<T: Encodable & SchemaSpecified>(_ value: T) throws -> ASN1 {
     return try Self(schema: T.asn1Schema).encodeTree(value)
   }

@@ -300,13 +300,13 @@ public extension ASN1 {
     return value
   }
 
-  /// Values as ``BigInt`` or `nil` if this is not an ``integer(_:)``.
-  var integerValue: BigInt? {
+  /// Values as ``ASN1/Integer`` or `nil` if this is not an ``integer(_:)``.
+  var integerValue: ASN1.Integer? {
     guard case .integer(let value) = absolute else { return nil }
     return value
   }
 
-  /// Values as ``BitString`` or `nil` if this is not a ``bitString(_:)``.
+  /// Values as ``BitString`` or `nil` if this is not a ``bitString(_:_:)``.
   var bitStringValue: BitString? {
     guard case .bitString(let length, let bytes) = absolute else { return nil }
     return BitString(length: length, bytes: bytes)
@@ -318,7 +318,7 @@ public extension ASN1 {
     return value
   }
 
-  /// Values as ``[UInt64]`` or `nil` if this is not an ``objectIdentifier(_:)``.
+  /// Values as `[UInt64]` or `nil` if this is not an ``objectIdentifier(_:)``.
   var objectIdentifierValue: ObjectIdentifier? {
     guard case .objectIdentifier(let value) = absolute else { return nil }
     return ObjectIdentifier(value)
@@ -378,13 +378,13 @@ public extension ASN1 {
     return AnyString(value, kind: .ia5)
   }
 
-  /// Value as ``AnyTime `` or `nil` if this is not a ``utcTime(_:)``.
+  /// Value as ``AnyTime`` or `nil` if this is not a ``utcTime(_:)``.
   var utcTimeValue: AnyTime? {
     guard case .utcTime(let value) = absolute else { return nil }
     return AnyTime(value, kind: .utc)
   }
 
-  /// Value as ``AnyTime `` or `nil` if this is not a ``generalizedTime(_:)``.
+  /// Value as ``AnyTime`` or `nil` if this is not a ``generalizedTime(_:)``.
   var generalizedTimeValue: AnyTime? {
     guard case .generalizedTime(let value) = absolute else { return nil }
     return AnyTime(value, kind: .generalized)
@@ -454,7 +454,7 @@ public extension ASN1 {
     }
   }
 
-  /// Value as array of ``ASN`` or `nil` if this is not a ``sequence(_:)`` or ``set(_:)``.
+  /// Value as array of ``ASN1`` or `nil` if this is not a ``sequence(_:)`` or ``set(_:)``.
   var collectionValue: [ASN1]? {
     switch absolute {
     case .set(let value): return value
