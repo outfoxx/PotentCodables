@@ -13,6 +13,10 @@ import Foundation
 import PotentCodables
 
 
+/// State for encoding and decoding `Codable` types.
+///
+/// - Note: For internal use only.
+///
 public struct SchemaState {
 
   public enum SchemaError: Error {
@@ -234,7 +238,7 @@ public struct SchemaState {
 
       let version: BigInt?
       if let taggedVersionValue = versionValue.taggedValue {
-        if taggedVersionValue.bytes.isEmpty {
+        if taggedVersionValue.data.isEmpty {
           version = versionFieldSchema.defaultValue?.integerValue
         }
         else {

@@ -84,7 +84,7 @@ class ASN1Tests: XCTestCase {
 
   func testGeneralizedTimeReadingWriting() throws {
 
-    let writer = DERWriter()
+    let writer = ASN1DERWriter()
     try writer.write(ASN1.tagged(24, "22221111223344".data(using: .ascii)!))
     try writer.write(ASN1.tagged(24, "22221111223344.567".data(using: .ascii)!))
 
@@ -113,11 +113,11 @@ class ASN1Tests: XCTestCase {
     try writer.write(ASN1.tagged(24, "22221111223344-11".data(using: .ascii)!))
     try writer.write(ASN1.tagged(24, "22221111223344.567-11".data(using: .ascii)!))
 
-    let values = try DERReader.parse(data: writer.data)
+    let values = try ASN1DERReader.parse(data: writer.data)
 
-    func date(_ index: Int) -> TimeInterval { values[index].generalizedTimeValue!.date.timeIntervalSince1970 }
-    func tz(_ index: Int) -> TimeZone { values[index].generalizedTimeValue!.timeZone }
-    func offset(_ index: Int) -> Int { values[index].generalizedTimeValue!.timeZone.secondsFromGMT() }
+    func date(_ index: Int) -> TimeInterval { values[index].generalizedTimeValue!.zonedDate.date.timeIntervalSince1970 }
+    func tz(_ index: Int) -> TimeZone { values[index].generalizedTimeValue!.zonedDate.timeZone }
+    func offset(_ index: Int) -> Int { values[index].generalizedTimeValue!.zonedDate.timeZone.secondsFromGMT() }
 
     XCTAssertEqual(date(0), 7_979_553_224.0)
     XCTAssertEqual(tz(0), .current)
@@ -197,7 +197,7 @@ class ASN1Tests: XCTestCase {
 
   func testUTCTimeReadingWriting() throws {
 
-    let writer = DERWriter()
+    let writer = ASN1DERWriter()
 
     try writer.write(ASN1.tagged(23, "2211112233Z".data(using: .ascii)!))
     try writer.write(ASN1.tagged(23, "221111223344Z".data(using: .ascii)!))
@@ -208,11 +208,11 @@ class ASN1Tests: XCTestCase {
     try writer.write(ASN1.tagged(23, "2211112233-1122".data(using: .ascii)!))
     try writer.write(ASN1.tagged(23, "221111223344-1122".data(using: .ascii)!))
 
-    let values = try DERReader.parse(data: writer.data)
+    let values = try ASN1DERReader.parse(data: writer.data)
 
-    func date(_ index: Int) -> TimeInterval { values[index].utcTimeValue!.date.timeIntervalSince1970 }
-    func tz(_ index: Int) -> TimeZone { values[index].utcTimeValue!.timeZone }
-    func offset(_ index: Int) -> Int { values[index].utcTimeValue!.timeZone.secondsFromGMT() }
+    func date(_ index: Int) -> TimeInterval { values[index].utcTimeValue!.zonedDate.date.timeIntervalSince1970 }
+    func tz(_ index: Int) -> TimeZone { values[index].utcTimeValue!.zonedDate.timeZone }
+    func offset(_ index: Int) -> Int { values[index].utcTimeValue!.zonedDate.timeZone.secondsFromGMT() }
 
     XCTAssertEqual(date(0), 1_668_205_980.0)
     XCTAssertEqual(tz(0), .utc)

@@ -14,18 +14,28 @@ import Foundation
 
 public extension BigUInt {
 
+  /// Initializes an integer from the provided `Data`.
+  ///
+  /// - Parameter data: Base-256 representation, in network (big-endian) byte order.
+  ///
   init(serialized data: Data) {
     self.init(data)
   }
 
+  /// Serializes the integer to `Data`.
+  ///
+  /// - Returns: Base-256 representation, in network (big-endian) byte order.
+  ///
   func serialized() -> Data { serialize() }
 
 }
 
 public extension BigInt {
 
-  /// Initializes an integer from the bits stored inside a piece of `Data`.
-  /// The data is assumed to be the two's compliment base-256 representation, in network (big-endian) byte order.
+  /// Initializes an integer from the provided `Data`.
+  ///
+  /// - Parameter data: Two's compliment, base-256 representation, in network (big-endian) byte order.
+  ///
   init(serialized data: Data) {
     let sign: Sign
     let magnitude: BigUInt
@@ -40,7 +50,10 @@ public extension BigInt {
     self.init(sign: sign, magnitude: magnitude)
   }
 
-  /// Return a `Data` value that contains the two's compliment base-256 representation of this integer, in network (big-endian) byte order.
+  /// Serializes the integer to `Data`.
+  ///
+  /// - Returns: Two's compliment, base-256 representation, in network (big-endian) byte order.
+  /// 
   func serialized() -> Data {
     var bytes = magnitude.serialize()
     if bytes.isEmpty || (bytes[0] & 0x80) == 0x80 {

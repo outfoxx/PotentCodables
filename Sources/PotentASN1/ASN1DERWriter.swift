@@ -12,37 +12,57 @@ import BigInt
 import Foundation
 
 
-public class DERWriter {
+/// Write ASN.1/DER encoded data.
+///
+public class ASN1DERWriter {
 
-  public private(set) var data: Data
-
-  public required init() {
-    data = Data(capacity: 256)
+  /// ASN.1 Writing Errors
+  public enum Error: Swift.Error {
+    /// Encoded value length could not be stored.
+    case lengthOverflow
   }
 
-  public init(data: Data) {
-    self.data = data
-  }
-
+  /// Write a collection of ``ASN1`` values in ASN.1/DER format.
+  ///
+  /// - Parameter values: Values to write.
+  /// - Throws: `Error` when unable to write data.
   public static func write(_ values: [ASN1]) throws -> Data {
-    let writer = DERWriter()
+    let writer = ASN1DERWriter()
     for value in values {
       try writer.write(value)
     }
     return writer.data
   }
 
+  /// Write an ``ASN1`` value in ASN.1/DER format.
+  ///
+  /// - Parameter value: Value to write.
+  /// - Throws: `Error` when unable to write data.
   public static func write(_ value: ASN1) throws -> Data {
-    let writer = DERWriter()
+    let writer = ASN1DERWriter()
     try writer.write(value)
     return writer.data
+  }
+
+  public private(set) var data: Data
+
+  /// Default initializer.
+  public required init() {
+    data = Data(capacity: 256)
+  }
+
+  /// Initialize with pre-existing data to append written data to.
+  ///
+  /// - Parameter data: Pre-existing data to append to.
+  public init(data: Data) {
+    self.data = data
   }
 
   private func append(byte: UInt8) {
     data.append(byte)
   }
 
-  private func append(length value: Int) {
+  private func append(length value: Int) throws {
 
     switch value {
     case 0x0000 ..< 0x0080:
@@ -60,7 +80,7 @@ public class DERWriter {
     default:
       let bytes = BigUInt(value).serialized()
       guard let byteCount = UInt8(exactly: bytes.count), byteCount <= 127 else {
-        fatalError("Invalid DER length")
+        throw Error.lengthOverflow
       }
       append(byte: 0x80 & byteCount)
       append(data: bytes)
@@ -71,14 +91,14 @@ public class DERWriter {
     self.data.append(data)
   }
 
-  public func append(tag: UInt8, length: Int) {
+  public func append(tag: UInt8, length: Int) throws {
     append(byte: tag)
-    append(length: length)
+    try append(length: length)
   }
 
-  public func append(tag: ASN1.Tag, length: Int) {
+  public func append(tag: ASN1.Tag, length: Int) throws {
     append(byte: tag.rawValue)
-    append(length: length)
+    try append(length: length)
   }
 
   private static let zero = Data(repeating: 0, count: 1)
@@ -86,28 +106,28 @@ public class DERWriter {
   public func write(_ value: ASN1) throws {
     switch value {
     case .boolean(let value):
-      append(tag: .boolean, length: 1)
+      try append(tag: .boolean, length: 1)
       append(byte: value ? 0xFF : 0x00)
 
     case .integer(let value):
       let bytes = value.serialized()
-      append(tag: .integer, length: max(1, bytes.count))
+      try append(tag: .integer, length: max(1, bytes.count))
       append(data: bytes.isEmpty ? Self.zero : bytes)
 
     case .bitString(let length, let data):
       let usedBits = UInt8(length % 8)
       let unusedBits = usedBits == 0 ? 0 : 8 - usedBits
 
-      append(tag: .bitString, length: data.count + 1)
+      try append(tag: .bitString, length: data.count + 1)
       append(byte: unusedBits)
       append(data: data)
 
     case .octetString(let value):
-      append(tag: .octetString, length: value.count)
+      try append(tag: .octetString, length: value.count)
       append(data: value)
 
     case .null:
-      append(tag: .null, length: 0)
+      try append(tag: .null, length: 0)
 
     case .objectIdentifier(let value):
 
@@ -135,109 +155,109 @@ public class DERWriter {
         bytes.append(field(val: val))
       }
 
-      append(tag: .objectIdentifier, length: bytes.count)
+      try append(tag: .objectIdentifier, length: bytes.count)
       append(data: bytes)
 
     case .real(let value):
       guard !value.isZero else {
-        append(tag: .real, length: 0)
+        try append(tag: .real, length: 0)
         return
       }
       guard !value.isInfinite else {
-        append(tag: .real, length: 1)
+        try append(tag: .real, length: 1)
         append(byte: 0x40 | (value.sign == .plus ? 0x0 : 0x1))
         return
       }
       // Choose ISO-6093 NR3
       var data = String(describing: value).data(using: .ascii) ?? Data()
       data.insert(0x3, at: 0)
-      append(tag: .real, length: data.count)
+      try append(tag: .real, length: data.count)
       append(data: data)
 
     case .utf8String(let value):
       let utf8 = value.data(using: String.Encoding.utf8)!
-      append(tag: .utf8String, length: utf8.count)
+      try append(tag: .utf8String, length: utf8.count)
       append(data: utf8)
 
     case .sequence(let values):
       let data = try Self.write(values)
-      append(tag: ASN1.Tag.sequence.constructed, length: data.count)
+      try append(tag: ASN1.Tag.sequence.constructed, length: data.count)
       append(data: data)
 
     case .set(let values):
       let data = try Self.write(values)
-      append(tag: ASN1.Tag.set.constructed, length: data.count)
+      try append(tag: ASN1.Tag.set.constructed, length: data.count)
       append(data: data)
 
     case .numericString(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .numericString, length: ascii.count)
+      try append(tag: .numericString, length: ascii.count)
       append(data: ascii)
 
     case .printableString(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .printableString, length: ascii.count)
+      try append(tag: .printableString, length: ascii.count)
       append(data: ascii)
 
     case .teletexString(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .teletexString, length: ascii.count)
+      try append(tag: .teletexString, length: ascii.count)
       append(data: ascii)
 
     case .videotexString(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .videotexString, length: ascii.count)
+      try append(tag: .videotexString, length: ascii.count)
       append(data: ascii)
 
     case .ia5String(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .ia5String, length: ascii.count)
+      try append(tag: .ia5String, length: ascii.count)
       append(data: ascii)
 
     case .utcTime(let value):
       let formatter = UTCFormatters.for(timeZone: value.timeZone)
       let ascii = formatter.string(from: value.date).data(using: .ascii)!
-      append(tag: .utcTime, length: ascii.count)
+      try append(tag: .utcTime, length: ascii.count)
       append(data: ascii)
 
     case .generalizedTime(let value):
       let formatter = GeneralizedFormatters.for(timeZone: value.timeZone)
       let ascii = formatter.string(from: value.date).data(using: .ascii)!
-      append(tag: .generalizedTime, length: ascii.count)
+      try append(tag: .generalizedTime, length: ascii.count)
       append(data: ascii)
 
     case .graphicString(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .graphicString, length: ascii.count)
+      try append(tag: .graphicString, length: ascii.count)
       append(data: ascii)
 
     case .visibleString(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .visibleString, length: ascii.count)
+      try append(tag: .visibleString, length: ascii.count)
       append(data: ascii)
 
     case .generalString(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .generalString, length: ascii.count)
+      try append(tag: .generalString, length: ascii.count)
       append(data: ascii)
 
     case .universalString(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .universalString, length: ascii.count)
+      try append(tag: .universalString, length: ascii.count)
       append(data: ascii)
 
     case .characterString(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .characterString, length: ascii.count)
+      try append(tag: .characterString, length: ascii.count)
       append(data: ascii)
 
     case .bmpString(let value):
       let ascii = value.data(using: String.Encoding.ascii)!
-      append(tag: .bmpString, length: ascii.count)
+      try append(tag: .bmpString, length: ascii.count)
       append(data: ascii)
 
     case .tagged(let tag, let data):
-      append(tag: tag, length: data.count)
+      try append(tag: tag, length: data.count)
       append(data: data)
 
     case .default:

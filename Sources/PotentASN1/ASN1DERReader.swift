@@ -13,17 +13,32 @@ import Foundation
 import PotentCodables
 
 
-public enum DERReader {
+/// Read ASN.1/DER encoded data.
+///
+public enum ASN1DERReader {
 
   public enum Error: Swift.Error {
+    /// Unexpectedly encounted end of data.
     case unexpectedEOF
+    /// Invalid or unsupported string.
     case invalidStringEncoding
+    /// Invalid characters for string.
     case invalidStringCharacters
+    /// Unsupported non-constructed collection
     case nonConstructedCollection
+    /// Incorrectly formatted UTC time.
     case invalidUTCTime
+    /// Incorrectly formatted generalized time.
     case invalidGeneralizedTime
+    /// Unsupported REAL type.
+    case unsupportedReal
   }
 
+  /// Parse data into a collection of ``ASN1`` values.
+  ///
+  /// - Parameter data: Data to be parsed.
+  /// - Returns: Collection of parsed ``ASN1`` values.
+  /// - Throws: ``ASN1DERReader/Error`` if `data` is unparsable or corrupted.
   public static func parse(data: Data) throws -> [ASN1] {
     try data.withUnsafeBytes { ptr in
       var buffer = ptr.bindMemory(to: UInt8.self)
@@ -31,27 +46,44 @@ public enum DERReader {
     }
   }
 
-  public static func parseTagged(data: Data) throws -> (tag: ASN1.AnyTag, data: Data) {
+  /// Parse explicitly tagged data into its tag and data.
+  ///
+  /// - Parameter data: Data to be parsed.
+  /// - Returns: Parsed tag and data.
+  /// - Throws: ``ASN1DERReader/Error`` if `data` is unparsable or corrupted.
+  public static func parseTagged(data: Data) throws -> TaggedValue {
     try data.withUnsafeBytes { ptr in
       var buffer = ptr.bindMemory(to: UInt8.self)
       let (tag, itemBuffer) = try parseTagged(&buffer)
-      return (tag, Data(itemBuffer))
+      return TaggedValue(tag: tag, data: Data(itemBuffer))
     }
   }
 
-  public static func parseTagged(_ buffer: inout UnsafeBufferPointer<UInt8>) throws
+  /// Parse data using specified tag.
+  ///
+  /// - Parameters:
+  ///   - data: Data to be parsed.
+  ///   - as: Tag specifying format of `data`.
+  public static func parseItem(_ data: Data, as tagValue: ASN1.AnyTag) throws -> ASN1 {
+    try data.withUnsafeBytes { ptr in
+      var buffer = ptr.bindMemory(to: UInt8.self)
+      return try parseItem(&buffer, as: tagValue)
+    }
+  }
+
+  private static func parseTagged(_ buffer: inout UnsafeBufferPointer<UInt8>) throws
     -> (tag: ASN1.AnyTag, data: UnsafeBufferPointer<UInt8>) {
     return (try buffer.pop(), try buffer.pop(count: parseLength(&buffer)))
   }
 
-  public static func parseItems(_ data: Data) throws -> [ASN1] {
+  private static func parseItems(_ data: Data) throws -> [ASN1] {
     try data.withUnsafeBytes { ptr in
       var buffer = ptr.bindMemory(to: UInt8.self)
       return try parseItems(&buffer)
     }
   }
 
-  public static func parseItems(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> [ASN1] {
+  private static func parseItems(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> [ASN1] {
 
     var items = [ASN1]()
     while buffer.count > 0 {
@@ -62,7 +94,7 @@ public enum DERReader {
     return items
   }
 
-  public static func parseItem(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> ASN1 {
+  private static func parseItem(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> ASN1 {
     var (tagValue, itemBuffer) = try parseTagged(&buffer)
     defer {
       assert(itemBuffer.isEmpty)
@@ -71,14 +103,7 @@ public enum DERReader {
     return try parseItem(&itemBuffer, as: tagValue)
   }
 
-  public static func parseItem(_ data: Data, as tagValue: ASN1.AnyTag) throws -> ASN1 {
-    try data.withUnsafeBytes { ptr in
-      var buffer = ptr.bindMemory(to: UInt8.self)
-      return try parseItem(&buffer, as: tagValue)
-    }
-  }
-
-  public static func parseItem(
+  private static func parseItem(
     _ itemBuffer: inout UnsafeBufferPointer<UInt8>,
     as tagValue: ASN1.AnyTag
   ) throws -> ASN1 {
@@ -195,7 +220,7 @@ public enum DERReader {
       return Decimal(string: String(bytes: bytes, encoding: .ascii) ?? "") ?? .zero
     }
     else {
-      fatalError("Only ISO-6903 supported")
+      throw Error.unsupportedReal
     }
   }
 
@@ -294,7 +319,7 @@ private extension UnsafeBufferPointer {
 
   func peek() throws -> Element {
     guard let byte = baseAddress?.pointee else {
-      throw DERReader.Error.unexpectedEOF
+      throw ASN1DERReader.Error.unexpectedEOF
     }
     return byte
   }
@@ -307,7 +332,7 @@ private extension UnsafeBufferPointer {
 
   mutating func pop(count: Int = 0) throws -> UnsafeBufferPointer {
     guard self.count >= count else {
-      throw DERReader.Error.unexpectedEOF
+      throw ASN1DERReader.Error.unexpectedEOF
     }
     let buffer = UnsafeBufferPointer(start: baseAddress, count: count)
     self = UnsafeBufferPointer(start: baseAddress?.advanced(by: count), count: self.count - count)
