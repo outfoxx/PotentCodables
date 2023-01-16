@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import BigInt
 
 
 /// A `Codable` value that allows encoding/decoding values of any type or structure.
@@ -46,6 +47,8 @@ public enum AnyValue: Hashable {
   case uint16(UInt16)
   case uint32(UInt32)
   case uint64(UInt64)
+  case integer(BigInt)
+  case unsignedInteger(BigUInt)
   case float(Float)
   case double(Double)
   case decimal(Decimal)
@@ -81,6 +84,8 @@ public enum AnyValue: Hashable {
       case "d": return .double(val.doubleValue)
       default: fatalError("Invalid NSNumber type identifier")
       }
+    case let val as BigInt: return .integer(val)
+    case let val as BigUInt: return .unsignedInteger(val)
     case let val as Decimal: return .decimal(val)
     case let val as Data: return .data(val)
     case let val as URL: return .url(val)
@@ -227,6 +232,8 @@ extension AnyValue: Value {
     case .uint16(let value): return value
     case .uint32(let value): return value
     case .uint64(let value): return value
+    case .integer(let value): return value
+    case .unsignedInteger(let value): return value
     case .float(let value): return value
     case .double(let value): return value
     case .decimal(let value): return value
@@ -235,14 +242,12 @@ extension AnyValue: Value {
     case .uuid(let value): return value
     case .date(let value): return value
     case .array(let value): return Array(value.map(\.unwrapped))
-    case .dictionary(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in
-        (key, value.unwrapped)
-      })
+    case .dictionary(let value): return Dictionary(uniqueKeysWithValues: value.map { ($0, $1.unwrapped) })
     }
   }
 
   /// Unwraps all the values in the tree, filtering nils present in `array` or `dictionary` values
-  public var unwrappedValues: Any? {
+  public var compactUnwrapped: Any? {
     switch self {
     case .nil: return nil
     case .bool(let value): return value
@@ -255,6 +260,8 @@ extension AnyValue: Value {
     case .uint16(let value): return value
     case .uint32(let value): return value
     case .uint64(let value): return value
+    case .integer(let value): return value
+    case .unsignedInteger(let value): return value
     case .float(let value): return value
     case .double(let value): return value
     case .decimal(let value): return value
@@ -366,6 +373,16 @@ extension AnyValue: Decodable {
       return
     }
 
+    if let value = try? container.decode(BigInt.self) {
+      self = .integer(value)
+      return
+    }
+
+    if let value = try? container.decode(BigUInt.self) {
+      self = .unsignedInteger(value)
+      return
+    }
+
     if let value = try? container.decode(Float.self) {
       self = .float(value)
       return
@@ -444,6 +461,10 @@ extension AnyValue: Encodable {
     case .uint32(let value):
       try container.encode(value)
     case .uint64(let value):
+      try container.encode(value)
+    case .integer(let value):
+      try container.encode(value)
+    case .unsignedInteger(let value):
       try container.encode(value)
     case .float(let value):
       try container.encode(value)

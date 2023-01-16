@@ -32,7 +32,8 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "PotentCodables"
+      name: "PotentCodables",
+      dependencies: ["BigInt"]
     ),
     .target(
       name: "PotentJSON",
