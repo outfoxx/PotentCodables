@@ -1,6 +1,5 @@
-/.swiftpm
-/PotentCodables.xcodeproj
-/PotentCodablesTest.xcodeproj
-/Project
-/TestResults
+.DS_Store
 /.build
+/.derived-data
+/.swiftpm
+/TestResults
