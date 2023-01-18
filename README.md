@@ -1,6 +1,9 @@
 # 🧪 PotentCodables
-[![Build Status](https://travis-ci.org/outfoxx/PotentCodables.svg?branch=master)](https://travis-ci.org/outfoxx/PotentCodables)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/outfoxx/PotentCodables)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/outfoxx/PotentCodables/ci.yml?branch=main)
+![Coverage](https://sonarcloud.io/api/project_badges/measure?project=outfoxx_PotentCodables&metric=coverage)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Foutfoxx%2FPotentCodables%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/outfoxx/PotentCodables)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Foutfoxx%2FPotentCodables%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/outfoxx/PotentCodables)
+
 ## A potent set of implementations and extension to the Swift `Codable` system
 
 ### Why?
