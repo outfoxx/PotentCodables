@@ -4,34 +4,66 @@ on:
   push:
     branches: [ main ]
   pull_request:
+    types: [ opened, synchronize, reopened ]
     branches: [ main ]
 
 jobs:
-
-  check:
-    runs-on: ubuntu-latest
-
-    steps:
-
-    - uses: actions/checkout@v1
-    - name: GitHub Action for SwiftLint
-      uses: norio-nomura/action-swiftlint@3.2.1
-      with:
-        args: --strict
-
-
-  build-test-coverage:
+  
+  check-build-test:
 
     runs-on: macos-12
 
-    needs: [check]
+    steps:
+
+    - name: Install Tools
+      run: |
+        brew tap a7ex/homebrew-formulae
+        brew install xcbeautify sonar-scanner findsimulator 
+      env:
+        HOMEBREW_NO_INSTALL_CLEANUP: 1
+
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer
+
+    - name: SwiftLint
+      run: |
+        mkdir .build
+        swiftlint lint --reporter json > .build/swiftlint.json
+
+    - name: Build/Test
+      run: set -o pipefail && swift test --enable-code-coverage --sanitize undefined | xcbeautify
+
+    - name: Convert Coverage
+      run: xcrun llvm-cov show -instr-profile=.build/debug/codecov/default.profdata .build/debug/PotentCodablesPackageTests.xctest/Contents/MacOS/PotentCodablesPackageTests > .build/coverage.report
+
+    - name: Sonar Scanner
+      run: sonar-scanner
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  build-test:
+
+    runs-on: macos-12
+
+    needs: [check-build-test]
 
     strategy:
       matrix:
-        platform: [macos, ios, watchos, tvos]
-        xcode: ["14.2"]
+        platform: [macos, ios, tvos, watchos]
 
     steps:
+
+    - name: Install Tools
+      run: |
+        brew tap a7ex/homebrew-formulae
+        brew install xcbeautify findsimulator 
+      env:
+        HOMEBREW_NO_INSTALL_CLEANUP: 1
       
     - uses: actions/checkout@v3
     
@@ -43,30 +75,15 @@ jobs:
         HOMEBREW_NO_INSTALL_CLEANUP: 1
 
     - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode_${{matrix.xcode}}.app/Contents/Developer
-
-    - name: Select Swift
-      uses: swift-actions/setup-swift@v1
+      run: sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer
 
     - name: Build/Test
       run: make build-test-${{ matrix.platform }}
 
-    - name: Test Coverage
-      uses: maxep/spm-lcov-action@0.3.0
-      if: ${{ matrix.platform == 'macos' && matrix.xcode == '12.5.1' }}
-      with:
-        output-file: ./coverage/lcov.info
-
-    - name: Report Coverage
-      uses: romeovs/lcov-reporter-action@v0.2.21
-      if: ${{ matrix.platform == 'macos' && matrix.xcode == '12.5.1' }}
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        lcov-file: ./coverage/lcov.info
-
-    - name: Updload Reports
-      uses: actions/upload-artifact@v2
+    - name: Report Test Results
+      uses: kishikawakatsumi/xcresulttool@v1
       if: always()
       with:
-        name: reports
-        path: TestResults
+          title: Test Results ${{ matrix.platform }}
+          path: ./TestResults/${{ matrix.platform }}.xcresult
+
