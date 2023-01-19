@@ -269,8 +269,8 @@ extension AnyValue: Value {
     case .url(let value): return value
     case .uuid(let value): return value
     case .date(let value): return value
-    case .array(let value): return value.compactMap(\.unwrappedValues)
-    case .dictionary(let value): return value.compactMapValues { $0.unwrappedValues }
+    case .array(let value): return value.compactMap(\.compactUnwrapped)
+    case .dictionary(let value): return value.compactMapValues { $0.compactUnwrapped }
     }
   }
 
