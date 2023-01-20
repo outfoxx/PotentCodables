@@ -20,7 +20,7 @@ struct YAMLWriter {
 
   typealias Writer = (String?) -> Void
 
-  public static func write(_ documents: YAML.Array, sortedKeys: Bool = false, writer: @escaping Writer) throws {
+  public static func write(_ documents: YAML.Sequence, sortedKeys: Bool = false, writer: @escaping Writer) throws {
 
     func output(
       emitter: OpaquePointer?,
@@ -130,7 +130,7 @@ struct YAMLWriter {
       emit(emitter: emitter, type: FYET_MAPPING_END)
 
     case .alias(let alias):
-      emit(emitter: emitter, type: FYET_ALIAS, args: alias)
+      emit(emitter: emitter, alias: alias)
 
     }
   }
@@ -148,6 +148,15 @@ struct YAMLWriter {
           emit(emitter: emitter, type: FYET_SCALAR, args: style.rawValue, scalarPtr, FY_NT, anchorPtr, tagPtr)
         }
       }
+    }
+  }
+
+  private static func emit(
+    emitter: OpaquePointer,
+    alias: String
+  ) {
+    alias.withCString { aliasPtr in
+      emit(emitter: emitter, type: FYET_ALIAS, args: aliasPtr)
     }
   }
 

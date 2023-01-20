@@ -8,6 +8,7 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
+import BigInt
 import Foundation
 import PotentCodables
 
@@ -15,6 +16,9 @@ import PotentCodables
 /// `CBOREncoder` facilitates the encoding of `Encodable` values into CBOR values.
 ///
 public class CBOREncoder: ValueEncoder<CBOR, CBOREncoderTransform>, EncodesToData {
+
+  public static let `default` = CBOREncoder()
+
   // MARK: Options
 
   /// The strategy to use for encoding `Date` values.
@@ -52,7 +56,6 @@ public class CBOREncoder: ValueEncoder<CBOR, CBOREncoderTransform>, EncodesToDat
 public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSerializer {
 
   public typealias Value = CBOR
-  public typealias Encoder = InternalValueEncoder<CBOR, Self>
   public typealias State = Void
 
   public static var emptyKeyedContainer = CBOR.map([:])
@@ -64,51 +67,174 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
-  public static func boxNil(encoder: Encoder) throws -> CBOR { return nil }
-  public static func box(_ value: Bool, encoder: Encoder) throws -> CBOR { return CBOR(value) }
-  public static func box(_ value: Int, encoder: Encoder) throws -> CBOR { return CBOR(Int64(value)) }
-  public static func box(_ value: Int8, encoder: Encoder) throws -> CBOR { return CBOR(Int64(value)) }
-  public static func box(_ value: Int16, encoder: Encoder) throws -> CBOR { return CBOR(Int64(value)) }
-  public static func box(_ value: Int32, encoder: Encoder) throws -> CBOR { return CBOR(Int64(value)) }
-  public static func box(_ value: Int64, encoder: Encoder) throws -> CBOR { return CBOR(Int64(value)) }
-  public static func box(_ value: UInt, encoder: Encoder) throws -> CBOR { return CBOR(UInt64(value)) }
-  public static func box(_ value: UInt8, encoder: Encoder) throws -> CBOR { return CBOR(UInt64(value)) }
-  public static func box(_ value: UInt16, encoder: Encoder) throws -> CBOR { return CBOR(UInt64(value)) }
-  public static func box(_ value: UInt32, encoder: Encoder) throws -> CBOR { return CBOR(UInt64(value)) }
-  public static func box(_ value: UInt64, encoder: Encoder) throws -> CBOR { return CBOR(UInt64(value)) }
-  public static func box(_ value: String, encoder: Encoder) throws -> CBOR { return CBOR(value) }
-  public static func box(_ value: Float, encoder: Encoder) throws -> CBOR { return CBOR(value) }
-  public static func box(_ value: Double, encoder: Encoder) throws -> CBOR { return CBOR(value) }
-  public static func box(
-    _ value: Decimal,
-    encoder: Encoder
-  ) throws -> CBOR { return CBOR((value as NSDecimalNumber).doubleValue) }
-  public static func box(_ value: Data, encoder: Encoder) throws -> CBOR { return CBOR(value) }
-  public static func box(
-    _ value: URL,
-    encoder: Encoder
-  ) throws -> CBOR { return .tagged(.uri, .utf8String(value.absoluteString)) }
+  public static func intercepts(_ type: Encodable.Type) -> Bool {
+    return type == CBOR.Half.self
+        || type == Date.self || type == NSDate.self
+        || type == Data.self || type == NSData.self
+        || type == URL.self || type == NSURL.self
+        || type == UUID.self || type == NSUUID.self
+        || type == Decimal.self || type == NSDecimalNumber.self
+        || type == BigInt.self
+        || type == BigUInt.self
+        || type == AnyValue.self
+  }
 
-  public static func box(_ value: UUID, encoder: Encoder) throws -> CBOR {
+  public static func box(_ value: Any, interceptedType: Encodable.Type, encoder: IVE) throws -> CBOR {
+    if let value = value as? CBOR.Half {
+      return try box(value, encoder: encoder)
+    }
+    if let value = value as? Date {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? Data {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? URL {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? UUID {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? Decimal {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? BigInt {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? BigUInt {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? AnyValue {
+      return try box(value, encoder: encoder)
+    }
+    fatalError("type not valid for intercept")
+  }
+
+  public static func boxNil(encoder: IVE) throws -> CBOR { return nil }
+  public static func box(_ value: Bool, encoder: IVE) throws -> CBOR { return CBOR(value) }
+  public static func box(_ value: Int, encoder: IVE) throws -> CBOR { return CBOR(Int64(value)) }
+  public static func box(_ value: Int8, encoder: IVE) throws -> CBOR { return CBOR(Int64(value)) }
+  public static func box(_ value: Int16, encoder: IVE) throws -> CBOR { return CBOR(Int64(value)) }
+  public static func box(_ value: Int32, encoder: IVE) throws -> CBOR { return CBOR(Int64(value)) }
+  public static func box(_ value: Int64, encoder: IVE) throws -> CBOR { return CBOR(Int64(value)) }
+  public static func box(_ value: UInt, encoder: IVE) throws -> CBOR { return CBOR(UInt64(value)) }
+  public static func box(_ value: UInt8, encoder: IVE) throws -> CBOR { return CBOR(UInt64(value)) }
+  public static func box(_ value: UInt16, encoder: IVE) throws -> CBOR { return CBOR(UInt64(value)) }
+  public static func box(_ value: UInt32, encoder: IVE) throws -> CBOR { return CBOR(UInt64(value)) }
+  public static func box(_ value: UInt64, encoder: IVE) throws -> CBOR { return CBOR(UInt64(value)) }
+  public static func box(_ value: Float, encoder: IVE) throws -> CBOR { return .float(value) }
+  public static func box(_ value: Double, encoder: IVE) throws -> CBOR { return .double(value) }
+  public static func box(_ value: String, encoder: IVE) throws -> CBOR { return .utf8String(value) }
+
+  public static func box(_ value: CBOR.Half, encoder: IVE) throws -> CBOR { return .half(value) }
+  public static func box(_ value: Data, encoder: IVE) throws -> CBOR { return .byteString(value) }
+
+  public static func box(_ value: BigInt, encoder: IVE) throws -> CBOR {
+    if value.sign == .plus {
+      return .tagged(.positiveBignum, .byteString(value.magnitude.serialize()))
+    }
+    else {
+      return .tagged(.negativeBignum, .byteString((value.magnitude - 1).serialize()))
+    }
+  }
+
+  public static func box(_ value: BigUInt, encoder: IVE) throws -> CBOR {
+    return .tagged(.positiveBignum, .byteString(value.magnitude.serialize()))
+  }
+
+  public static func box(_ value: Decimal, encoder: IVE) throws -> CBOR {
+    let exp: CBOR = value.exponent < 0
+      ? .negativeInt(UInt64(bitPattern: ~Int64(value.exponent)))
+      : .unsignedInt(UInt64(value.exponent))
+    let sig = BigInt(value.significand.description)!
+    let man: CBOR = value.sign == .plus
+      ? .tagged(.positiveBignum, .byteString(sig.magnitude.serialize()))
+      : .tagged(.negativeBignum, .byteString((sig.magnitude - 1).serialize()))
+    return .tagged(.decimalFraction, .array([exp, man]))
+  }
+
+  public static func box(_ value: URL, encoder: IVE) throws -> CBOR {
+    return .tagged(.uri, .utf8String(value.absoluteString))
+  }
+
+  public static func box(_ value: UUID, encoder: IVE) throws -> CBOR {
     return withUnsafeBytes(of: value) { ptr in
       let bytes = Data(ptr.bindMemory(to: UInt8.self))
       return .tagged(.uuid, .byteString(bytes))
     }
   }
 
-  public static func box(_ value: Date, encoder: Encoder) throws -> CBOR {
+  public static func box(_ value: Date, encoder: IVE) throws -> CBOR {
     switch encoder.options.dateEncodingStrategy {
-    case .iso8601: return .tagged(.iso8601DateTime, .utf8String(_iso8601Formatter.string(from: value)))
-    case .secondsSince1970: return .tagged(.epochDateTime, CBOR(value.timeIntervalSince1970))
-    case .millisecondsSince1970: return .tagged(.epochDateTime, CBOR(Int64(value.timeIntervalSince1970 * 1000.0)))
+    case .iso8601:
+      return .tagged(.iso8601DateTime, .utf8String(ZonedDate(date: value, timeZone: .utc).iso8601EncodedString()))
+    case .secondsSince1970:
+      return .tagged(.epochDateTime, CBOR(value.timeIntervalSince1970))
+    case .millisecondsSince1970:
+      return .tagged(.epochDateTime, CBOR(Int64(value.timeIntervalSince1970 * 1000.0)))
     }
   }
 
-  public static func unkeyedValuesToValue(_ values: [CBOR], encoder: Encoder) -> CBOR {
-    return .array(values)
+  public static func box(_ value: AnyValue, encoder: IVE) throws -> CBOR {
+    switch value {
+    case .nil:
+      return .null
+    case .bool(let value):
+      return .boolean(value)
+    case .string(let value):
+      return .utf8String(value)
+    case .int8(let value):
+      return try box(value, encoder: encoder)
+    case .int16(let value):
+      return try box(value, encoder: encoder)
+    case .int32(let value):
+      return try box(value, encoder: encoder)
+    case .int64(let value):
+      return try box(value, encoder: encoder)
+    case .uint8(let value):
+      return try box(value, encoder: encoder)
+    case .uint16(let value):
+      return try box(value, encoder: encoder)
+    case .uint32(let value):
+      return try box(value, encoder: encoder)
+    case .uint64(let value):
+      return try box(value, encoder: encoder)
+    case .integer(let value):
+      return try box(value, encoder: encoder)
+    case .unsignedInteger(let value):
+      return try box(value, encoder: encoder)
+    case .float16(let value):
+      return try box(value, encoder: encoder)
+    case .float(let value):
+      return try box(value, encoder: encoder)
+    case .double(let value):
+      return try box(value, encoder: encoder)
+    case .decimal(let value):
+      return try box(value, encoder: encoder)
+    case .data(let value):
+      return try box(value, encoder: encoder)
+    case .url(let value):
+      return try box(value, encoder: encoder)
+    case .uuid(let value):
+      return try box(value, encoder: encoder)
+    case .date(let value):
+      return try box(value, encoder: encoder)
+    case .array(let value):
+      return .array(.init(try value.map { try box($0, encoder: encoder) }))
+    case .dictionary(let value):
+      return .map(.init(uniqueKeysWithValues: try value.map { key, value in
+        let key = try box(key, encoder: encoder)
+        let value = try box(value, encoder: encoder)
+        return (key, value)
+      }))
+    }
   }
 
-  public static func keyedValuesToValue(_ values: [String: CBOR], encoder: Encoder) -> CBOR {
+  public static func unkeyedValuesToValue(_ values: UnkeyedValues, encoder: IVE) -> CBOR {
+    return .array(CBOR.Array(values))
+  }
+
+  public static func keyedValuesToValue(_ values: KeyedValues, encoder: IVE) -> CBOR {
     return .map(CBOR.Map(uniqueKeysWithValues: values.map { key, value in (CBOR(key), value) }))
   }
 
@@ -117,16 +243,6 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
   }
 
 }
-
-
-private let _iso8601Formatter: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
-  return formatter
-}()
 
 
 #if canImport(Combine)

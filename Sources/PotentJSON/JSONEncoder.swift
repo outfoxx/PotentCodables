@@ -8,6 +8,7 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
+import BigInt
 import Foundation
 import PotentCodables
 
@@ -36,6 +37,9 @@ public class JSONEncoder: ValueEncoder<JSON, JSONEncoderTransform>, EncodesToStr
 
     /// Produce JSON with dictionary keys sorted in lexicographic order.
     public static let sortedKeys = OutputFormatting(rawValue: 1 << 1)
+
+    /// Produce JSON with slashes escaped.
+    public static let escapeSlashes = OutputFormatting(rawValue: 1 << 2)
   }
 
   /// The strategy to use for encoding `Date` values.
@@ -123,7 +127,6 @@ public class JSONEncoder: ValueEncoder<JSON, JSONEncoderTransform>, EncodesToStr
 public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSerializer, InternalValueStringifier {
 
   public typealias Value = JSON
-  public typealias Encoder = InternalValueEncoder<Value, Self>
   public typealias State = Void
 
   public static var emptyKeyedContainer = JSON.object([:])
@@ -138,23 +141,90 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
-  public static func boxNil(encoder: Encoder) throws -> JSON { return .null }
-  public static func box(_ value: Bool, encoder: Encoder) throws -> JSON { return .bool(value) }
-  public static func box(_ value: Int, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int8, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int16, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int32, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: Int64, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt8, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt16, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt32, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: UInt64, encoder: Encoder) throws -> JSON { return .number(.init(value.description)) }
-  public static func box(_ value: String, encoder: Encoder) throws -> JSON { return .string(value) }
-  public static func box(_ value: URL, encoder: Encoder) throws -> JSON { return .string(value.absoluteString) }
-  public static func box(_ value: UUID, encoder: Encoder) throws -> JSON { return .string(value.uuidString) }
+  public static func intercepts(_ type: Encodable.Type) -> Bool {
+    return type == Date.self || type == NSDate.self
+        || type == Data.self || type == NSData.self
+        || type == URL.self || type == NSURL.self
+        || type == UUID.self || type == NSUUID.self
+        || type == Float16.self
+        || type == Decimal.self || type == NSDecimalNumber.self
+        || type == BigInt.self
+        || type == BigUInt.self
+        || type == AnyValue.self
+  }
 
-  public static func box(_ float: Float, encoder: Encoder) throws -> JSON {
+  public static func box(_ value: Any, interceptedType: Encodable.Type, encoder: IVE) throws -> JSON {
+    if let value = value as? Date {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? Data {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? URL {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? UUID {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? Float16 {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? Decimal {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? BigInt {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? BigUInt {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? AnyValue {
+      return try box(value, encoder: encoder)
+    }
+    fatalError("type not valid for intercept")
+  }
+
+  public static func boxNil(encoder: IVE) throws -> JSON { return .null }
+  public static func box(_ value: Bool, encoder: IVE) throws -> JSON { return .bool(value) }
+  public static func box(_ value: Int, encoder: IVE) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int8, encoder: IVE) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int16, encoder: IVE) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int32, encoder: IVE) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: Int64, encoder: IVE) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt, encoder: IVE) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt8, encoder: IVE) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt16, encoder: IVE) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt32, encoder: IVE) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: UInt64, encoder: IVE) throws -> JSON { return .number(.init(value.description)) }
+  public static func box(_ value: String, encoder: IVE) throws -> JSON { return .string(value) }
+  public static func box(_ value: URL, encoder: IVE) throws -> JSON { return .string(value.absoluteString) }
+  public static func box(_ value: UUID, encoder: IVE) throws -> JSON { return .string(value.uuidString) }
+
+  public static func box(_ float: Float16, encoder: IVE) throws -> JSON {
+    guard !float.isInfinite, !float.isNaN else {
+      guard case .convertToString(
+        let posInfString,
+        let negInfString,
+        let nanString
+      ) = encoder.options.nonConformingFloatEncodingStrategy else {
+        throw EncodingError.invalidFloatingPointValue(float, at: encoder.codingPath)
+      }
+
+      if float == Float16.infinity {
+        return .string(posInfString)
+      }
+      else if float == -Float16.infinity {
+        return .string(negInfString)
+      }
+      else {
+        return .string(nanString)
+      }
+    }
+
+    return .number(.init(float))
+  }
+
+  public static func box(_ float: Float, encoder: IVE) throws -> JSON {
     guard !float.isInfinite, !float.isNaN else {
       guard case .convertToString(
         let posInfString,
@@ -175,10 +245,10 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
       }
     }
 
-    return .number(.init(float.description))
+    return .number(.init(float))
   }
 
-  public static func box(_ double: Double, encoder: Encoder) throws -> JSON {
+  public static func box(_ double: Double, encoder: IVE) throws -> JSON {
     guard !double.isInfinite, !double.isNaN else {
       guard case .convertToString(
         let posInfString,
@@ -199,10 +269,10 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
       }
     }
 
-    return .number(.init(double.description))
+    return .number(.init(double))
   }
 
-  public static func box(_ decimal: Decimal, encoder: Encoder) throws -> JSON {
+  public static func box(_ decimal: Decimal, encoder: IVE) throws -> JSON {
     guard !decimal.isInfinite, !decimal.isNaN else {
       guard case .convertToString(
         let posInfString,
@@ -223,29 +293,34 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
       }
     }
 
-    var decimal = decimal
-    let rep = NSDecimalString(&decimal, NSLocale.system)
-
-    return .number(.init(rep.description))
+    return .number(.init(decimal.description))
   }
 
-  public static func box(_ value: Data, encoder: Encoder) throws -> JSON {
+  public static func box(_ value: BigInt, encoder: IVE) throws -> JSON {
+    return .number(.init(value.description))
+  }
+
+  public static func box(_ value: BigUInt, encoder: IVE) throws -> JSON {
+    return .number(.init(value.description))
+  }
+
+  public static func box(_ value: Data, encoder: IVE) throws -> JSON {
     switch encoder.options.dataEncodingStrategy {
     case .deferredToData:
-      return try encoder.subEncode { try value.encode(to: $0) } ?? emptyKeyedContainer
+      return try encoder.subEncode { try value.encode(to: $0.encoder) } ?? .null
 
     case .base64:
       return .string(value.base64EncodedString())
 
     case .custom(let closure):
-      return try encoder.subEncode { try closure(value, $0) } ?? emptyKeyedContainer
+      return try encoder.subEncode { try closure(value, $0.encoder) } ?? .null
     }
   }
 
-  public static func box(_ value: Date, encoder: Encoder) throws -> JSON {
+  public static func box(_ value: Date, encoder: IVE) throws -> JSON {
     switch encoder.options.dateEncodingStrategy {
     case .deferredToDate:
-      return try encoder.subEncode { try value.encode(to: $0) } ?? emptyKeyedContainer
+      return try encoder.subEncode { try value.encode(to: $0.encoder) } ?? .null
 
     case .secondsSince1970:
       return .number(.init(value.timeIntervalSince1970.description))
@@ -254,26 +329,90 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
       return .number(.init((1000.0 * value.timeIntervalSince1970).description))
 
     case .iso8601:
-      return .string(_iso8601Formatter.string(from: value))
+      return .string(ZonedDate(date: value, timeZone: .utc).iso8601EncodedString())
 
     case .formatted(let formatter):
       return .string(formatter.string(from: value))
 
     case .custom(let closure):
-      return try encoder.subEncode { try closure(value, $0) } ?? emptyKeyedContainer
+      return try encoder.subEncode { try closure(value, $0.encoder) } ?? .null
     }
   }
 
-  public static func unkeyedValuesToValue(_ values: [JSON], encoder: Encoder) -> JSON {
+  public static func box(_ value: AnyValue, encoder: IVE) throws -> JSON {
+    switch value {
+    case .nil:
+      return .null
+    case .bool(let value):
+      return .bool(value)
+    case .int8(let value):
+      return .number(JSON.Number(value))
+    case .int16(let value):
+      return .number(JSON.Number(value))
+    case .int32(let value):
+      return .number(JSON.Number(value))
+    case .int64(let value):
+      return .number(JSON.Number(value))
+    case .integer(let value):
+      return .number(JSON.Number(value))
+    case .uint8(let value):
+      return .number(JSON.Number(value))
+    case .uint16(let value):
+      return .number(JSON.Number(value))
+    case .uint32(let value):
+      return .number(JSON.Number(value))
+    case .uint64(let value):
+      return .number(JSON.Number(value))
+    case .unsignedInteger(let value):
+      return .number(JSON.Number(value))
+    case .float16(let value):
+      return .number(JSON.Number(value))
+    case .float(let value):
+      return .number(JSON.Number(value))
+    case .double(let value):
+      return .number(JSON.Number(value))
+    case .decimal(let value):
+      return .number(JSON.Number(value.description, isInteger: false, isNegative: value < 0))
+    case .string(let value):
+      return .string(value)
+    case .data(let value):
+      return .string(value.base64EncodedString())
+    case .url(let value):
+      return .string(value.absoluteString)
+    case .date(let value):
+      return .string(ZonedDate(date: value, timeZone: .utc).iso8601EncodedString())
+    case .uuid(let value):
+      return .string(value.uuidString)
+    case .array(let value):
+      return .array(try value.map { try box($0, encoder: encoder) })
+    case .dictionary(let value):
+      return .object(JSON.Object(uniqueKeysWithValues: try value.map { key, value in
+        let boxedValue = try box(value, encoder: encoder)
+        if let stringKey = key.stringValue {
+          return (stringKey, boxedValue)
+        }
+        else if let intKey = key.integerValue(Int.self) {
+          return (String(intKey), boxedValue)
+        }
+        throw EncodingError.invalidValue(value, .init(codingPath: encoder.codingPath,
+                                                      debugDescription: "Dictionary contains non-string values"))
+      }))
+    }
+  }
+
+  public static func unkeyedValuesToValue(_ values: UnkeyedValues, encoder: IVE) -> JSON {
     return .array(values)
   }
 
-  public static func keyedValuesToValue(_ values: [String: JSON], encoder: Encoder) -> JSON {
-    return .object(JSON.Object(uniqueKeysWithValues: values))
+  public static func keyedValuesToValue(_ values: KeyedValues, encoder: IVE) -> JSON {
+    return .object(values)
   }
 
   public static func data(from value: JSON, options: Options) throws -> Data {
     var writingOptions: JSONSerialization.WritingOptions = []
+    if options.outputFormatting.contains(.escapeSlashes) {
+      writingOptions.insert(.escapeSlashes)
+    }
     if options.outputFormatting.contains(.prettyPrinted) {
       writingOptions.insert(.prettyPrinted)
     }
@@ -285,6 +424,9 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
 
   public static func string(from value: JSON, options: Options) throws -> String {
     var writingOptions: JSONSerialization.WritingOptions = []
+    if options.outputFormatting.contains(.escapeSlashes) {
+      writingOptions.insert(.escapeSlashes)
+    }
     if options.outputFormatting.contains(.prettyPrinted) {
       writingOptions.insert(.prettyPrinted)
     }
@@ -295,16 +437,6 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
   }
 
 }
-
-
-private let _iso8601Formatter: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
-  return formatter
-}()
 
 
 #if canImport(Combine)

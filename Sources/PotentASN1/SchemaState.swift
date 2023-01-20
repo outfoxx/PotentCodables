@@ -33,8 +33,10 @@ public struct SchemaState {
     case undefinedField(String, SchemaError.Context)
     case structureMismatch(SchemaError.Context)
     case versionCheck(SchemaError.Context)
-    case unknownDynamicType(SchemaError.Context)
+    case unknownDynamicValue(SchemaError.Context)
     case ambiguousImplicitTag(SchemaError.Context)
+    case noScopeAvailable
+    case notCollection
   }
 
   class Scope {
@@ -54,9 +56,9 @@ public struct SchemaState {
 
     var description: String {
       switch self {
-      case .schema(let schema): return String(describing: schema)
+      case .schema(let schema): return "\(schema)"
       case .nothing: return "NONE"
-      case .disallowed(let schema): return String(describing: schema)
+      case .disallowed(let schema): return "\(schema) DISALLOWED"
       }
     }
   }
@@ -140,7 +142,7 @@ public struct SchemaState {
     case .sequence(let fields):
 
       guard currentKey.intValue == nil else {
-        fatalError("Not a collection")
+        throw SchemaError.notCollection
       }
 
       let fieldName = currentKey.stringValue
@@ -172,7 +174,7 @@ public struct SchemaState {
       return try step(into: schema)
 
     default:
-      fatalError("state stack corrupt, stepping into scalar schema")
+      return []
     }
 
   }
@@ -193,14 +195,14 @@ public struct SchemaState {
 
 
     case .type(let typeSchema):
-      guard let scope = nearestScope else { fatalError("no scope") }
+      guard let scope = nearestScope else { throw SchemaError.noScopeAvailable }
 
       scope.typeFieldName = currentKey.stringValue
       return try expand(schema: typeSchema)
 
 
     case .dynamic(let unknownTypeSchema, let dynamicSchemaMappings):
-      guard let nearestScope = nearestScope else { fatalError("no scope") }
+      guard let nearestScope = nearestScope else { throw SchemaError.noScopeAvailable }
 
       guard let typeFieldName = nearestScope.typeFieldName else {
         throw SchemaError.noDynamicTypeDefined("Dynamic type referenced but none marked in structure's schema")
@@ -211,14 +213,14 @@ public struct SchemaState {
       }
 
       guard let dynamicSchema = (dynamicSchemaMappings[dynamicType] ?? unknownTypeSchema) else {
-        throw SchemaError.unknownDynamicType(errorContext("Dynamic type not found in mapping"))
+        throw SchemaError.unknownDynamicValue(errorContext("Dynamic value not found in mapping"))
       }
 
       return try expand(schema: dynamicSchema)
 
 
     case .version(let versionSchema):
-      guard let scope = nearestScope else { fatalError("no scope") }
+      guard let scope = nearestScope else { throw SchemaError.noScopeAvailable }
 
       scope.versionField = (currentKey.stringValue, versionSchema)
 
@@ -226,7 +228,7 @@ public struct SchemaState {
 
 
     case .versioned(range: let allowedRange, let versionedSchema):
-      guard let nearestScope = nearestScope else { fatalError("no scope") }
+      guard let nearestScope = nearestScope else { throw SchemaError.noScopeAvailable }
 
       guard let (versionFieldName, versionFieldSchema) = nearestScope.versionField else {
         throw SchemaError.noVersionDefined("Version referenced but none marked in structure's schema")

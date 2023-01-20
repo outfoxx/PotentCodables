@@ -30,9 +30,10 @@ struct JSONReader {
       case invalidEscapeSequence
       case invalidNumber
       case invalidArray
-      case expectedMapKey
-      case expectedMapSeparator
-      case expectedMapValue
+      case expectedObjectKey
+      case expectedObjectSeparator
+      case expectedObjectValue
+      case expectedArraySeparator
     }
 
     case unexpectedEndOfStream
@@ -402,8 +403,7 @@ struct JSONReader {
       if let finalIndex = try consumeStructure(Structure.endObject, input: index) {
         return (output, finalIndex)
       }
-
-      if let (key, value, nextIndex) = try parseObjectMember(index, options: opt) {
+      else if let (key, value, nextIndex) = try parseObjectMember(index, options: opt) {
         output[key] = value
 
         if let finalParser = try consumeStructure(Structure.endObject, input: nextIndex) {
@@ -414,10 +414,10 @@ struct JSONReader {
           continue
         }
         else {
-          return nil
+          throw Error.invalidData(.expectedObjectSeparator, position: nextIndex)
         }
       }
-      return nil
+      throw Error.invalidData(.expectedObjectKey, position: index)
     }
   }
 
@@ -426,13 +426,13 @@ struct JSONReader {
     options opt: JSONSerialization.ReadingOptions
   ) throws -> (String, JSON, Index)? {
     guard let (name, index) = try parseString(input) else {
-      throw Error.invalidData(.expectedMapKey, position: source.distanceFromStart(input))
+      throw Error.invalidData(.expectedObjectKey, position: source.distanceFromStart(input))
     }
     guard let separatorIndex = try consumeStructure(Structure.nameSeparator, input: index) else {
-      throw Error.invalidData(.expectedMapSeparator, position: source.distanceFromStart(index))
+      throw Error.invalidData(.expectedObjectSeparator, position: source.distanceFromStart(index))
     }
     guard let (value, finalIndex) = try parseValue(separatorIndex, options: opt) else {
-      throw Error.invalidData(.expectedMapValue, position: source.distanceFromStart(separatorIndex))
+      throw Error.invalidData(.expectedObjectValue, position: source.distanceFromStart(separatorIndex))
     }
 
     return (name, value, finalIndex)
@@ -460,6 +460,9 @@ struct JSONReader {
         else if let nextIndex = try consumeStructure(Structure.valueSeparator, input: nextIndex) {
           index = nextIndex
           continue
+        }
+        else {
+          throw Error.invalidData(.expectedArraySeparator, position: nextIndex)
         }
       }
       throw Error.invalidData(.invalidArray, position: source.distanceFromStart(index))

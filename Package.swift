@@ -33,7 +33,7 @@ let package = Package(
   targets: [
     .target(
       name: "PotentCodables",
-      dependencies: ["BigInt"]
+      dependencies: ["BigInt", "Float16"]
     ),
     .target(
       name: "PotentJSON",
@@ -46,7 +46,6 @@ let package = Package(
       name: "PotentCBOR",
       dependencies: [
         "PotentCodables",
-        "Float16",
         .product(name: "Collections", package: "swift-collections")
       ]
     ),

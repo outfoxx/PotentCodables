@@ -31,7 +31,7 @@ public struct AnyTime: Equatable, Hashable, Codable {
   }
 
 
-  /// Specifies the exact ``Kind`` of time.
+  /// Specifies the exact ``Kind-swift.enum`` of time.
   ///
   /// When encoding, selects the specific kind when the schema allows
   /// for multiple kinds of times.

@@ -14,29 +14,29 @@ import Foundation
 
 public extension BigUInt {
 
-  /// Initializes an integer from the provided `Data`.
+  /// Initializes an integer from the provided `Data` in ASN.1 DER format.
   ///
   /// - Parameter data: Base-256 representation, in network (big-endian) byte order.
   ///
-  init(serialized data: Data) {
+  init(derEncoded data: Data) {
     self.init(data)
   }
 
-  /// Serializes the integer to `Data`.
+  /// Encodes the integer to `Data` in  ASN.1 DER format.
   ///
   /// - Returns: Base-256 representation, in network (big-endian) byte order.
   ///
-  func serialized() -> Data { serialize() }
+  func derEncoded() -> Data { serialize() }
 
 }
 
 public extension BigInt {
 
-  /// Initializes an integer from the provided `Data`.
+  /// Initializes an integer from the provided `Data` in ASN.1 DER format.
   ///
   /// - Parameter data: Two's compliment, base-256 representation, in network (big-endian) byte order.
   ///
-  init(serialized data: Data) {
+  init(derEncoded data: Data) {
     let sign: Sign
     let magnitude: BigUInt
     if (data[0] & 0x80) == 0x80 {
@@ -50,11 +50,11 @@ public extension BigInt {
     self.init(sign: sign, magnitude: magnitude)
   }
 
-  /// Serializes the integer to `Data`.
+  /// Encodes the integer to `Data` in  ASN.1 DER format.
   ///
   /// - Returns: Two's compliment, base-256 representation, in network (big-endian) byte order.
   /// 
-  func serialized() -> Data {
+  func derEncoded() -> Data {
     var bytes = magnitude.serialize()
     if bytes.isEmpty || (bytes[0] & 0x80) == 0x80 {
       // Make room for sign
@@ -63,12 +63,21 @@ public extension BigInt {
     if sign == .plus {
       return bytes
     }
-    return bytes.twosCompliment()
+    var twos = bytes.twosCompliment()
+    // Compact
+    while twos.canRemoveLeadingByte() {
+      twos.remove(at: 0)
+    }
+    return twos
   }
 
 }
 
 private extension Data {
+
+  func canRemoveLeadingByte() -> Bool {
+    count > 1 && ((self[0] == 0xff && self[1] & 0x80 == 0x80) || (self[0] == 0x00 && self[1] & 0x80 == 0x00))
+  }
 
   /// Two's compliment of _big endian_ integer
   func twosCompliment() -> Data {

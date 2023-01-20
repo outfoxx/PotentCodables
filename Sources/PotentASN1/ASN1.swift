@@ -15,7 +15,7 @@ import PotentCodables
 
 /// General ASN.1 Value.
 ///
-public indirect enum ASN1: Value {
+public indirect enum ASN1 {
 
   /// ASN.1 Tag Code
   public typealias AnyTag = UInt8
@@ -60,12 +60,12 @@ public indirect enum ASN1: Value {
     case characterString = 29
     case bmpString = 30
 
-    /// Creates an ASN.1 tag from the tag code (``AnyTag``), ``Class``, and if the tag is constructed.
+    /// Creates an ASN.1 tag from the tag code (``ASN1/AnyTag-swift.typealias``), ``Class``, and if the tag is constructed.
     public static func tag(from value: UInt8, in tagClass: Class, constructed: Bool) -> AnyTag {
       return (value & ~0xE0) | tagClass.rawValue | (constructed ? 0x20 : 0x00)
     }
 
-    /// Creates an ASN.1 tag code (``AnyTag``), from an existing tag code and ``Class``.
+    /// Creates an ASN.1 tag code (``ASN1/AnyTag-swift.typealias``), from an existing tag code and ``Class``.
     public static func value(from tag: AnyTag, in tagClass: Class) -> AnyTag {
       return (tag & ~0xE0) & ~tagClass.rawValue
     }
@@ -115,8 +115,188 @@ public indirect enum ASN1: Value {
   case tagged(UInt8, Data)
   case `default`(ASN1)
 
-  /// Check if this value is an ASN.1 ``null``.
-  public var isNull: Bool { return self == .null }
+  /// Unwrap the ``default(_:)`` modifier, if present.
+  public var absolute: ASN1 {
+    switch self {
+    case .default(let value): return value
+    default: return self
+    }
+  }
+
+  /// Values as boolean or `nil` if this is not a ``boolean(_:)``.
+  public var booleanValue: Bool? {
+    guard case .boolean(let value) = absolute else { return nil }
+    return value
+  }
+
+  /// Values as ``ASN1/Integer`` or `nil` if this is not an ``integer(_:)``.
+  public var integerValue: ASN1.Integer? {
+    guard case .integer(let value) = absolute else { return nil }
+    return value
+  }
+
+  /// Values as ``BitString`` or `nil` if this is not a ``bitString(_:_:)``.
+  public var bitStringValue: BitString? {
+    guard case .bitString(let length, let bytes) = absolute else { return nil }
+    return BitString(length: length, bytes: bytes)
+  }
+
+  /// Values as `Data` or `nil` if this is not an ``octetString(_:)``.
+  public var octetStringValue: Data? {
+    guard case .octetString(let value) = absolute else { return nil }
+    return value
+  }
+
+  /// Values as `[UInt64]` or `nil` if this is not an ``objectIdentifier(_:)``.
+  public var objectIdentifierValue: ObjectIdentifier? {
+    guard case .objectIdentifier(let value) = absolute else { return nil }
+    return ObjectIdentifier(value)
+  }
+
+  /// Values as decimal or `nil` if this is not a ``real(_:)``.
+  public var realValue: Decimal? {
+    guard case .real(let value) = absolute else { return nil }
+    return value
+  }
+
+  /// Values as ``AnyString`` or `nil` if this is not a ``utf8String(_:)``.
+  public var utf8StringValue: AnyString? {
+    guard case .utf8String(let value) = absolute else { return nil }
+    return AnyString(value, kind: .utf8)
+  }
+
+  /// Value as array of ``ASN1`` or `nil` if this is not a ``sequence(_:)``.
+  public var sequenceValue: [ASN1]? {
+    guard case .sequence(let value) = absolute else { return nil }
+    return value
+  }
+
+  /// Value as array of ``ASN1`` or `nil` if this is not a ``set(_:)``.
+  public var setValue: [ASN1]? {
+    guard case .set(let value) = absolute else { return nil }
+    return value
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not a ``numericString(_:)``.
+  public var numericStringValue: AnyString? {
+    guard case .numericString(let value) = absolute else { return nil }
+    return AnyString(value, kind: .numeric)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not a ``printableString(_:)``.
+  public var printableStringValue: AnyString? {
+    guard case .printableString(let value) = absolute else { return nil }
+    return AnyString(value, kind: .printable)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not a ``teletexString(_:)``.
+  public var teletexStringValue: AnyString? {
+    guard case .teletexString(let value) = absolute else { return nil }
+    return AnyString(value, kind: .teletex)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not a ``videotexString(_:)``.
+  public var videotexStringValue: AnyString? {
+    guard case .videotexString(let value) = absolute else { return nil }
+    return AnyString(value, kind: .videotex)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not an ``ia5String(_:)``.
+  public var ia5StringValue: AnyString? {
+    guard case .ia5String(let value) = absolute else { return nil }
+    return AnyString(value, kind: .ia5)
+  }
+
+  /// Value as ``AnyTime`` or `nil` if this is not a ``utcTime(_:)``.
+  public var utcTimeValue: AnyTime? {
+    guard case .utcTime(let value) = absolute else { return nil }
+    return AnyTime(value, kind: .utc)
+  }
+
+  /// Value as ``AnyTime`` or `nil` if this is not a ``generalizedTime(_:)``.
+  public var generalizedTimeValue: AnyTime? {
+    guard case .generalizedTime(let value) = absolute else { return nil }
+    return AnyTime(value, kind: .generalized)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not a ``graphicString(_:)``.
+  public var graphicStringValue: AnyString? {
+    guard case .graphicString(let value) = absolute else { return nil }
+    return AnyString(value, kind: .graphic)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not a ``visibleString(_:)``.
+  public var visibleStringValue: AnyString? {
+    guard case .visibleString(let value) = absolute else { return nil }
+    return AnyString(value, kind: .visible)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not a ``generalString(_:)``.
+  public var generalStringValue: AnyString? {
+    guard case .generalString(let value) = absolute else { return nil }
+    return AnyString(value, kind: .general)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not a ``universalString(_:)``.
+  public var universalStringValue: AnyString? {
+    guard case .universalString(let value) = absolute else { return nil }
+    return AnyString(value, kind: .universal)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not a ``characterString(_:)``.
+  public var characterStringValue: AnyString? {
+    guard case .characterString(let value) = absolute else { return nil }
+    return AnyString(value, kind: .character)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not a ``bmpString(_:)``.
+  public var bmpStringValue: AnyString? {
+    guard case .bmpString(let value) = absolute else { return nil }
+    return AnyString(value, kind: .bmp)
+  }
+
+  /// Value as ``AnyString`` or `nil` if this is not one of the string values.
+  public var stringValue: AnyString? {
+    switch absolute {
+    case .utf8String(let value): return AnyString(value, kind: .utf8)
+    case .numericString(let value): return AnyString(value, kind: .numeric)
+    case .printableString(let value): return AnyString(value, kind: .printable)
+    case .teletexString(let value): return AnyString(value, kind: .teletex)
+    case .videotexString(let value): return AnyString(value, kind: .videotex)
+    case .ia5String(let value): return AnyString(value, kind: .ia5)
+    case .graphicString(let value): return AnyString(value, kind: .graphic)
+    case .visibleString(let value): return AnyString(value, kind: .visible)
+    case .generalString(let value): return AnyString(value, kind: .general)
+    case .universalString(let value): return AnyString(value, kind: .universal)
+    case .characterString(let value): return AnyString(value, kind: .character)
+    case .bmpString(let value): return AnyString(value, kind: .bmp)
+    default: return nil
+    }
+  }
+
+  /// Value as ``AnyTime`` or `nil` if this is not one of the time values.
+  public var timeValue: AnyTime? {
+    switch absolute {
+    case .utcTime(let date): return AnyTime(date, kind: .utc)
+    case .generalizedTime(let date): return AnyTime(date, kind: .generalized)
+    default: return nil
+    }
+  }
+
+  /// Value as array of ``ASN1`` or `nil` if this is not a ``sequence(_:)`` or ``set(_:)``.
+  public var collectionValue: [ASN1]? {
+    switch absolute {
+    case .set(let value): return value
+    case .sequence(let value): return value
+    default: return nil
+    }
+  }
+
+  /// Value as ``TaggedValue`` or `nil` if this is not a ``tagged(_:_:)``.
+  public var taggedValue: TaggedValue? {
+    guard case .tagged(let tag, let data) = absolute else { return nil }
+    return TaggedValue(tag: tag, data: data)
+  }
 
   /// Known tag for this ASN.1 value, if available.
   ///
@@ -169,72 +349,12 @@ public indirect enum ASN1: Value {
     return String(describing: knownTag)
   }
 
-  public var unwrapped: Any? {
-    switch absolute {
-    case .boolean(let value): return value
-    case .integer(let value): return value
-    case .bitString(let length, let bytes): return BitString(length: length, bytes: bytes).bitFlags
-    case .octetString(let value): return value
-    case .null: return nil
-    case .objectIdentifier(let fields): return fields
-    case .real(let value): return value
-    case .utf8String(let value): return value
-    case .sequence(let values): return Array(values.map(\.unwrapped))
-    case .set(let values): return Array(values.map(\.unwrapped))
-    case .numericString(let value): return value
-    case .printableString(let value): return value
-    case .teletexString(let value): return value
-    case .videotexString(let value): return value
-    case .ia5String(let value): return value
-    case .utcTime(let value): return value.utcDate
-    case .generalizedTime(let value): return value.utcDate
-    case .graphicString(let value): return value
-    case .visibleString(let value): return value
-    case .generalString(let value): return value
-    case .universalString(let value): return value
-    case .characterString(let value): return value
-    case .bmpString(let value): return value
-    case .tagged(_, let data): return data
-    case .default(let value): return value.unwrapped
-    }
-  }
-
-  /// Current value as ASN1 type.
-  ///
-  /// Returns equivalent types as the value accessors (e.g. ``booleanValue``).
-  ///
-  public var currentValue: Any? {
-    switch absolute {
-    case .boolean(let value): return value
-    case .integer(let value): return value
-    case .bitString(let length, let bytes): return BitString(length: length, bytes: bytes)
-    case .octetString(let value): return value
-    case .null: return nil
-    case .objectIdentifier(let fields): return ObjectIdentifier(fields)
-    case .real(let value): return value
-    case .utf8String(let value): return AnyString(value, kind: .utf8)
-    case .sequence(let values): return values
-    case .set(let values): return values
-    case .numericString(let value): return AnyString(value, kind: .numeric)
-    case .printableString(let value): return AnyString(value, kind: .printable)
-    case .teletexString(let value): return AnyString(value, kind: .teletex)
-    case .videotexString(let value): return AnyString(value, kind: .videotex)
-    case .ia5String(let value): return AnyString(value, kind: .ia5)
-    case .utcTime(let value): return AnyTime(value, kind: .utc)
-    case .generalizedTime(let value): return AnyTime(value, kind: .generalized)
-    case .graphicString(let value): return AnyString(value, kind: .graphic)
-    case .visibleString(let value): return AnyString(value, kind: .visible)
-    case .generalString(let value): return AnyString(value, kind: .general)
-    case .universalString(let value): return AnyString(value, kind: .universal)
-    case .characterString(let value): return AnyString(value, kind: .character)
-    case .bmpString(let value): return AnyString(value, kind: .bmp)
-    case .tagged: return self
-    case .default(let value): return value.currentValue
-    }
-  }
-
 }
 
+
+// MARK: Conformances
+
+extension ASN1: Equatable {}
 
 public func == (lhs: ASN1.Tag, rhs: ASN1.AnyTag) -> Bool {
   return lhs.rawValue == rhs
@@ -244,6 +364,16 @@ public func == (lhs: ASN1.AnyTag, rhs: ASN1.Tag) -> Bool {
   return lhs == rhs.rawValue
 }
 
+
+extension ASN1: Hashable {}
+extension ASN1: Value {
+
+  /// Check if this value is an ASN.1 ``null``.
+  public var isNull: Bool {
+    return self == .null
+  }
+
+}
 
 extension ASN1.Tag: CustomStringConvertible {
 
@@ -284,203 +414,88 @@ extension ASN1.Tag: CustomStringConvertible {
 }
 
 
-public extension ASN1 {
+// MARK: Wrapping
 
-  /// Unwrap the ``default(_:)`` modifier, if present.
-  var absolute: ASN1 {
+extension ASN1 {
+
+  public var unwrapped: Any? {
     switch self {
-    case .default(let value): return value
-    default: return self
+    case .boolean(let value): return value
+    case .integer(let value): return value
+    case .bitString(let length, let bytes): return BitString(length: length, bytes: bytes).bitFlags
+    case .octetString(let value): return value
+    case .null: return nil
+    case .objectIdentifier(let fields): return fields
+    case .real(let value): return value
+    case .utf8String(let value): return value
+    case .sequence(let values): return Array(values.map(\.unwrapped))
+    case .set(let values): return Array(values.map(\.unwrapped))
+    case .numericString(let value): return value
+    case .printableString(let value): return value
+    case .teletexString(let value): return value
+    case .videotexString(let value): return value
+    case .ia5String(let value): return value
+    case .utcTime(let value): return value.utcDate
+    case .generalizedTime(let value): return value.utcDate
+    case .graphicString(let value): return value
+    case .visibleString(let value): return value
+    case .generalString(let value): return value
+    case .universalString(let value): return value
+    case .characterString(let value): return value
+    case .bmpString(let value): return value
+    case .tagged(let tag, let data): return try? ASN1DERReader.parseItem(data, as: tag).unwrapped
+    case .default(let value): return value.unwrapped
     }
   }
 
-  /// Values as boolean or `nil` if this is not a ``boolean(_:)``.
-  var booleanValue: Bool? {
-    guard case .boolean(let value) = absolute else { return nil }
-    return value
-  }
-
-  /// Values as ``ASN1/Integer`` or `nil` if this is not an ``integer(_:)``.
-  var integerValue: ASN1.Integer? {
-    guard case .integer(let value) = absolute else { return nil }
-    return value
-  }
-
-  /// Values as ``BitString`` or `nil` if this is not a ``bitString(_:_:)``.
-  var bitStringValue: BitString? {
-    guard case .bitString(let length, let bytes) = absolute else { return nil }
-    return BitString(length: length, bytes: bytes)
-  }
-
-  /// Values as `Data` or `nil` if this is not an ``octetString(_:)``.
-  var octetStringValue: Data? {
-    guard case .octetString(let value) = absolute else { return nil }
-    return value
-  }
-
-  /// Values as `[UInt64]` or `nil` if this is not an ``objectIdentifier(_:)``.
-  var objectIdentifierValue: ObjectIdentifier? {
-    guard case .objectIdentifier(let value) = absolute else { return nil }
-    return ObjectIdentifier(value)
-  }
-
-  /// Values as decimal or `nil` if this is not a ``real(_:)``.
-  var realValue: Decimal? {
-    guard case .real(let value) = absolute else { return nil }
-    return value
-  }
-
-  /// Values as ``AnyString`` or `nil` if this is not a ``utf8String(_:)``.
-  var utf8StringValue: AnyString? {
-    guard case .utf8String(let value) = absolute else { return nil }
-    return AnyString(value, kind: .utf8)
-  }
-
-  /// Value as array of ``ASN1`` or `nil` if this is not a ``sequence(_:)``.
-  var sequenceValue: [ASN1]? {
-    guard case .sequence(let value) = absolute else { return nil }
-    return value
-  }
-
-  /// Value as array of ``ASN1`` or `nil` if this is not a ``set(_:)``.
-  var setValue: [ASN1]? {
-    guard case .set(let value) = absolute else { return nil }
-    return value
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not a ``numericString(_:)``.
-  var numericStringValue: AnyString? {
-    guard case .numericString(let value) = absolute else { return nil }
-    return AnyString(value, kind: .numeric)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not a ``printableString(_:)``.
-  var printableStringValue: AnyString? {
-    guard case .printableString(let value) = absolute else { return nil }
-    return AnyString(value, kind: .printable)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not a ``teletexString(_:)``.
-  var teletexStringValue: AnyString? {
-    guard case .teletexString(let value) = absolute else { return nil }
-    return AnyString(value, kind: .teletex)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not a ``videotexString(_:)``.
-  var videotexStringValue: AnyString? {
-    guard case .videotexString(let value) = absolute else { return nil }
-    return AnyString(value, kind: .videotex)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not an ``ia5String(_:)``.
-  var ia5StringValue: AnyString? {
-    guard case .ia5String(let value) = absolute else { return nil }
-    return AnyString(value, kind: .ia5)
-  }
-
-  /// Value as ``AnyTime`` or `nil` if this is not a ``utcTime(_:)``.
-  var utcTimeValue: AnyTime? {
-    guard case .utcTime(let value) = absolute else { return nil }
-    return AnyTime(value, kind: .utc)
-  }
-
-  /// Value as ``AnyTime`` or `nil` if this is not a ``generalizedTime(_:)``.
-  var generalizedTimeValue: AnyTime? {
-    guard case .generalizedTime(let value) = absolute else { return nil }
-    return AnyTime(value, kind: .generalized)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not a ``graphicString(_:)``.
-  var graphicStringValue: AnyString? {
-    guard case .graphicString(let value) = absolute else { return nil }
-    return AnyString(value, kind: .graphic)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not a ``visibleString(_:)``.
-  var visibleStringValue: AnyString? {
-    guard case .visibleString(let value) = absolute else { return nil }
-    return AnyString(value, kind: .visible)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not a ``generalString(_:)``.
-  var generalStringValue: AnyString? {
-    guard case .generalString(let value) = absolute else { return nil }
-    return AnyString(value, kind: .general)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not a ``universalString(_:)``.
-  var universalStringValue: AnyString? {
-    guard case .universalString(let value) = absolute else { return nil }
-    return AnyString(value, kind: .universal)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not a ``characterString(_:)``.
-  var characterStringValue: AnyString? {
-    guard case .characterString(let value) = absolute else { return nil }
-    return AnyString(value, kind: .character)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not a ``bmpString(_:)``.
-  var bmpStringValue: AnyString? {
-    guard case .bmpString(let value) = absolute else { return nil }
-    return AnyString(value, kind: .bmp)
-  }
-
-  /// Value as ``AnyString`` or `nil` if this is not one of the string values.
-  var stringValue: AnyString? {
-    switch absolute {
+  /// Current value as ASN1 type.
+  ///
+  /// Returns equivalent types as the value accessors (e.g. ``booleanValue``).
+  ///
+  public var currentValue: Any? {
+    switch self {
+    case .boolean(let value): return value
+    case .integer(let value): return value
+    case .bitString(let length, let bytes): return BitString(length: length, bytes: bytes)
+    case .octetString(let value): return value
+    case .null: return nil
+    case .objectIdentifier(let fields): return ObjectIdentifier(fields)
+    case .real(let value): return value
     case .utf8String(let value): return AnyString(value, kind: .utf8)
+    case .sequence(let values): return values
+    case .set(let values): return values
     case .numericString(let value): return AnyString(value, kind: .numeric)
     case .printableString(let value): return AnyString(value, kind: .printable)
     case .teletexString(let value): return AnyString(value, kind: .teletex)
     case .videotexString(let value): return AnyString(value, kind: .videotex)
     case .ia5String(let value): return AnyString(value, kind: .ia5)
+    case .utcTime(let value): return AnyTime(value, kind: .utc)
+    case .generalizedTime(let value): return AnyTime(value, kind: .generalized)
     case .graphicString(let value): return AnyString(value, kind: .graphic)
     case .visibleString(let value): return AnyString(value, kind: .visible)
     case .generalString(let value): return AnyString(value, kind: .general)
     case .universalString(let value): return AnyString(value, kind: .universal)
     case .characterString(let value): return AnyString(value, kind: .character)
     case .bmpString(let value): return AnyString(value, kind: .bmp)
-    default: return nil
+    case .tagged(let tag, let data): return TaggedValue(tag: tag, data: data)
+    case .default(let value): return value.currentValue
     }
-  }
-
-  /// Value as ``AnyTime`` or `nil` if this is not one of the time values.
-  var timeValue: AnyTime? {
-    switch absolute {
-    case .utcTime(let date): return AnyTime(date, kind: .utc)
-    case .generalizedTime(let date): return AnyTime(date, kind: .generalized)
-    default: return nil
-    }
-  }
-
-  /// Value as array of ``ASN1`` or `nil` if this is not a ``sequence(_:)`` or ``set(_:)``.
-  var collectionValue: [ASN1]? {
-    switch absolute {
-    case .set(let value): return value
-    case .sequence(let value): return value
-    default: return nil
-    }
-  }
-
-  /// Value as ``TaggedValue`` or `nil` if this is not a ``tagged(_:_:)``.
-  var taggedValue: TaggedValue? {
-    guard case .tagged(let tag, let data) = absolute else { return nil }
-    return TaggedValue(tag: tag, data: data)
   }
 
 }
 
 
-extension ASN1: Codable {
+// MARK: Codable
 
-  public init(from decoder: Decoder) throws {
+extension ASN1: Decodable {
+
+  public init(from decoder: Swift.Decoder) throws {
     var container = try decoder.unkeyedContainer()
     let tagValue = try container.decode(UInt8.self)
 
     guard let tag = Tag(rawValue: tagValue) else {
-      let taggedValue = try container.decode(TaggedValue.self)
-      self = .tagged(taggedValue.tag, taggedValue.data)
+      let data = try container.decode(Data.self)
+      self = .tagged(tagValue, data)
       return
     }
 
@@ -497,7 +512,7 @@ extension ASN1: Codable {
     case .null:
       self = .null
     case .objectIdentifier:
-      self = .objectIdentifier(try container.decode([UInt64].self))
+      self = .objectIdentifier(try container.decode(ObjectIdentifier.self).fields)
     case .real:
       self = .real(try container.decode(Decimal.self))
     case .utf8String:
@@ -517,9 +532,17 @@ extension ASN1: Codable {
     case .ia5String:
       self = .ia5String(try container.decode(String.self))
     case .utcTime:
-      self = .utcTime(try container.decode(ZonedDate.self))
+      guard let time = ZonedDate(iso8601Encoded: try container.decode(String.self)) else {
+        throw DecodingError.dataCorruptedError(in: container,
+                                               debugDescription: "Invalid ISO8601 formatted date")
+      }
+      self = .utcTime(time)
     case .generalizedTime:
-      self = .generalizedTime(try container.decode(ZonedDate.self))
+      guard let time = ZonedDate(iso8601Encoded: try container.decode(String.self)) else {
+        throw DecodingError.dataCorruptedError(in: container,
+                                               debugDescription: "Invalid ISO8601 formatted date")
+      }
+      self = .generalizedTime(time)
     case .graphicString:
       self = .graphicString(try container.decode(String.self))
     case .visibleString:
@@ -540,61 +563,104 @@ extension ASN1: Codable {
     }
   }
 
-  public func encode(to encoder: Encoder) throws {
+}
+
+extension ASN1: Encodable {
+
+  public func encode(to encoder: Swift.Encoder) throws {
     var container = encoder.unkeyedContainer()
-    try container.encode(anyTag)
     switch absolute {
     case .boolean(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .integer(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .bitString(let length, let bytes):
+      try container.encode(anyTag)
       try container.encode(BitString(length: length, bytes: bytes))
     case .octetString(let data):
+      try container.encode(anyTag)
       try container.encode(data)
     case .null:
+      try container.encode(anyTag)
       try container.encodeNil()
     case .objectIdentifier(let fields):
-      try container.encode(fields)
+      try container.encode(anyTag)
+      try container.encode(ObjectIdentifier(fields))
     case .real(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .utf8String(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .sequence(let elements):
+      try container.encode(anyTag)
       try container.encode(elements)
     case .set(let elements):
+      try container.encode(anyTag)
       try container.encode(elements)
     case .numericString(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .printableString(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .teletexString(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .videotexString(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .ia5String(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .utcTime(let value):
-      try container.encode(value)
+      try container.encode(anyTag)
+      try container.encode(value.iso8601EncodedString())
     case .generalizedTime(let value):
-      try container.encode(value)
+      try container.encode(anyTag)
+      try container.encode(value.iso8601EncodedString())
     case .graphicString(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .visibleString(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .generalString(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .universalString(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .characterString(let value):
+      try container.encode(anyTag)
       try container.encode(value)
     case .bmpString(let value):
+      try container.encode(anyTag)
       try container.encode(value)
-    case .tagged(let tag, let data):
-      try container.encode(TaggedValue(tag: tag, data: data))
+    case .tagged(let tagValue, let data):
+      if let tag = Tag(rawValue: tagValue) {
+        let value = try ASN1DERReader.parseItem(data, as: tag.rawValue)
+        try value.encode(to: encoder)
+      }
+      else {
+        try container.encode(tagValue)
+        try container.encode(data)
+      }
     case .default:
-      fatalError()
+      break
     }
   }
+
+}
+
+
+// Make encoders/decoders available in AnyValue namespace
+
+public extension ASN1 {
+
+  typealias Encoder = ASN1Encoder
+  typealias Decoder = ASN1Decoder
 
 }

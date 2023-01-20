@@ -1,5 +1,5 @@
 //
-//  NestedEncoders.swift
+//  KeyedNestedEncoder.swift
 //  PotentCodables
 //
 //  Copyright © 2021 Outfox, inc.
@@ -107,103 +107,6 @@ public class KeyedNestedEncoder<K: CodingKey>: Encoder, SingleValueEncodingConta
 
   public func encode(_ value: Bool) throws {
     try container.encode(value, forKey: key)
-  }
-
-}
-
-
-public class UnkeyedNestedEncoder: Encoder, SingleValueEncodingContainer {
-
-  var container: UnkeyedEncodingContainer
-  let encoder: Encoder
-
-  public init(container: UnkeyedEncodingContainer, encoder: Encoder) {
-    self.container = container
-    self.encoder = encoder
-  }
-
-  public var userInfo: [CodingUserInfoKey: Any] { encoder.userInfo }
-
-  public func container<Key>(keyedBy type: Key.Type) -> KeyedEncodingContainer<Key> where Key: CodingKey {
-    return container.nestedContainer(keyedBy: type)
-  }
-
-  public func unkeyedContainer() -> UnkeyedEncodingContainer {
-    return container.nestedUnkeyedContainer()
-  }
-
-  public func singleValueContainer() -> SingleValueEncodingContainer {
-    return self
-  }
-
-  // Single value container
-
-  public var codingPath: [CodingKey] {
-    return container.codingPath + [AnyCodingKey(index: container.count)]
-  }
-
-  public func encodeNil() throws {
-    try container.encodeNil()
-  }
-
-  public func encode(_ value: String) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: Double) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: Float) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: Int) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: Int8) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: Int16) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: Int32) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: Int64) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: UInt) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: UInt8) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: UInt16) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: UInt32) throws {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: UInt64) throws {
-    try container.encode(value)
-  }
-
-  public func encode<T>(_ value: T) throws where T: Encodable {
-    try container.encode(value)
-  }
-
-  public func encode(_ value: Bool) throws {
-    try container.encode(value)
   }
 
 }

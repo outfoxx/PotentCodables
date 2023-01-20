@@ -8,6 +8,7 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
+import BigInt
 import Foundation
 import OrderedCollections
 import PotentCodables
@@ -34,13 +35,14 @@ public enum JSON {
 
   enum Error: Swift.Error {
     case unsupportedType
+    case invalidNumber
   }
 
   public struct Number: Equatable, Hashable, Codable {
 
-    public let value: String
-    public let isInteger: Bool
-    public let isNegative: Bool
+    public var value: String
+    public var isInteger: Bool
+    public var isNegative: Bool
 
     public init(_ value: String, isInteger: Bool, isNegative: Bool) {
       self.value = value
@@ -49,21 +51,25 @@ public enum JSON {
     }
 
     public init(_ value: String) {
-      self.value = value
-      isInteger = value.allSatisfy(\.isNumber)
-      isNegative = value.hasPrefix("-")
+      self.init(value, isInteger: value.allSatisfy { $0.isNumber || $0 == "-" }, isNegative: value.hasPrefix("-"))
     }
 
-    public init(_ value: Double) {
-      self.value = value.description
+    public init<T: FloatingPoint>(_ value: T) {
+      self.value = String(describing: value)
       isInteger = false
       isNegative = value < 0
     }
 
-    public init(_ value: Int) {
-      self.value = value.description
+    public init<T: SignedInteger>(_ value: T) {
+      self.value = String(value)
       isInteger = true
       isNegative = value < 0
+    }
+
+    public init<T: UnsignedInteger>(_ value: T) {
+      self.value = String(value)
+      isInteger = true
+      isNegative = false
     }
 
     public var integerValue: Int? {
@@ -87,17 +93,40 @@ public enum JSON {
     public var numberValue: Any? {
       if isInteger {
         if isNegative {
-          if MemoryLayout<Int>.size == 4 {
-            return Int(value) ?? Int64(value) ?? Decimal(string: value)
+          guard let int = BigInt(value) else {
+            return nil
           }
-          return Int(value) ?? Decimal(string: value)
+          switch int.bitWidth {
+          case 0 ... (MemoryLayout<Int>.size * 8):
+            return Int(int)
+          case 0 ... (MemoryLayout<Int64>.size * 8):
+            return Int64(int)
+          default:
+            return BigInt(value)
+          }
         }
-        if MemoryLayout<Int>.size == 4 {
-          return Int(value) ?? Int64(value) ?? UInt(value) ?? UInt64(value) ?? Decimal(string: value)
+        else {
+          guard let int = BigUInt(value) else {
+            return nil
+          }
+          switch int.bitWidth {
+          case 0 ... (MemoryLayout<Int>.size * 8) - 1:
+            return Int(int)
+          case 0 ... (MemoryLayout<UInt>.size * 8):
+            return UInt(int)
+          case 0 ... (MemoryLayout<Int64>.size * 8) - 1:
+            return Int64(int)
+          case 0 ... (MemoryLayout<UInt64>.size * 8):
+            return UInt64(int)
+          default:
+            return BigInt(value)
+          }
         }
-        return Int(value) ?? UInt(value) ?? Decimal(string: value)
       }
-      return Double(value) ?? Decimal(string: value)
+      guard let double = Double(value) else {
+        return nil
+      }
+      return double
     }
 
   }
@@ -112,11 +141,25 @@ public enum JSON {
   case array(Array)
   case object(Object)
 
-  public var isNull: Bool {
-    if case .null = self {
-      return true
+  public subscript(dynamicMember member: String) -> JSON? {
+    if let object = objectValue {
+      return object[member]
     }
-    return false
+    return nil
+  }
+
+  public subscript(index: Int) -> JSON? {
+    if let array = arrayValue, index < array.count {
+      return array[index]
+    }
+    return nil
+  }
+
+  public subscript(key: String) -> JSON? {
+    if let object = objectValue {
+      return object[key]
+    }
+    return nil
   }
 
   public var stringValue: String? {
@@ -164,25 +207,20 @@ public enum JSON {
     return value
   }
 
-  public subscript(dynamicMember member: String) -> JSON? {
-    if let object = objectValue {
-      return object[member]
-    }
-    return nil
-  }
+}
 
-  public subscript(index: Int) -> JSON? {
-    if let array = arrayValue {
-      return index < array.count ? array[index] : nil
-    }
-    return nil
-  }
 
-  public subscript(key: String) -> JSON? {
-    if let object = objectValue {
-      return object[key]
+// MARK: Conformances
+
+extension JSON: Equatable {}
+extension JSON: Hashable {}
+extension JSON: Value {
+
+  public var isNull: Bool {
+    if case .null = self {
+      return true
     }
-    return nil
+    return false
   }
 
 }
@@ -204,9 +242,10 @@ extension JSON: CustomStringConvertible {
 
 }
 
-extension JSON: Equatable {}
-extension JSON: Hashable {}
-extension JSON: Value {
+
+// MARK: Wrapping
+
+extension JSON {
 
   public var unwrapped: Any? {
     switch self {
@@ -222,9 +261,7 @@ extension JSON: Value {
 }
 
 
-/**
- * Literal support
- **/
+// MARK: Literals
 
 extension JSON: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral,
   ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral,
@@ -265,6 +302,7 @@ extension JSON: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expressibl
 
 }
 
+
 extension JSON.Number: ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, ExpressibleByStringLiteral {
 
   public init(stringLiteral value: String) {
@@ -281,8 +319,9 @@ extension JSON.Number: ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, E
 
 }
 
-/// Make encoders/decoders available in JSON namespace
-///
+
+// Make encoders/decoders available in AnyValue namespace
+
 public extension JSON {
 
   typealias Encoder = JSONEncoder

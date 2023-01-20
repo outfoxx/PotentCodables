@@ -458,6 +458,14 @@ public extension KeyedEncodingContainer {
     _ value: Transformer.Target,
     forKey key: Key,
     using transformer: Transformer
+  ) throws where Transformer.Source == Int {
+    try encode(transformer.encode(value), forKey: key)
+  }
+
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
   ) throws where Transformer.Source == Int8 {
     try encode(transformer.encode(value), forKey: key)
   }
@@ -483,6 +491,14 @@ public extension KeyedEncodingContainer {
     forKey key: Key,
     using transformer: Transformer
   ) throws where Transformer.Source == Int64 {
+    try encode(transformer.encode(value), forKey: key)
+  }
+
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt {
     try encode(transformer.encode(value), forKey: key)
   }
 
@@ -572,6 +588,19 @@ public extension KeyedEncodingContainer {
     _ value: Transformer.Target?,
     forKey key: Key,
     using transformer: Transformer
+  ) throws where Transformer.Source == Int {
+    guard let value = value else {
+      try encodeIfPresent(nil as Transformer.Source?, forKey: key)
+      return
+    }
+
+    try encode(value, forKey: key, using: transformer)
+  }
+
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
   ) throws where Transformer.Source == Int8 {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
@@ -612,6 +641,19 @@ public extension KeyedEncodingContainer {
     forKey key: Key,
     using transformer: Transformer
   ) throws where Transformer.Source == Int64 {
+    guard let value = value else {
+      try encodeIfPresent(nil as Transformer.Source?, forKey: key)
+      return
+    }
+
+    try encode(value, forKey: key, using: transformer)
+  }
+
+  mutating func encodeIfPresent<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target?,
+    forKey key: Key,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt {
     guard let value = value else {
       try encodeIfPresent(nil as Transformer.Source?, forKey: key)
       return
@@ -723,94 +765,159 @@ public extension UnkeyedEncodingContainer {
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == Bool {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == String {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == Int8 {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == Int16 {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == Int32 {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == Int64 {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == UInt8 {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == UInt16 {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == UInt32 {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == UInt64 {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == Float {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source == Double {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
-    _ value: Transformer.Target,
+    _ value: Transformer.Target?,
     using transformer: Transformer
   ) throws where Transformer.Source: Encodable {
-    try encode(transformer.encode(value))
+    if let value = try value.map({ try transformer.encode($0) }) {
+      try encode(value)
+    }
+    else {
+      try encodeNil()
+    }
   }
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
@@ -824,6 +931,13 @@ public extension UnkeyedEncodingContainer {
     contentsOf values: [Transformer.Target],
     using transformer: Transformer
   ) throws where Transformer.Source == String {
+    try encode(contentsOf: values.map { try transformer.encode($0) })
+  }
+
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
@@ -852,6 +966,13 @@ public extension UnkeyedEncodingContainer {
     contentsOf values: [Transformer.Target],
     using transformer: Transformer
   ) throws where Transformer.Source == Int64 {
+    try encode(contentsOf: values.map { try transformer.encode($0) })
+  }
+
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    contentsOf values: [Transformer.Target],
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
@@ -917,8 +1038,15 @@ public extension SingleValueEncodingContainer {
 
   mutating func encode<Transformer: ValueEncodingTransformer>(
     _ value: Transformer.Target,
-    transformer: Transformer
+    using transformer: Transformer
   ) throws where Transformer.Source == String {
+    try encode(transformer.encode(value))
+  }
+
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == Int {
     try encode(transformer.encode(value))
   }
 
@@ -947,6 +1075,13 @@ public extension SingleValueEncodingContainer {
     _ value: Transformer.Target,
     using transformer: Transformer
   ) throws where Transformer.Source == Int64 {
+    try encode(transformer.encode(value))
+  }
+
+  mutating func encode<Transformer: ValueEncodingTransformer>(
+    _ value: Transformer.Target,
+    using transformer: Transformer
+  ) throws where Transformer.Source == UInt {
     try encode(transformer.encode(value))
   }
 

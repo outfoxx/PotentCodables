@@ -51,8 +51,11 @@ public enum ASN1DERReader {
   /// - Parameter data: Data to be parsed.
   /// - Returns: Parsed tag and data.
   /// - Throws: ``ASN1DERReader/Error`` if `data` is unparsable or corrupted.
-  public static func parseTagged(data: Data) throws -> TaggedValue {
-    try data.withUnsafeBytes { ptr in
+  public static func parseTagged(data: Data) throws -> TaggedValue? {
+    if data.isEmpty {
+      return nil
+    }
+    return try data.withUnsafeBytes { ptr in
       var buffer = ptr.bindMemory(to: UInt8.self)
       let (tag, itemBuffer) = try parseTagged(&buffer)
       return TaggedValue(tag: tag, data: Data(itemBuffer))
@@ -129,8 +132,11 @@ public enum ASN1DERReader {
       return .boolean(try itemBuffer.pop() != 0)
 
     case .integer:
+      if itemBuffer.isEmpty {
+        return .integer(BigInt.zero)
+      }
       let data = Data(itemBuffer.popAll())
-      return .integer(BigInt(serialized: data))
+      return .integer(BigInt(derEncoded: data))
 
     case .bitString:
       let unusedBits = try itemBuffer.pop()
@@ -214,8 +220,7 @@ public enum ASN1DERReader {
     if lead & 0x40 == 0x40 {
       return lead & 0x1 == 0 ? Decimal(Double.infinity) : Decimal(-Double.infinity)
     }
-    else if lead & 0x3F == 0 {
-      // Choose ISO-6093 NR3
+    else if lead & 0xC0 == 0 {
       let bytes = buffer.popAll()
       return Decimal(string: String(bytes: bytes, encoding: .ascii) ?? "") ?? .zero
     }
@@ -317,13 +322,6 @@ public enum ASN1DERReader {
 
 private extension UnsafeBufferPointer {
 
-  func peek() throws -> Element {
-    guard let byte = baseAddress?.pointee else {
-      throw ASN1DERReader.Error.unexpectedEOF
-    }
-    return byte
-  }
-
   mutating func popAll() -> UnsafeRawBufferPointer {
     let buffer = UnsafeRawBufferPointer(start: baseAddress, count: count)
     self = UnsafeBufferPointer(start: baseAddress?.advanced(by: count), count: 0)
@@ -340,6 +338,9 @@ private extension UnsafeBufferPointer {
   }
 
   mutating func pop() throws -> Element {
+    guard self.count >= 1 else {
+      throw ASN1DERReader.Error.unexpectedEOF
+    }
     defer {
       self = UnsafeBufferPointer(start: baseAddress?.advanced(by: 1), count: self.count - 1)
     }
@@ -348,11 +349,8 @@ private extension UnsafeBufferPointer {
 
 }
 
+private let utcFormatter =
+  SuffixedDateFormatter(basePattern: "yyMMddHHmm", secondsPattern: "ss") { $0.count > 10 }
 
-private extension String {
-  var hasFractionalSeconds: Bool { contains(".") }
-  var hasZone: Bool { contains("+") || contains("-") || contains("Z") }
-}
-
-private let utcFormatter = SuffixedDateFormatter(basePattern: "yyMMddHHmm", secondsPattern: "ss") { $0.count > 10 }
-private let generalizedFormatter = SuffixedDateFormatter.optionalFractionalSeconds(basePattern: "yyyyMMddHHmmss")
+private let generalizedFormatter =
+  SuffixedDateFormatter(basePattern: "yyyyMMddHHmmss", secondsPattern: ".S") { $0.contains(".") }

@@ -21,22 +21,22 @@ public struct CBORReader {
     self.stream = stream
   }
 
-  private func readBinaryNumber(_ type: CBOR.Half.Type) throws -> CBOR.Half {
+  private func readHalf() throws -> CBOR.Half {
     return CBOR.Half(bitPattern: try stream.readInt(UInt16.self))
   }
 
-  private func readBinaryNumber(_ type: CBOR.Float.Type) throws -> CBOR.Float {
+  private func readFloat() throws -> CBOR.Float {
     return CBOR.Float(bitPattern: try stream.readInt(UInt32.self))
   }
 
-  private func readBinaryNumber(_ type: CBOR.Double.Type) throws -> CBOR.Double {
+  private func readDouble() throws -> CBOR.Double {
     return CBOR.Double(bitPattern: try stream.readInt(UInt64.self))
   }
 
   private func readVarUInt(_ initByte: UInt8, base: UInt8) throws -> UInt64 {
     guard initByte > base + 0x17 else { return UInt64(initByte - base) }
 
-    switch VarUIntSize(rawValue: initByte) {
+    switch try VarUIntSize.from(serialized: initByte) {
     case .uint8: return UInt64(try stream.readInt(UInt8.self))
     case .uint16: return UInt64(try stream.readInt(UInt16.self))
     case .uint32: return UInt64(try stream.readInt(UInt32.self))
@@ -208,11 +208,11 @@ public struct CBORReader {
     case 0xF8: return .simple(try stream.readByte())
 
     case 0xF9:
-      return .half(try readBinaryNumber(CBOR.Half.self))
+      return .half(try readHalf())
     case 0xFA:
-      return .float(try readBinaryNumber(CBOR.Float.self))
+      return .float(try readFloat())
     case 0xFB:
-      return .double(try readBinaryNumber(CBOR.Double.self))
+      return .double(try readDouble())
 
     case 0xFF: return nil
     default: throw CBORError.invalidItemType
@@ -227,13 +227,15 @@ private enum VarUIntSize: UInt8 {
   case uint32 = 2
   case uint64 = 3
 
-  init(rawValue: UInt8) {
-    switch rawValue & 0b11 {
-    case 0: self = .uint8
-    case 1: self = .uint16
-    case 2: self = .uint32
-    case 3: self = .uint64
-    default: fatalError() // mask only allows values from 0-3
+  static func from(serialized value: UInt8) throws -> VarUIntSize {
+    switch value & 0b11 {
+    case 0: return .uint8
+    case 1: return .uint16
+    case 2: return .uint32
+    case 3: return .uint64
+    default:
+      // mask only allows values from 0-3
+      throw CBORError.invalidIntegerSize
     }
   }
 }

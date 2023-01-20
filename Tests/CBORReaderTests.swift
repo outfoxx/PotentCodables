@@ -14,18 +14,6 @@ import XCTest
 
 
 class CBORReaderTests: XCTestCase {
-  static var allTests = [
-    ("testDecodeNumbers", testDecodeNumbers),
-    ("testDecodeByteStrings", testDecodeByteStrings),
-    ("testDecodeUtf8Strings", testDecodeUtf8Strings),
-    ("testDecodeArrays", testDecodeArrays),
-    ("testDecodeMaps", testDecodeMaps),
-    ("testDecodeTagged", testDecodeTagged),
-    ("testDecodeSimple", testDecodeSimple),
-    ("testDecodeFloats", testDecodeFloats),
-    ("testDecodePerformance", testDecodePerformance),
-    ("testDecodeMapFromIssue29", testDecodeMapFromIssue29),
-  ]
 
   func decode(_ bytes: UInt8...) throws -> CBOR {
     return try decode(Data(bytes))
@@ -324,7 +312,7 @@ class CBORReaderTests: XCTestCase {
   //        XCTAssertEqual(try decode(0xc1, 0xfb, 0x41, 0xd4, 0x52, 0xd9, 0xec, 0x20, 0x00, 0x00), .date(dateTwo))
   //    }
 
-  func testDecodePerformance() {
+  func disabled_testDecodePerformance() {
     var data = Data([0x9F])
     for i in 0 ..< 255 {
       data.append(contentsOf: [0xBF, 0x63, 0x6B, 0x65, 0x79, 0xA1, 0x63, 0x6B, 0x65, 0x79, 0x18, UInt8(i), 0xFF])

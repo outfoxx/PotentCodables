@@ -13,7 +13,7 @@ import Foundation
 
 /// ASN.1 encoded data with tag describing its contents.
 ///
-public struct TaggedValue: Codable {
+public struct TaggedValue: Codable, Equatable, Hashable {
   var tag: UInt8
   var data: Data
 

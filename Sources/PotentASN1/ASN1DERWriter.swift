@@ -46,16 +46,8 @@ public class ASN1DERWriter {
 
   public private(set) var data: Data
 
-  /// Default initializer.
   public required init() {
     data = Data(capacity: 256)
-  }
-
-  /// Initialize with pre-existing data to append written data to.
-  ///
-  /// - Parameter data: Pre-existing data to append to.
-  public init(data: Data) {
-    self.data = data
   }
 
   private func append(byte: UInt8) {
@@ -78,7 +70,7 @@ public class ASN1DERWriter {
       append(byte: UInt8(value & 0xFF))
 
     default:
-      let bytes = BigUInt(value).serialized()
+      let bytes = BigUInt(value).derEncoded()
       guard let byteCount = UInt8(exactly: bytes.count), byteCount <= 127 else {
         throw Error.lengthOverflow
       }
@@ -110,7 +102,7 @@ public class ASN1DERWriter {
       append(byte: value ? 0xFF : 0x00)
 
     case .integer(let value):
-      let bytes = value.serialized()
+      let bytes = value.derEncoded()
       try append(tag: .integer, length: max(1, bytes.count))
       append(data: bytes.isEmpty ? Self.zero : bytes)
 
@@ -170,7 +162,7 @@ public class ASN1DERWriter {
       }
       // Choose ISO-6093 NR3
       var data = String(describing: value).data(using: .ascii) ?? Data()
-      data.insert(0x3, at: 0)
+      data.insert(0x00, at: 0)
       try append(tag: .real, length: data.count)
       append(data: data)
 

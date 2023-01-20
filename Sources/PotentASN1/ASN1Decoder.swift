@@ -8,7 +8,9 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
+import BigInt
 import Foundation
+import OrderedCollections
 import PotentCodables
 
 
@@ -82,7 +84,6 @@ public class ASN1Decoder: ValueDecoder<ASN1, ASN1DecoderTransform>, DecodesFromD
 public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeserializer {
 
   public typealias Value = ASN1
-  public typealias Decoder = InternalValueDecoder<Value, Self>
   public typealias State = SchemaState
 
   public static let nilValue = ASN1.null
@@ -94,8 +95,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
-  static func decode(_ value: ASN1, decoder: Decoder) throws -> Any? {
-//    print("codingPath =", decoder.codingPath.map { $0.stringValue })
+  static func decode(_ value: ASN1, decoder: IVD) throws -> Any? {
 
     if decoder.state == nil {
       decoder.state = try SchemaState(initial: decoder.options.schema)
@@ -116,16 +116,131 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     return try decoder.state.decode(value)
   }
 
-  /// Returns the given value unboxed from a container.
-  public static func unbox(_ value: ASN1, as type: Bool.Type, decoder: Decoder) throws -> Bool? {
+  public static func intercepts(_ type: Decodable.Type) -> Bool {
+    if type as? Tagged.Type != nil {
+      return true
+    }
+    return type == AnyString.self || type == AnyTime.self
+        || type == BitString.self || type == ObjectIdentifier.self
+        || type == ASN1.Integer.self
+        || type == Date.self || type == NSDate.self
+        || type == Data.self || type == NSData.self
+        || type == URL.self || type == NSURL.self
+        || type == UUID.self || type == NSUUID.self
+        || type == Decimal.self || type == NSDecimalNumber.self
+        || type == BigInt.self
+        || type == BigUInt.self
+        || type == AnyValue.self
+  }
+
+  public static func unbox(_ value: ASN1, interceptedType: Decodable.Type, decoder: IVD) throws -> Any? {
+    if let taggedType = interceptedType as? Tagged.Type {
+      return try unbox(value, as: taggedType, decoder: decoder)
+    }
+    else if interceptedType == AnyString.self {
+      return try unbox(value, as: AnyString.self, decoder: decoder)
+    }
+    else if interceptedType == AnyTime.self {
+      return try unbox(value, as: AnyTime.self, decoder: decoder)
+    }
+    else if interceptedType == BitString.self {
+      return try unbox(value, as: BitString.self, decoder: decoder)
+    }
+    else if interceptedType == ObjectIdentifier.self {
+      return try unbox(value, as: ObjectIdentifier.self, decoder: decoder)
+    }
+    else if interceptedType == Date.self || interceptedType == NSDate.self {
+      return try unbox(value, as: Date.self, decoder: decoder)
+    }
+    else if interceptedType == Data.self || interceptedType == NSData.self {
+      return try unbox(value, as: Data.self, decoder: decoder)
+    }
+    else if interceptedType == URL.self || interceptedType == URL.self {
+      return try unbox(value, as: URL.self, decoder: decoder)
+    }
+    else if interceptedType == UUID.self || interceptedType == UUID.self {
+      return try unbox(value, as: UUID.self, decoder: decoder)
+    }
+    else if interceptedType == Decimal.self || interceptedType == NSDecimalNumber.self {
+      return try unbox(value, as: Decimal.self, decoder: decoder)
+    }
+    else if interceptedType == BigInt.self {
+      return try unbox(value, as: BigInt.self, decoder: decoder)
+    }
+    else if interceptedType == BigUInt.self {
+      return try unbox(value, as: BigUInt.self, decoder: decoder)
+    }
+    else if interceptedType == AnyValue.self {
+      return try unbox(value, as: AnyValue.self, decoder: decoder)
+    }
+    else {
+      fatalError("type not valid for intercept")
+    }
+  }
+
+  public static func unbox(_ value: ASN1, as type: Tagged.Type, decoder: IVD) throws -> Tagged? {
+    guard let decoded = try decode(value, decoder: decoder) else { return nil }
+    return type.init(tag: value.anyTag, value: decoded)
+  }
+
+  public static func unbox(_ value: ASN1, as type: AnyString.Type, decoder: IVD) throws -> AnyString? {
     switch try decode(value, decoder: decoder) {
-    case let bool as Bool: return bool
-    case .none: return nil
+    case let string as AnyString: return string
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
+      )
+    }
+  }
+
+  public static func unbox(_ value: ASN1, as type: AnyTime.Type, decoder: IVD) throws -> AnyTime? {
+    switch try decode(value, decoder: decoder) {
+    case let time as AnyTime: return time
+    case let invalid:
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid as Any
+      )
+    }
+  }
+
+  public static func unbox(_ value: ASN1, as type: BitString.Type, decoder: IVD) throws -> BitString? {
+    switch try decode(value, decoder: decoder) {
+    case let bitString as BitString: return bitString
+    case let data as Data: return BitString(length: data.count * 8, bytes: data)
+    case let invalid:
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid as Any
+      )
+    }
+  }
+
+  public static func unbox(_ value: ASN1, as type: ObjectIdentifier.Type, decoder: IVD) throws -> ObjectIdentifier? {
+    switch try decode(value, decoder: decoder) {
+    case let oid as ObjectIdentifier: return oid
+    case let invalid:
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid as Any
+      )
+    }
+  }
+
+  /// Returns the given value unboxed from a container.
+  public static func unbox(_ value: ASN1, as type: Bool.Type, decoder: IVD) throws -> Bool? {
+    switch try decode(value, decoder: decoder) {
+    case let bool as Bool: return bool
+    case let invalid:
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid as Any
       )
     }
   }
@@ -151,319 +266,338 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     return result
   }
 
-  public static func unbox(_ value: ASN1, as type: Int.Type, decoder: Decoder) throws -> Int? {
+  static func coerce<T>(_ from: ASN1.Integer, at codingPath: [CodingKey]) throws -> T
+    where T: BinaryFloatingPoint & LosslessStringConvertible {
+    guard let result = T(from.description) else {
+      throw overflow(T.self, value: from, at: codingPath)
+    }
+    return result
+  }
+
+  public static func unbox(_ value: ASN1, as type: Int.Type, decoder: IVD) throws -> Int? {
     switch try decode(value, decoder: decoder) {
     case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(Int.self)
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: Int8.Type, decoder: Decoder) throws -> Int8? {
+  public static func unbox(_ value: ASN1, as type: Int8.Type, decoder: IVD) throws -> Int8? {
     switch try decode(value, decoder: decoder) {
     case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(Int8.self)
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: Int16.Type, decoder: Decoder) throws -> Int16? {
+  public static func unbox(_ value: ASN1, as type: Int16.Type, decoder: IVD) throws -> Int16? {
     switch try decode(value, decoder: decoder) {
     case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(Int16.self)
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: Int32.Type, decoder: Decoder) throws -> Int32? {
+  public static func unbox(_ value: ASN1, as type: Int32.Type, decoder: IVD) throws -> Int32? {
     switch try decode(value, decoder: decoder) {
     case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(Int32.self)
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: Int64.Type, decoder: Decoder) throws -> Int64? {
+  public static func unbox(_ value: ASN1, as type: Int64.Type, decoder: IVD) throws -> Int64? {
     switch try decode(value, decoder: decoder) {
     case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(Int64.self)
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: UInt.Type, decoder: Decoder) throws -> UInt? {
+  public static func unbox(_ value: ASN1, as type: UInt.Type, decoder: IVD) throws -> UInt? {
     switch try decode(value, decoder: decoder) {
     case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(UInt.self)
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: UInt8.Type, decoder: Decoder) throws -> UInt8? {
+  public static func unbox(_ value: ASN1, as type: UInt8.Type, decoder: IVD) throws -> UInt8? {
     switch try decode(value, decoder: decoder) {
     case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(UInt8.self)
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: UInt16.Type, decoder: Decoder) throws -> UInt16? {
+  public static func unbox(_ value: ASN1, as type: UInt16.Type, decoder: IVD) throws -> UInt16? {
     switch try decode(value, decoder: decoder) {
     case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(UInt16.self)
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: UInt32.Type, decoder: Decoder) throws -> UInt32? {
+  public static func unbox(_ value: ASN1, as type: UInt32.Type, decoder: IVD) throws -> UInt32? {
     switch try decode(value, decoder: decoder) {
     case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(UInt32.self)
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: UInt64.Type, decoder: Decoder) throws -> UInt64? {
+  public static func unbox(_ value: ASN1, as type: UInt64.Type, decoder: IVD) throws -> UInt64? {
     switch try decode(value, decoder: decoder) {
     case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let bitString as BitString: return bitString.integer(UInt64.self)
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: Float.Type, decoder: Decoder) throws -> Float? {
+  public static func unbox(_ value: ASN1, as type: BigInt.Type, decoder: IVD) throws -> BigInt? {
+    switch try decode(value, decoder: decoder) {
+    case let integer as ASN1.Integer: return integer
+    case let bitString as BitString:
+      if bitString.bytes.isEmpty {
+        return BigInt.zero
+      }
+      var data = Data(count: bitString.bytes.count)
+      bitString.copyOctets(into: &data)
+      return BigInt(derEncoded: data)
+    case let invalid:
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid as Any
+      )
+    }
+  }
+
+  public static func unbox(_ value: ASN1, as type: BigUInt.Type, decoder: IVD) throws -> BigUInt? {
+    switch try decode(value, decoder: decoder) {
+    case let integer as ASN1.Integer:
+      if integer.sign == .minus {
+        throw overflow(BigUInt.self, value: integer, at: decoder.codingPath)
+      }
+      return integer.magnitude
+    case let bitString as BitString:
+      if bitString.bytes.isEmpty {
+        return BigUInt.zero
+      }
+      var data = Data(count: bitString.bytes.count)
+      bitString.copyOctets(into: &data)
+      return BigUInt(derEncoded: data)
+    case let invalid:
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid as Any
+      )
+    }
+  }
+
+  public static func unbox(_ value: ASN1, as type: Float.Type, decoder: IVD) throws -> Float? {
     switch try decode(value, decoder: decoder) {
     case let number as Decimal: return try coerce(number, at: decoder.codingPath)
-    case .none: return nil
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: Double.Type, decoder: Decoder) throws -> Double? {
+  public static func unbox(_ value: ASN1, as type: Double.Type, decoder: IVD) throws -> Double? {
     switch try decode(value, decoder: decoder) {
     case let number as Decimal: return try coerce(number, at: decoder.codingPath)
-    case .none: return nil
+    case let integer as ASN1.Integer: return try coerce(integer, at: decoder.codingPath)
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: Decimal.Type, decoder: Decoder) throws -> Decimal? {
+  public static func unbox(_ value: ASN1, as type: Decimal.Type, decoder: IVD) throws -> Decimal? {
     switch try decode(value, decoder: decoder) {
     case let number as Decimal: return number
-    case .none: return nil
+    case let integer as ASN1.Integer: return Decimal(string: integer.description)
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: String.Type, decoder: Decoder) throws -> String? {
+  public static func unbox(_ value: ASN1, as type: String.Type, decoder: IVD) throws -> String? {
     switch try decode(value, decoder: decoder) {
     case let string as AnyString: return string.storage
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: UUID.Type, decoder: Decoder) throws -> UUID? {
+  public static func unbox(_ value: ASN1, as type: UUID.Type, decoder: IVD) throws -> UUID? {
     switch try decode(value, decoder: decoder) {
-    case let string as AnyString: return UUID(uuidString: string.storage)
-    case let data as Data where data.count == 16:
+    case let string as AnyString:
+      guard let uuid = UUID(uuidString: string.storage) else {
+        throw DecodingError.dataCorruptedError(
+          in: decoder,
+          debugDescription: "Failed to decode UUID from invalid UUID string"
+        )
+      }
+      return uuid
+    case let data as Data:
+      if data.count != 16 {
+        throw DecodingError.dataCorruptedError(
+          in: decoder,
+          debugDescription: "Failed to decode UUID from binary data that is not 16 bytes"
+        )
+      }
       return UUID(uuid: data.withUnsafeBytes { $0.bindMemory(to: uuid_t.self).first ?? UUID_NULL })
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: Date.Type, decoder: Decoder) throws -> Date? {
+  public static func unbox(_ value: ASN1, as type: URL.Type, decoder: IVD) throws -> URL? {
     switch try decode(value, decoder: decoder) {
-    case let date as Date: return date
-    case .none: return nil
+    case let string as AnyString: return URL(string: string.storage)
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func unbox(_ value: ASN1, as type: Data.Type, decoder: Decoder) throws -> Data? {
+  public static func unbox(_ value: ASN1, as type: Date.Type, decoder: IVD) throws -> Date? {
+    switch try decode(value, decoder: decoder) {
+    case let time as AnyTime:
+      return time.zonedDate.utcDate
+    case let invalid:
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid as Any
+      )
+    }
+  }
+
+  public static func unbox(_ value: ASN1, as type: Data.Type, decoder: IVD) throws -> Data? {
     switch try decode(value, decoder: decoder) {
     case let data as Data: return data
     case let bitString as BitString: return bitString.bytes
-    case .none: return nil
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
         expectation: type,
-        reality: invalid!
+        reality: invalid as Any
       )
     }
   }
 
-  public static func intercepts(_ type: Decodable.Type) -> Bool {
-    return
-      type == ASN1.self || type is Tagged.Type ||
-      type == AnyString.self || type == AnyTime.self ||
-      type == BitString.self || type == ObjectIdentifier.self || type == ASN1.Integer.self
-  }
-
-  public static func unbox(_ value: ASN1, interceptedType: Decodable.Type, decoder: Decoder) throws -> Any? {
-    if interceptedType == ASN1.self {
-      return value
-    }
-
-    guard let decoded = try decode(value, decoder: decoder) else { return nil }
-    if interceptedType == ASN1.Integer.self {
-      guard let int = decoded as? ASN1.Integer else {
-        throw DecodingError.typeMismatch(
-          at: decoder.codingPath,
-          expectation: interceptedType,
-          reality: decoded
-        )
-      }
-      return int
-    }
-    else if interceptedType == AnyString.self {
-      guard let string = decoded as? AnyString else {
-        throw DecodingError.typeMismatch(
-          at: decoder.codingPath,
-          expectation: interceptedType,
-          reality: decoded
-        )
-      }
-      return string
-    }
-    else if interceptedType == AnyTime.self {
-      guard let time = decoded as? AnyTime else {
-        throw DecodingError.typeMismatch(
-          at: decoder.codingPath,
-          expectation: interceptedType,
-          reality: decoded
-        )
-      }
-      return time
-    }
-    else if interceptedType == BitString.self {
-      switch decoded {
-      case let bitString as BitString: return bitString
-      case let data as Data: return BitString(length: data.count * 8, bytes: data)
-      default:
-        throw DecodingError.typeMismatch(
-          at: decoder.codingPath,
-          expectation: interceptedType,
-          reality: decoded
-        )
-      }
-    }
-    else if interceptedType == ObjectIdentifier.self {
-      guard let oid = decoded as? ObjectIdentifier else {
-        throw DecodingError.typeMismatch(
-          at: decoder.codingPath,
-          expectation: interceptedType,
-          reality: decoded
-        )
-      }
-      return oid
-    }
-    else if let taggedType = interceptedType as? Tagged.Type {
-      return taggedType.init(tag: value.anyTag, value: decoded)
-    }
-    else {
-      fatalError("Unhandled type")
+  public static func unbox(_ value: ASN1, as type: AnyValue.Type, decoder: IVD) throws -> AnyValue {
+    switch value.absolute {
+    case .boolean(let value): return .bool(value)
+    case .integer(let value): return .integer(value)
+    case .bitString(let length, let bytes): return .string(BitString(length: length, bytes: bytes).bitFlagString)
+    case .octetString(let value): return .data(value)
+    case .null: return .nil
+    case .objectIdentifier(let fields): return .array(fields.map(AnyValue.uint64))
+    case .real(let value): return .decimal(value)
+    case .utf8String(let value): return .string(value)
+    case .sequence(let values): return .array(try values.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
+    case .set(let values): return .array(try values.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
+    case .numericString(let value): return .string(value)
+    case .printableString(let value): return .string(value)
+    case .teletexString(let value): return .string(value)
+    case .videotexString(let value): return .string(value)
+    case .ia5String(let value): return .string(value)
+    case .utcTime(let value): return .date(value.utcDate)
+    case .generalizedTime(let value): return .date(value.utcDate)
+    case .graphicString(let value): return .string(value)
+    case .visibleString(let value): return .string(value)
+    case .generalString(let value): return .string(value)
+    case .universalString(let value): return .string(value)
+    case .characterString(let value): return .string(value)
+    case .bmpString(let value): return .string(value)
+    default:
+      fatalError("unexpected value")
     }
   }
 
-  public static func valueToUnkeyedValues(_ value: ASN1, decoder: Decoder) throws -> [ASN1]? {
+  public static func valueToUnkeyedValues(_ value: ASN1, decoder: IVD) throws -> UnkeyedValues? {
 
     guard let decoded = try decode(value, decoder: decoder) else { return nil }
 
-    guard let collection = decoded as? [ASN1] else {
-      fatalError()
+    guard let collection = decoded as? UnkeyedValues else {
+      return nil
     }
 
     decoder.state.save(container: UnkeyedContainer(backing: collection), forCodingPath: decoder.codingPath)
@@ -471,12 +605,12 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     return collection
   }
 
-  public static func valueToKeyedValues(_ value: ASN1, decoder: Decoder) throws -> [String: ASN1]? {
+  public static func valueToKeyedValues(_ value: ASN1, decoder: IVD) throws -> KeyedValues? {
 
     guard let decoded = try decode(value, decoder: decoder) else { return nil }
 
-    guard let structure = decoded as? [String: ASN1] else {
-      fatalError()
+    guard let structure = decoded as? KeyedValues else {
+      return nil
     }
 
     decoder.state.save(container: KeyedContainer(backing: structure), forCodingPath: decoder.codingPath)
@@ -530,28 +664,21 @@ extension SchemaState {
           continue
         }
 
-        var results = [String: ASN1]()
+        var results = OrderedDictionary<String, ASN1>()
         var valueIdx = 0
 
         for (fieldName, fieldSchema) in fields {
           let possibleValue: ASN1? = valueIdx < values.count ? values[valueIdx] : nil
 
           guard let value = possibleValue else {
-            // No value... asign default (if available)
-            if fieldSchema.defaultValue != nil {
-              var fieldSchemaState = try SchemaState(initial: fieldSchema.unwrapDirectives)
-              results[fieldName] = try fieldSchemaState.encode(nil)
-            }
+            // No value... assign default (if available)
+            results[fieldName] = try fieldSchema.defaultValueEncoded()
             continue
           }
 
           if let fieldSchemaPossibleTags = fieldSchema.possibleTags, !fieldSchemaPossibleTags.contains(value.anyTag) {
-            // No value... assign default (if available)
-            if fieldSchema.defaultValue != nil {
-              var fieldSchemaState = try SchemaState(initial: fieldSchema.unwrapDirectives)
-              results[fieldName] = try fieldSchemaState.encode(nil)
-            }
-            // value tag not in schema's possible tags... skip to next field and try value again
+            // Value tag not in schema's possible tags... assign defaul and skip to next field
+            results[fieldName] = try fieldSchema.defaultValueEncoded()
             continue
           }
 
@@ -712,11 +839,10 @@ extension SchemaState {
 
       case .implicit(let schemaTag, in: let schemaTagClass, let implicitSchema):
 
-        guard let tagged = value.taggedValue, ASN1.Tag.tag(
-          from: schemaTag,
-          in: schemaTagClass,
-          constructed: implicitSchema.isCollection
-        ) == tagged.tag else {
+        guard
+          let tagged = value.taggedValue,
+          ASN1.Tag.tag(from: schemaTag, in: schemaTagClass, constructed: implicitSchema.isCollection) == tagged.tag
+        else {
           // try next possible schema
           continue
         }
@@ -731,18 +857,24 @@ extension SchemaState {
           return item.setValue!
 
         default:
+          if tagged.data.isEmpty {
+            if let defaultValue = implicitSchema.defaultValue {
+              return defaultValue.currentValue
+            }
+            throw DecodingError.badValue(value, errorContext("Implicit tagged value contains no data"))
+          }
           guard let nextPossibleTags = implicitSchema.possibleTags, nextPossibleTags.count == 1 else {
             throw SchemaError.ambiguousImplicitTag(errorContext("Implicit schema is ambiguous"))
           }
-
           return try ASN1DERReader.parseItem(tagged.data, as: nextPossibleTags[0]).currentValue
         }
 
 
       case .explicit(let schemaTag, in: let schemaTagClass, let explicitSchema):
 
-        guard let tagged = value.taggedValue,
-              ASN1.Tag.tag(from: schemaTag, in: schemaTagClass, constructed: true) == tagged.tag
+        guard
+          let tagged = value.taggedValue,
+          ASN1.Tag.tag(from: schemaTag, in: schemaTagClass, constructed: true) == tagged.tag
         else {
           // try next possible schema
           continue

@@ -12,24 +12,21 @@ public struct AnyCodingKey: CodingKey, Equatable, Hashable {
   public var stringValue: String
   public var intValue: Int?
 
-  public init(stringValue: String) {
-    self.stringValue = stringValue
-    intValue = nil
-  }
-
-  public init(intValue: Int) {
-    stringValue = "\(intValue)"
-    self.intValue = intValue
-  }
-
   public init(stringValue: String, intValue: Int?) {
     self.stringValue = stringValue
     self.intValue = intValue
   }
 
+  public init(stringValue: String) {
+    self.init(stringValue: stringValue, intValue: nil)
+  }
+
+  public init(intValue: Int) {
+    self.init(stringValue: "\(intValue)", intValue: intValue)
+  }
+
   public init(index: Int) {
-    stringValue = "\(index)"
-    intValue = index
+    self.init(intValue: index)
   }
 
   public init<Key: CodingKey>(_ base: Key) {
@@ -53,32 +50,6 @@ public struct AnyCodingKey: CodingKey, Equatable, Hashable {
 
   internal static let `super` = AnyCodingKey(stringValue: "super")
 
-}
-
-extension AnyCodingKey: Encodable {
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-    if let intValue = self.intValue {
-      try container.encode(intValue)
-    }
-    else {
-      try container.encode(stringValue)
-    }
-  }
-}
-
-extension AnyCodingKey: Decodable {
-  public init(from decoder: Decoder) throws {
-    let value = try decoder.singleValueContainer()
-    if let intValue = try? value.decode(Int.self) {
-      stringValue = "\(intValue)"
-      self.intValue = intValue
-    }
-    else {
-      stringValue = try value.decode(String.self)
-      intValue = nil
-    }
-  }
 }
 
 extension AnyCodingKey: ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {

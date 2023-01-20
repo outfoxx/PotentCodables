@@ -47,12 +47,12 @@ import PotentCodables
 ///   .decode(TBSCertificate.self, from: data)
 /// ```
 ///
-public indirect enum Schema {
+public indirect enum Schema: Equatable, Hashable {
 
   public typealias DynamicMap = [ASN1: Schema]
   public typealias StructureSequenceMap = OrderedDictionary<String, Schema>
 
-  public enum Size: CustomStringConvertible {
+  public enum Size: Equatable, Hashable {
     case min(Int)
     case max(Int)
     case `is`(Int)
@@ -67,17 +67,8 @@ public indirect enum Schema {
       }
     }
 
-    public func `in`(_ range: ClosedRange<Int>) -> Size {
+    public static func `in`(_ range: ClosedRange<Int>) -> Size {
       return .range(range.lowerBound, range.upperBound)
-    }
-
-    public var description: String {
-      switch self {
-      case .min(let min): return "\(min)..MAX"
-      case .max(let max): return "0..\(max)"
-      case .is(let size): return "\(size)..\(size)"
-      case .range(let min, let max): return "\(min)..\(max)"
-      }
     }
 
   }
@@ -165,6 +156,14 @@ public indirect enum Schema {
     case .integer(_, let defaultValue): return defaultValue.map { .integer(BigInt($0)) }
     default: return nil
     }
+  }
+
+  public func defaultValueEncoded() throws -> ASN1? {
+    guard defaultValue != nil else {
+      return nil
+    }
+    var schemaState = try SchemaState(initial: unwrapDirectives)
+    return try schemaState.encode(nil)
   }
 
   public var unwrapDirectives: Schema {
@@ -264,9 +263,9 @@ public indirect enum Schema {
 
 }
 
-extension Schema: CustomDebugStringConvertible {
+extension Schema: CustomStringConvertible {
 
-  public var debugDescription: String {
+  public var description: String {
     var result = ""
     var indent = ""
 
@@ -288,7 +287,7 @@ extension Schema: CustomDebugStringConvertible {
       append("SEQUENCE ::= {")
 
       for (field, fieldSchema) in fields {
-        append("\n\(field) \(fieldSchema.debugDescription)")
+        append("\n\(field) \(fieldSchema.description)")
       }
 
     case .sequenceOf(let schema, size: let size):
@@ -303,7 +302,7 @@ extension Schema: CustomDebugStringConvertible {
         append("SIZE (\(size)) ")
       }
 
-      append("OF\n\(schema.debugDescription)")
+      append("OF\n\(schema.description)")
 
     case .setOf(let schema, size: let size):
       indent += "  "
@@ -317,7 +316,7 @@ extension Schema: CustomDebugStringConvertible {
         append("SIZE (\(size)) ")
       }
 
-      append("OF\n\(schema.debugDescription)")
+      append("OF\n\(schema.description)")
 
     case .choiceOf(let schemas):
       indent += "  "
@@ -328,19 +327,19 @@ extension Schema: CustomDebugStringConvertible {
       append("CHOICE ::= {")
 
       for schema in schemas {
-        append("\n\(schema.debugDescription)")
+        append("\n\(schema.description)")
       }
 
     case .optional(let schema):
-      append("\(schema.debugDescription) OPTIONAL")
+      append("\(schema.description) OPTIONAL")
 
     case .implicit(let tag, let inClass, let schema):
       let tagPrefix = inClass != .contextSpecific ? String(describing: inClass).uppercased() : ""
-      append("[\(tagPrefix)\(tag)] \(schema.debugDescription) ")
+      append("[\(tagPrefix)\(tag)] IMPLICIT \(schema.description)")
 
     case .explicit(let tag, let inClass, let schema):
       let tagPrefix = inClass != .contextSpecific ? String(describing: inClass).uppercased() : ""
-      append("[\(tagPrefix)\(tag)] EXPLICIT \(schema.debugDescription) ")
+      append("[\(tagPrefix)\(tag)] EXPLICIT \(schema.description)")
 
     case .boolean(let def):
       append("BOOLEAN")
@@ -351,7 +350,7 @@ extension Schema: CustomDebugStringConvertible {
     case .integer(let allowed, let def):
       append("INTEGER")
       if let allowed = allowed {
-        append(" { \(allowed.map { String($0) }.joined()) }")
+        append(" { \(allowed.map { String($0) }.joined(separator: ", ")) }")
       }
       if let def = def {
         append(" DEFAULT \(String(def).uppercased())")
@@ -369,8 +368,11 @@ extension Schema: CustomDebugStringConvertible {
         append(" (\(size))")
       }
 
-    case .objectIdentifier:
+    case .objectIdentifier(let allowed):
       append("OBJECT IDENTIFIER")
+      if let allowed = allowed {
+        append(" { \(allowed.map { $0.description }.sorted().joined(separator: " , ")) }")
+      }
 
     case .real:
       append("REAL")
@@ -392,19 +394,49 @@ extension Schema: CustomDebugStringConvertible {
     case .null:
       append("NULL")
 
-    case .dynamic, .any:
+    case .any:
       append("ANY")
+
+    case .dynamic(let unknownSchema, let map):
+      indent += "  "
+      defer {
+        indent.removeLast(2)
+        append("\n}")
+      }
+
+      append("DYNAMIC {")
+
+      for (key, schema) in map {
+        append("\nCASE \(key.unwrapped ?? key) (\(key.tagName)): \(schema.description)")
+      }
+
+      if let unknownSchema = unknownSchema {
+        append("\nELSE: \(unknownSchema.description)")
+      }
 
     case .versioned(let versionRange, let versionedSchema):
       append(
-        "\n\(versionedSchema.debugDescription) -- for version (\(versionRange.lowerBound)..\(versionRange.upperBound))"
+        "\(versionedSchema.description) -- for version (\(versionRange.lowerBound)..\(versionRange.upperBound))"
       )
 
     case .type(let schema), .version(let schema):
-      append(schema.debugDescription)
+      append(schema.description)
     }
 
     return result
+  }
+
+}
+
+extension Schema.Size: CustomStringConvertible {
+
+  public var description: String {
+    switch self {
+    case .min(let min): return "\(min)..MAX"
+    case .max(let max): return "0..\(max)"
+    case .is(let size): return "\(size)"
+    case .range(let min, let max): return "\(min)..\(max)"
+    }
   }
 
 }
