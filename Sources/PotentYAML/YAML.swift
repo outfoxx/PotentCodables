@@ -269,7 +269,7 @@ extension YAML: CustomStringConvertible {
 
       var output = ""
 
-      try YAMLWriter.write([self], sortedKeys: true) { output += $0 ?? "" }
+      try YAMLWriter.write([self]) { output += $0 ?? "" }
 
       return output
     }
@@ -387,29 +387,6 @@ extension YAML: ExpressibleByDictionaryLiteral {
 
   public init(dictionaryLiteral elements: (YAML, YAML)...) {
     self = .mapping(elements.map { MappingEntry(key: $0, value: $1) }, style: .any, tag: nil, anchor: nil)
-  }
-
-}
-
-
-/**
- * "Stable" encoding of YAML to text
- *
- * Encodes values in a stable (aka repeatable) manner making it
- * easy to compare different complex values that have been encoded
- * to text
- **/
-public extension YAML {
-
-  var stableText: String {
-    var output = ""
-    do {
-      try YAMLWriter.write([self], sortedKeys: true) { output += $0 ?? "" }
-    }
-    catch {
-      output = "Invalid YAML: \(error)"
-    }
-    return output
   }
 
 }
