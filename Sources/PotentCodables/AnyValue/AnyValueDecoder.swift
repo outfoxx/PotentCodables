@@ -231,7 +231,7 @@ public struct AnyValueDecoderTransform: InternalDecoderTransform {
     decoder: InternalValueDecoder<AnyValue, AnyValueDecoderTransform>
   ) throws -> [String: AnyValue]? {
     guard case .dictionary(let dictionary) = value else { return nil }
-    return dictionary
+    return Dictionary(uniqueKeysWithValues: dictionary.map { (key: $0, value: $1) })
   }
 
 }

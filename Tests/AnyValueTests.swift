@@ -75,7 +75,7 @@ class AnyValueTests: XCTestCase {
     let tree = try JSONSerialization.json(from: json)
     let value = try JSON.Decoder().decode(TestValue.self, from: json)
     let recoded = try JSON.Encoder().encodeTree(value)
-    XCTAssertEqual(recoded.stableText, tree.stableText)
+    XCTAssertEqual(recoded, tree)
     XCTAssertEqual(value.e!, e)
   }
 

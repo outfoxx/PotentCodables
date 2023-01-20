@@ -209,7 +209,7 @@ public struct AnyValueEncoderTransform: InternalEncoderTransform {
     _ values: [String: AnyValue],
     encoder: InternalValueEncoder<Value, Self>
   ) -> AnyValue {
-    return .dictionary(values)
+    return .dictionary(AnyValue.AnyDictionary(uniqueKeysWithValues: values))
   }
 
 }

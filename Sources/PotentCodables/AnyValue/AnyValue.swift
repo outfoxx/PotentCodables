@@ -10,6 +10,7 @@
 
 import Foundation
 import BigInt
+import OrderedCollections
 
 
 /// A `Codable` value that allows encoding/decoding values of any type or structure.
@@ -36,6 +37,9 @@ public enum AnyValue: Hashable {
     case unsupportedValue(Any)
   }
 
+  public typealias AnyArray = [AnyValue]
+  public typealias AnyDictionary = OrderedDictionary<String, AnyValue>
+
   case `nil`
   case bool(Bool)
   case string(String)
@@ -56,8 +60,8 @@ public enum AnyValue: Hashable {
   case url(URL)
   case uuid(UUID)
   case date(Date)
-  case array([AnyValue])
-  case dictionary([String: AnyValue])
+  case array(AnyArray)
+  case dictionary(AnyDictionary)
 
   /// Wraps the value into an equivalent `AnyValue` tree
   public static func wrapped(_ value: Any?) throws -> AnyValue {
@@ -92,7 +96,8 @@ public enum AnyValue: Hashable {
     case let val as UUID: return .uuid(val)
     case let val as Date: return .date(val)
     case let val as [Any]: return .array(try val.map { try wrapped($0) })
-    case let val as [String: Any]: return .dictionary(try val.mapValues { try wrapped($0) })
+    case let val as [String: Any]: return .dictionary(AnyDictionary(uniqueKeysWithValues: try val.mapValues { try wrapped($0) }))
+    case let val as OrderedDictionary<String, Any>: return .dictionary(try val.mapValues { try wrapped($0) })
     default: throw Error.unsupportedValue(value)
     }
   }
@@ -138,12 +143,12 @@ public enum AnyValue: Hashable {
     return value
   }
 
-  public var arrayValue: [AnyValue]? {
+  public var arrayValue: AnyArray? {
     guard case .array(let value) = self else { return nil }
     return value
   }
 
-  public var dictionaryValue: [String: AnyValue]? {
+  public var dictionaryValue: AnyDictionary? {
     guard case .dictionary(let value) = self else { return nil }
     return value
   }
@@ -204,7 +209,7 @@ extension AnyValue: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expres
   public typealias Value = AnyValue
 
   public init(dictionaryLiteral elements: (Key, Value)...) {
-    self = .dictionary(Dictionary(uniqueKeysWithValues: elements))
+    self = .dictionary(AnyDictionary(uniqueKeysWithValues: elements))
   }
 
 }
@@ -286,7 +291,7 @@ extension AnyValue: Decodable {
     // Try keyed container
     if let container = try? decoder.container(keyedBy: AnyCodingKey.self) {
 
-      var dictionary = [String: AnyValue]()
+      var dictionary = AnyDictionary()
       for key in container.allKeys {
         dictionary[key.stringValue] = try container.decode(AnyValue.self, forKey: key)
       }
@@ -298,7 +303,7 @@ extension AnyValue: Decodable {
     // Try unkeyed container
     if var container = try? decoder.unkeyedContainer() {
 
-      var array = [AnyValue]()
+      var array = AnyArray()
       for _ in 0 ..< (container.count ?? 0) {
         array.append(try container.decode(AnyValue.self))
       }
@@ -424,7 +429,7 @@ extension AnyValue: Decodable {
     }
 
     if let value = try? container.decode([String: AnyValue].self) {
-      self = .dictionary(value)
+      self = .dictionary(AnyDictionary(uniqueKeysWithValues: value))
       return
     }
 
