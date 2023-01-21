@@ -143,6 +143,26 @@ class JSONTests: XCTestCase {
     XCTAssertEqual(object, try JSONSerialization.json(from: #"{"c":1,"a":2,"b":3}"#))
   }
 
+  func testDescriptionOrder() throws {
+
+    let json: JSON = [
+      "c": 1,
+      "a": 2,
+      "b": 3,
+    ]
+
+    XCTAssertEqual(
+      json.description,
+      """
+      {
+        "c" : 1,
+        "a" : 2,
+        "b" : 3
+      }
+      """
+    )
+  }
+
 }
 
 

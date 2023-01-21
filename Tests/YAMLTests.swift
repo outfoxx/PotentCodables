@@ -154,6 +154,90 @@ class YAMLTests: XCTestCase {
     XCTAssertEqual(yamlText, values.stableText)
   }
 
+  func testObjectKeySerializationExplicitOrder() throws {
+
+    let yaml = try YAMLSerialization.string(from: [
+      "c": 1,
+      "a": 2,
+      "b": 3,
+    ])
+
+    XCTAssertEqual(
+      yaml,
+      """
+      ---
+      c: 1
+      a: 2
+      b: 3
+      ...
+
+      """
+    )
+  }
+
+  func testObjectKeySerializationSortedOrder() throws {
+
+    let yaml = try YAMLSerialization.string(from: [
+      "c": 1,
+      "a": 2,
+      "b": 3,
+    ], options: .sortedKeys)
+
+    XCTAssertEqual(
+      yaml,
+      """
+      ---
+      a: 2
+      b: 3
+      c: 1
+      ...
+
+      """
+    )
+  }
+
+  func testObjectKeyDeserializationOrder() throws {
+
+    let object: YAML = [
+      "c": 1,
+      "a": 2,
+      "b": 3,
+    ]
+
+    let yaml =
+      """
+      ---
+      c: 1
+      a: 2
+      b: 3
+      ...
+
+      """
+
+    XCTAssertEqual(object, try YAMLSerialization.yaml(from: yaml.data(using: .utf8)!))
+  }
+
+  func testDescriptionOrder() throws {
+
+    let yaml: YAML = [
+      "c": 1,
+      "a": 2,
+      "b": 3,
+    ]
+
+    XCTAssertEqual(
+      yaml.description,
+      """
+      ---
+      c: 1
+      a: 2
+      b: 3
+      ...
+
+      """
+    )
+  }
+
 }
 
 
