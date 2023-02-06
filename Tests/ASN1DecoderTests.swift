@@ -1080,6 +1080,32 @@ class ASN1DecoderTests: XCTestCase {
     }
   }
 
+  func testDecodeZonedDate() {
+    XCTAssertEqual(
+      try ASN1Decoder(schema: .time(kind: .generalized))
+        .decode(ZonedDate.self, from: Data([ASN1.Tag.generalizedTime.rawValue, 0x0f,
+                                       0x32, 0x30, 0x32, 0x32, 0x31, 0x32, 0x31,
+                                       0x31, 0x31, 0x30, 0x30, 0x39, 0x30, 0x38, 0x5A])),
+      ZonedDate(iso8601Encoded: "2022-12-11T10:09:08Z")!
+    )
+  }
+
+  func testDecodeInvalidZonedDate() {
+    XCTAssertThrowsError(
+      try ASN1Decoder(schema: .boolean()).decode(ZonedDate.self, from: Data([ASN1.Tag.boolean.rawValue, 0x01, 0x00]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeZonedDateFromNull() {
+    XCTAssertThrowsError(
+      try ASN1Decoder(schema: .null).decode(ZonedDate.self, from: Data([ASN1.Tag.null.rawValue, 0x00]))
+    ) { error in
+      AssertDecodingValueNotFound(error)
+    }
+  }
+
   func testDecodeBitString() {
     XCTAssertEqual(
       try ASN1Decoder(schema: .bitString())

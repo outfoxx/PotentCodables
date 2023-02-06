@@ -146,6 +146,9 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     else if interceptedType == AnyTime.self {
       return try unbox(value, as: AnyTime.self, decoder: decoder)
     }
+    else if interceptedType == ZonedDate.self {
+      return try unbox(value, as: ZonedDate.self, decoder: decoder)
+    }
     else if interceptedType == BitString.self {
       return try unbox(value, as: BitString.self, decoder: decoder)
     }
@@ -201,6 +204,18 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
   public static func unbox(_ value: ASN1, as type: AnyTime.Type, decoder: IVD) throws -> AnyTime? {
     switch try decode(value, decoder: decoder) {
     case let time as AnyTime: return time
+    case let invalid:
+      throw DecodingError.typeMismatch(
+        at: decoder.codingPath,
+        expectation: type,
+        reality: invalid as Any
+      )
+    }
+  }
+
+  public static func unbox(_ value: ASN1, as type: ZonedDate.Type, decoder: IVD) throws -> ZonedDate? {
+    switch try decode(value, decoder: decoder) {
+    case let time as AnyTime: return time.zonedDate
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
