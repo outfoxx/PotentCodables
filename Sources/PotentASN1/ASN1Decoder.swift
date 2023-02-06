@@ -97,23 +97,22 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   static func decode(_ value: ASN1, decoder: IVD) throws -> Any? {
 
-    if decoder.state == nil {
-      decoder.state = try SchemaState(initial: decoder.options.schema)
-    }
+    let state = try decoder.state ?? SchemaState(initial: decoder.options.schema)
+    decoder.state = state
 
-    let keep = zip(decoder.state.keyStack, decoder.codingPath).prefix { $0.0.stringValue == $0.1.stringValue }.count
+    let keep = zip(state.keyStack, decoder.codingPath).prefix { $0.0.stringValue == $0.1.stringValue }.count
 
-    let drop = decoder.state.count - keep
-    decoder.state.removeLast(count: drop)
+    let drop = state.count - keep
+    state.removeLast(count: drop)
 
-    for key in decoder.codingPath[decoder.state.count...] {
-      guard let container = decoder.state.container(forCodingPath: decoder.state.keyStack) else {
+    for key in decoder.codingPath[state.count...] {
+      guard let container = state.container(forCodingPath: state.keyStack) else {
         fatalError("container should already be cached")
       }
-      try decoder.state.step(into: container, key: key)
+      try state.step(into: container, key: key)
     }
 
-    return try decoder.state.decode(value)
+    return try state.decode(value)
   }
 
   public static func intercepts(_ type: Decodable.Type) -> Bool {
@@ -600,7 +599,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
       return nil
     }
 
-    decoder.state.save(container: UnkeyedContainer(backing: collection), forCodingPath: decoder.codingPath)
+    decoder.state?.save(container: UnkeyedContainer(backing: collection), forCodingPath: decoder.codingPath)
 
     return collection
   }
@@ -613,7 +612,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
       return nil
     }
 
-    decoder.state.save(container: KeyedContainer(backing: structure), forCodingPath: decoder.codingPath)
+    decoder.state?.save(container: KeyedContainer(backing: structure), forCodingPath: decoder.codingPath)
 
     return structure
   }
@@ -643,7 +642,7 @@ extension SchemaState {
     case badValue(Any, SchemaError.Context)
   }
 
-  mutating func decode(_ value: ASN1) throws -> Any? {
+  func decode(_ value: ASN1) throws -> Any? {
 
     for possibleState in currentPossibleStates {
 

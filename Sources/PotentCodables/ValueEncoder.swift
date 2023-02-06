@@ -184,7 +184,7 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
   /// Options set on the top-level encoder.
   public let options: Transform.Options
 
-  public var state: Transform.State!
+  public var state: Transform.State?
 
   /// The path to the current point in encoding.
   public fileprivate(set) var codingPath: [CodingKey]

@@ -94,20 +94,19 @@ public struct ASN1EncoderTransform: InternalEncoderTransform, InternalValueSeria
 
   static func encode(_ value: Any?, encoder: IVE) throws -> ASN1 {
 
-    if encoder.state == nil {
-      encoder.state = try SchemaState(initial: encoder.options.schema)
+    let state = try encoder.state ?? SchemaState(initial: encoder.options.schema)
+    encoder.state = state
+
+    let keep = zip(state.keyStack, encoder.codingPath).prefix { $0.0.stringValue == $0.1.stringValue }.count
+
+    let drop = state.count - keep
+    state.removeLast(count: drop)
+
+    for key in encoder.codingPath[state.count...] {
+      try state.step(into: encoder.container(depth: state.count), key: key)
     }
 
-    let keep = zip(encoder.state.keyStack, encoder.codingPath).prefix { $0.0.stringValue == $0.1.stringValue }.count
-
-    let drop = encoder.state.count - keep
-    encoder.state.removeLast(count: drop)
-
-    for key in encoder.codingPath[encoder.state.count...] {
-      try encoder.state.step(into: encoder.container(depth: encoder.state.count), key: key)
-    }
-
-    return try encoder.state.encode(value)
+    return try state.encode(value)
   }
 
   public static func intercepts(_ type: Encodable.Type) -> Bool {
@@ -230,7 +229,7 @@ extension SchemaState {
     case badValue(Any, SchemaError.Context)
   }
 
-  mutating func encode(_ value: Any?) throws -> ASN1 {
+  func encode(_ value: Any?) throws -> ASN1 {
 
     guard let encoded = try tryEncode(value) else {
       let stateOptions = currentPossibleStates.map { $0.description }.joined(separator: " or ")
@@ -240,7 +239,7 @@ extension SchemaState {
     return encoded
   }
 
-  private mutating func tryEncode(_ value: Any?) throws -> ASN1? {
+  private func tryEncode(_ value: Any?) throws -> ASN1? {
 
     for possibleState in currentPossibleStates {
 
@@ -599,7 +598,7 @@ extension SchemaState {
 
 
       case .implicit(let tag, in: let tagClass, let implicitSchema):
-        var implicitSchemaState = try SchemaState(initial: implicitSchema)
+        let implicitSchemaState = try SchemaState(initial: implicitSchema)
         let encoded: ASN1
         if let taggedValue = value as? Tagged {
           guard taggedValue.tag == tag else {
@@ -620,7 +619,7 @@ extension SchemaState {
 
 
       case .explicit(let tag, in: let tagClass, let explicitSchema):
-        var explicitSchemaState = try SchemaState(initial: explicitSchema)
+        let explicitSchemaState = try SchemaState(initial: explicitSchema)
         let encoded: ASN1
         if let taggedValue = value as? Tagged {
           guard taggedValue.tag == tag else {

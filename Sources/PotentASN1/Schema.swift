@@ -162,8 +162,7 @@ public indirect enum Schema: Equatable, Hashable {
     guard defaultValue != nil else {
       return nil
     }
-    var schemaState = try SchemaState(initial: unwrapDirectives)
-    return try schemaState.encode(nil)
+    return try SchemaState(initial: unwrapDirectives).encode(nil)
   }
 
   public var unwrapDirectives: Schema {

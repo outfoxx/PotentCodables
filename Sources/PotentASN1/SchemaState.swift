@@ -17,7 +17,7 @@ import PotentCodables
 ///
 /// - Note: For internal use only.
 ///
-public struct SchemaState {
+public class SchemaState {
 
   public enum SchemaError: Error {
 
@@ -77,7 +77,7 @@ public struct SchemaState {
   var currentKey: CodingKey { keyStack.last! }
   var currentPossibleStates: [State] { stateStack.last! }
 
-  mutating func removeLast(count: Int = 1) {
+  func removeLast(count: Int = 1) {
     stateStack.removeLast(count)
     keyStack.removeLast(count)
   }
@@ -86,7 +86,7 @@ public struct SchemaState {
     return containers[codingPath.map(\.stringValue)] ?? nil
   }
 
-  mutating func save(container: Any?, forCodingPath codingPath: [CodingKey]) {
+  func save(container: Any?, forCodingPath codingPath: [CodingKey]) {
     containers[codingPath.map(\.stringValue)] = container
   }
 
@@ -100,18 +100,18 @@ public struct SchemaState {
     return nil
   }
 
-  mutating func save(scope container: KeyedContainer, forCodingPath codingPath: [CodingKey]) {
+  func save(scope container: KeyedContainer, forCodingPath codingPath: [CodingKey]) {
     let path = codingPath.map(\.stringValue)
     guard !scopes.keys.contains(path) else { return }
 
     scopes[path] = Scope(container: container)
   }
 
-  mutating func removeScope(forCodingPath codingPath: [CodingKey]) {
+  func removeScope(forCodingPath codingPath: [CodingKey]) {
     scopes.removeValue(forKey: codingPath.map(\.stringValue))
   }
 
-  mutating func step(into container: Any?, key: CodingKey) throws {
+  func step(into container: Any?, key: CodingKey) throws {
     guard let currentPossibleStates = stateStack.last else { return }
 
     if let keyed = container as? KeyedContainer {
