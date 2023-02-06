@@ -42,7 +42,7 @@ class AnyCodingKeyTests: XCTestCase {
     let strKey = AnyCodingKey(StrKey.test)
     XCTAssertEqual(strKey.stringValue, "test")
     XCTAssertNil(strKey.intValue)
-    XCTAssertEqual(strKey.key() as StrKey, .test)
+    XCTAssertEqual(try strKey.key() as StrKey, .test)
 
     enum IntKey: Int, CodingKey {
       case test = 1
@@ -51,7 +51,7 @@ class AnyCodingKeyTests: XCTestCase {
     let intKey = AnyCodingKey(IntKey.test)
     XCTAssertEqual(intKey.stringValue, "1")
     XCTAssertEqual(intKey.intValue, 1)
-    XCTAssertEqual(intKey.key() as IntKey, .test)
+    XCTAssertEqual(try intKey.key() as IntKey, .test)
   }
 
 }

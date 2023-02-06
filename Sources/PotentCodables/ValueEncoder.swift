@@ -320,8 +320,7 @@ public class InternalValueEncoder<Value, Transform>: Encoder where Transform: In
       return try Transform.unkeyedValuesToValue(rolled, encoder: self)
     }
     else {
-      // swiftlint:disable:next force_cast
-      return value as! Value
+      return (value as? Value).unsafelyUnwrapped
     }
   }
 
@@ -417,8 +416,10 @@ private struct ValueEncodingStorage<Value, Transform> where Transform: InternalE
   }
 
   fileprivate mutating func popContainer() -> Any {
-    precondition(containers.count > 0, "Empty container stack.")
-    return containers.popLast()!
+    guard let container = containers.popLast() else {
+      fatalError("Empty container stack.")
+    }
+    return container
   }
 }
 
@@ -866,7 +867,7 @@ public extension InternalValueEncoder {
       return try Transform.box(value, interceptedType: type, encoder: self)
     }
     else if value is ValueStringDictionaryEncodableMarker {
-      return try box((value as Any) as! [String: Encodable]) // swiftlint:disable:this force_cast
+      return try box(((value as Any) as? [String: Encodable]).unsafelyUnwrapped)
     }
     return try Transform.box(value, otherType: type, encoder: self)
   }
@@ -1062,8 +1063,9 @@ public extension InternalEncoderTransform {
   }
 
   static func box(_ value: Any, otherType: Encodable.Type, encoder: IVE) throws -> Value? {
-    // swiftlint:disable:next force_cast
-    return try encoder.subEncode { subEncoder in try (value as! Encodable).encode(to: subEncoder.encoder) }
+    return try encoder.subEncode { subEncoder in
+      try ((value as? Encodable).unsafelyUnwrapped).encode(to: subEncoder.encoder)
+    }
   }
 
 }

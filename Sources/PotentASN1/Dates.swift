@@ -78,11 +78,11 @@ public struct SuffixedDateFormatter {
     else {
       parsedDate = noSuffixes.date(from: string)
     }
-    guard parsedDate != nil else {
+    guard let parsedDate = parsedDate else {
       return nil
     }
     let parsedTimeZone = TimeZone.timeZone(from: String(string[zoneStartIndex...])) ?? .current
-    return ZonedDate(date: parsedDate!, timeZone: parsedTimeZone)
+    return ZonedDate(date: parsedDate, timeZone: parsedTimeZone)
   }
 
 }

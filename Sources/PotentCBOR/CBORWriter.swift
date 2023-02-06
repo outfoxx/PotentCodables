@@ -113,7 +113,8 @@ public struct CBORWriter {
 
   /// Encodes any unsigned integer, `or`ing `modifier` with first byte
   private func encodeUInt<T>(_ val: T, modifier: UInt8) throws where T: FixedWidthInteger, T: UnsignedInteger {
-    try encodeVarUInt(UInt64(exactly: val)!, modifier: modifier)
+    guard let value = UInt64(exactly: val) else { fatalError("invalid unsigned integer") }
+    try encodeVarUInt(value, modifier: modifier)
   }
 
   /// Encodes any unsigned integer, `or`ing `modifier` with first byte

@@ -21,7 +21,7 @@
 import Foundation
 
 
-struct JSONReader {
+internal struct JSONReader {
 
   public enum Error: Swift.Error {
 
@@ -78,10 +78,10 @@ struct JSONReader {
     func takeString(_ begin: Index, end: Index) throws -> String {
       let byteLength = begin.distance(to: end)
 
-      guard let chunk = String(
-        data: Data(bytes: buffer.baseAddress!.advanced(by: begin), count: byteLength),
-        encoding: .utf8
-      ) else {
+      guard
+        let baseAddress = buffer.baseAddress,
+        let chunk = String(data: Data(bytes: baseAddress.advanced(by: begin), count: byteLength), encoding: .utf8)
+      else {
         throw Error.invalidData(.invalidString, position: distanceFromStart(begin))
       }
       return chunk
@@ -212,7 +212,10 @@ struct JSONReader {
     guard isLeadSurrogate || isTrailSurrogate else {
       // The code units that are neither lead surrogates nor trail surrogates
       // form valid unicode scalars.
-      return (String(UnicodeScalar(codeUnit)!), index)
+      guard let scalar = UnicodeScalar(codeUnit) else {
+        throw Error.invalidData(.invalidEscapeSequence, position: source.distanceFromStart(input))
+      }
+      return (String(scalar), index)
     }
 
     // Surrogates must always come in pairs.

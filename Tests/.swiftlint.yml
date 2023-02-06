@@ -6,4 +6,4 @@ disabled_rules:
 - trailing_comma
 
 file_length:
-  - 3000
+- 3000

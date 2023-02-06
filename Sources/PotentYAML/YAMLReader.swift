@@ -144,20 +144,20 @@ public enum YAMLReader {
     return result
   }
 
-  static let nullRegex = RegEx(pattern: #"^(null|Null|NULL|~)$"#)!
-  static let trueRegex = RegEx(pattern: #"^(true|True|TRUE)$"#)!
-  static let falseRegex = RegEx(pattern: #"^(false|False|FALSE)$"#)!
-  static let integerRegex = RegEx(pattern: #"^(([-+]?[0-9]+)|(0o[0-7]+)|(0x[0-9a-fA-F]+))$"#)!
-  static let floatRegex = RegEx(pattern: #"^([-+]?(\.[0-9]+|[0-9]+(\.[0-9]*)?)([eE][-+]?[0-9]+)?)$"#)!
-  static let infinityRegex = RegEx(pattern: #"^([-+]?(\.inf|\.Inf|\.INF))$"#)!
-  static let nanRegex = RegEx(pattern: #"^(\.nan|\.NaN|\.NAN)$"#)!
+  private static let nullRegex = RegEx(pattern: #"^(null|Null|NULL|~)$"#)
+  private static let trueRegex = RegEx(pattern: #"^(true|True|TRUE)$"#)
+  private static let falseRegex = RegEx(pattern: #"^(false|False|FALSE)$"#)
+  private static let integerRegex = RegEx(pattern: #"^(([-+]?[0-9]+)|(0o[0-7]+)|(0x[0-9a-fA-F]+))$"#)
+  private static let floatRegex = RegEx(pattern: #"^([-+]?(\.[0-9]+|[0-9]+(\.[0-9]*)?)([eE][-+]?[0-9]+)?)$"#)
+  private static let infinityRegex = RegEx(pattern: #"^([-+]?(\.inf|\.Inf|\.INF))$"#)
+  private static let nanRegex = RegEx(pattern: #"^(\.nan|\.NaN|\.NAN)$"#)
 
   static func scalar(value: String, style: fy_scalar_style, tag: YAML.Tag?, anchor: String?) throws -> YAML {
-    let stringStyle = YAML.StringStyle(rawValue: style.rawValue)!
+    let stringStyle = YAML.StringStyle(rawValue: style.rawValue) ?? .any
 
     switch tag {
     case .none:
-      return try untaggedScalar(value: value, stringStyle: stringStyle, style: style, tag: tag, anchor: anchor)
+      return try untaggedScalar(value: value, stringStyle: stringStyle, style: style, anchor: anchor)
 
     case .some(YAML.Tag.null):
       return .null(anchor: anchor)
@@ -181,7 +181,6 @@ public enum YAMLReader {
     value: String,
     stringStyle: YAML.StringStyle,
     style: fy_scalar_style,
-    tag: YAML.Tag?,
     anchor: String?
   ) throws -> YAML {
 
@@ -351,7 +350,7 @@ extension String {
 }
 
 
-class RegEx {
+private class RegEx {
 
   public struct Options: OptionSet {
     public let rawValue: Int32
@@ -380,12 +379,12 @@ class RegEx {
 
   private var regex = regex_t()
 
-  init?(pattern: String, options: Options = [.extended]) {
+  init(pattern: String, options: Options = [.extended]) {
     let res = pattern.withCString { patternPtr in
       regcomp(&regex, patternPtr, options.rawValue)
     }
     guard res == 0 else {
-      return nil
+      fatalError("invalid pattern")
     }
   }
 
@@ -395,7 +394,7 @@ class RegEx {
 
   func matches(string: String, options: MatchOptions = []) -> Bool {
     return string.withCString { stringPtr in
-      return regexec(&regex, stringPtr, 0, nil, options.rawValue) == 0
+      regexec(&regex, stringPtr, 0, nil, options.rawValue) == 0
     }
   }
 

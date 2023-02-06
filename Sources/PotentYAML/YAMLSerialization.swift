@@ -66,7 +66,14 @@ public enum YAMLSerialization {
   }
 
   public static func data(from yaml: YAML, options: WritingOptions = []) throws -> Data {
-    return try string(from: yaml, options: options).data(using: .utf8)!
+    guard let data = try string(from: yaml, options: options).data(using: .utf8) else {
+      throw DecodingError
+        .dataCorrupted(
+          DecodingError
+            .Context(codingPath: [], debugDescription: "String cannot be decoded as UTF-8", underlyingError: nil)
+        )
+    }
+    return data
   }
 
   public static func string(from yaml: YAML, options: WritingOptions = []) throws -> String {

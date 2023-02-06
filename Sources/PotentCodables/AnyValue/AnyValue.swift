@@ -399,8 +399,11 @@ extension AnyValue {
     case .uuid(let value): return value
     case .date(let value): return value
     case .array(let value): return Array(value.map(\.unwrapped))
-    case .dictionary(let value):
-      return Dictionary(uniqueKeysWithValues: value.compactMap {
+    case .dictionary(let value): return unwrap(dictionary: value)
+    }
+
+    func unwrap(dictionary: AnyDictionary) -> Any {
+      return Dictionary(uniqueKeysWithValues: dictionary.compactMap {
         guard let value = $1.unwrapped else {
           return nil
         }

@@ -56,7 +56,8 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
 
     /// Encode the `Date` as a custom value encoded by the given closure.
     ///
-    /// If the closure fails to encode a value into the given encoder, the encoder will encode an empty automatic container in its place.
+    /// If the closure fails to encode a value into the given encoder, the encoder
+    ///  will encode an empty automatic container in its place.
     case custom((Date, Encoder) throws -> Void)
   }
 
@@ -71,7 +72,8 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
 
     /// Encode the `Data` as a custom value encoded by the given closure.
     ///
-    /// If the closure fails to encode a value into the given encoder, the encoder will encode an empty automatic container in its place.
+    /// If the closure fails to encode a value into the given encoder, the encoder
+    ///  will encode an empty automatic container in its place.
     case custom((Data, Encoder) throws -> Void)
   }
 
@@ -120,16 +122,20 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
+  static let interceptedTypes: [Any.Type] = [
+    Date.self, NSDate.self,
+    Data.self, NSData.self,
+    URL.self, NSURL.self,
+    UUID.self, NSUUID.self,
+    Float16.self,
+    Decimal.self, NSDecimalNumber.self,
+    BigInt.self,
+    BigUInt.self,
+    AnyValue.self,
+  ]
+
   public static func intercepts(_ type: Encodable.Type) -> Bool {
-    return type == Date.self || type == NSDate.self
-        || type == Data.self || type == NSData.self
-        || type == URL.self || type == NSURL.self
-        || type == UUID.self || type == NSUUID.self
-        || type == Float16.self
-        || type == Decimal.self || type == NSDecimalNumber.self
-        || type == BigInt.self
-        || type == BigUInt.self
-        || type == AnyValue.self
+    return interceptedTypes.contains { $0 == type }
   }
 
   public static func box(_ value: Any, interceptedType: Encodable.Type, encoder: IVE) throws -> YAML {

@@ -97,7 +97,7 @@ open class ValueDecoder<Value, Transform> where Transform: InternalDecoderTransf
   /// The options set on the top-level decoder.
   open var options: Transform.Options { fatalError() }
 
-  open var state: Transform.State!
+  open var state: Transform.State?
 
   // MARK: - Decoding Values
 
@@ -243,10 +243,12 @@ extension ValueDecoder where Transform: InternalValueParser {
 
 // MARK: - InternalValueDecoder
 
-/// `InternalValueDocoder` is the `Decoder` implementation that is passed to `Decodable` objects to allow them to perform decoding
+/// `InternalValueDocoder` is the `Decoder` implementation that is passed
+/// to `Decodable` objects to allow them to perform decoding
 ///
-/// Although the type represents an implementation of the public API for `Decodable` it can also be used by implementations of
-/// `InternalDecoderTransform` as the instance is also passed to all members of the transform.
+/// Although the type represents an implementation of the public API for
+/// `Decodable` it can also be used by implementations of `InternalDecoderTransform`
+///  as the instance is also passed to all members of the transform.
 public class InternalValueDecoder<Value, Transform>: Decoder where Transform: InternalDecoderTransform,
   Value == Transform.Value {
 
@@ -350,8 +352,10 @@ private struct ValueDecodingStorage<Value> where Value: PotentCodables.Value {
   }
 
   fileprivate var topContainer: Value {
-    precondition(containers.count > 0, "Empty container stack.")
-    return containers.last!
+    guard let container = containers.last else {
+      fatalError("Empty container stack.")
+    }
+    return container
   }
 
   fileprivate mutating func push(container: Value) {
@@ -385,12 +389,17 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
   // MARK: - Initialization
 
   /// Initializes `self` by referencing the given decoder and container.
-  fileprivate init(referencing decoder: InternalValueDecoder, wrapping container: OrderedDictionary<String, Value>) throws {
+  fileprivate init(
+    referencing decoder: InternalValueDecoder,
+    wrapping container: OrderedDictionary<String, Value>
+  ) throws {
     self.decoder = decoder
     switch decoder.options.keyDecodingStrategy {
     case .convertFromSnakeCase:
       // Convert the snake case keys in the container to camel case.
-      // If we hit a duplicate key after conversion, then we'll use the first one we saw. Effectively an undefined behavior with dictionaries.
+      // If we hit a duplicate key after conversion, then we'll use
+      // the first one we saw. Effectively an undefined behavior with
+      // dictionaries.
       self.container = try OrderedDictionary(
         container.map {
           (KeyDecodingStrategy.convertFromSnakeCase($0.key), $0.value)
@@ -497,11 +506,12 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
     defer { self.decoder.codingPath.removeLast() }
 
     guard let value = self.container[key.stringValue] else {
+      let container = KeyedDecodingContainer<NestedKey>.self
       throw DecodingError.keyNotFound(
         key,
         DecodingError.Context(
           codingPath: codingPath,
-          debugDescription: "Cannot get \(KeyedDecodingContainer<NestedKey>.self) -- no value found for key \(errorDescription(of: key))"
+          debugDescription: "Cannot get \(container) -- no value found for key \(errorDescription(of: key))"
         )
       )
     }
@@ -592,7 +602,7 @@ private struct ValueUnkeyedDecodingContainer<Value, Transform>: UnkeyedDecodingC
   }
 
   public var isAtEnd: Bool {
-    return currentIndex >= count!
+    return currentIndex >= container.count
   }
 
   public mutating func decodeNil() throws -> Bool {

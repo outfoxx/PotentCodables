@@ -109,21 +109,25 @@ public struct ASN1EncoderTransform: InternalEncoderTransform, InternalValueSeria
     return try state.encode(value)
   }
 
+  static let interceptedTypes: [Any.Type] = [
+    AnyString.self,
+    AnyTime.self,
+    ZonedDate.self,
+    BitString.self,
+    ObjectIdentifier.self,
+    ASN1.Integer.self,
+    Date.self, NSDate.self,
+    Data.self, NSData.self,
+    URL.self, NSURL.self,
+    UUID.self, NSUUID.self,
+    Decimal.self, NSDecimalNumber.self,
+    BigInt.self,
+    BigUInt.self,
+    AnyValue.self,
+  ]
+
   public static func intercepts(_ type: Encodable.Type) -> Bool {
-    if type as? Tagged.Type != nil {
-      return true
-    }
-    return type == ASN1.self
-        || type == AnyString.self || type == AnyTime.self || type == ZonedDate.self
-        || type == BitString.self || type == ObjectIdentifier.self || type == ASN1.Integer.self
-        || type == Date.self || type == NSDate.self
-        || type == Data.self || type == NSData.self
-        || type == URL.self || type == NSURL.self
-        || type == UUID.self || type == NSUUID.self
-        || type == Decimal.self || type == NSDecimalNumber.self
-        || type == BigInt.self
-        || type == BigUInt.self
-        || type == AnyValue.self
+    return interceptedTypes.contains { $0 == type } || type is Tagged.Type
   }
 
   public static func box(_ value: Any, interceptedType: Encodable.Type, encoder: IVE) throws -> ASN1 {

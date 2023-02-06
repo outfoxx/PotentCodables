@@ -107,16 +107,20 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
+  static let interceptedTypes: [Any.Type] = [
+    Date.self, NSDate.self,
+    Data.self, NSData.self,
+    URL.self, NSURL.self,
+    UUID.self, NSUUID.self,
+    Float16.self,
+    Decimal.self, NSDecimalNumber.self,
+    BigInt.self,
+    BigUInt.self,
+    AnyValue.self,
+  ]
+
   public static func intercepts(_ type: Decodable.Type) -> Bool {
-    return type == Date.self || type == NSDate.self
-        || type == Data.self || type == NSData.self
-        || type == URL.self || type == NSURL.self
-        || type == UUID.self || type == NSUUID.self
-        || type == Float16.self
-        || type == Decimal.self || type == NSDecimalNumber.self
-        || type == BigInt.self
-        || type == BigUInt.self
-        || type == AnyValue.self
+    return interceptedTypes.contains { $0 == type }
   }
 
   public static func unbox(_ value: JSON, interceptedType: Decodable.Type, decoder: IVD) throws -> Any? {
@@ -397,15 +401,25 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return try decoder.subDecode(with: value) { try Date(from: $0) }
 
     case .secondsSince1970:
-      let double = try unbox(value, as: Double.self, decoder: decoder)!
-      return Date(timeIntervalSince1970: double)
+      return try unbox(value, as: Double.self, decoder: decoder).map { Date(timeIntervalSince1970: $0) }
 
     case .millisecondsSince1970:
-      let double = try unbox(value, as: Double.self, decoder: decoder)!
-      return Date(timeIntervalSince1970: double / 1000.0)
+      return try unbox(value, as: Double.self, decoder: decoder).map { Date(timeIntervalSince1970: $0 / 1000.0) }
 
     case .iso8601:
-      let string = try unbox(value, as: String.self, decoder: decoder)!
+      return try decodeISO8601(from: value)
+
+    case .formatted(let formatter):
+      return try decodeFormatted(from: value, formatter: formatter)
+
+    case .custom(let closure):
+      return try decoder.subDecode(with: value) { try closure($0) }
+    }
+
+    func decodeISO8601(from value: JSON) throws -> Date? {
+      guard let string = try unbox(value, as: String.self, decoder: decoder) else {
+        return nil
+      }
       guard let zonedDate = ZonedDate(iso8601Encoded: string) else {
         throw DecodingError.dataCorrupted(.init(
           codingPath: decoder.codingPath,
@@ -413,9 +427,12 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
         ))
       }
       return zonedDate.utcDate
+    }
 
-    case .formatted(let formatter):
-      let string = try unbox(value, as: String.self, decoder: decoder)!
+    func decodeFormatted(from value: JSON, formatter: DateFormatter) throws -> Date? {
+      guard let string = try unbox(value, as: String.self, decoder: decoder) else {
+        return nil
+      }
       guard let date = formatter.date(from: string) else {
         throw DecodingError.dataCorrupted(.init(
           codingPath: decoder.codingPath,
@@ -423,9 +440,6 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
         ))
       }
       return date
-
-    case .custom(let closure):
-      return try decoder.subDecode(with: value) { try closure($0) }
     }
   }
 
@@ -437,6 +451,13 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return try decoder.subDecode(with: value) { try Data(from: $0) }
 
     case .base64:
+      return try decodeBase64(from: value)
+
+    case .custom(let closure):
+      return try decoder.subDecode(with: value) { try closure($0) }
+    }
+
+    func decodeBase64(from value: JSON) throws -> Data {
       guard case .string(let string) = value else {
         throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
       }
@@ -449,18 +470,28 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       }
 
       return data
-
-    case .custom(let closure):
-      return try decoder.subDecode(with: value) { try closure($0) }
     }
   }
 
   public static func unbox(_ value: JSON, as type: AnyValue.Type, decoder: IVD) throws -> AnyValue {
     switch value {
-    case .null: return .nil
-    case .bool(let value): return .bool(value)
-    case .string(let value): return .string(value)
+    case .null:
+      return .nil
+    case .bool(let value):
+      return .bool(value)
+    case .string(let value):
+      return .string(value)
     case .number(let value):
+      return decode(from: value)
+    case .array(let value):
+      return .array(try value.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
+    case .object(let value):
+      return .dictionary(AnyValue.AnyDictionary(uniqueKeysWithValues: try value.map { key, value in
+        (.string(key), try unbox(value, as: AnyValue.self, decoder: decoder))
+      }))
+    }
+
+    func decode(from value: JSON.Number) -> AnyValue {
       switch value.numberValue {
       case .none: return .nil
       case let int as Int:
@@ -478,12 +509,6 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       default:
         fatalError("numberValue returned unsupported value")
       }
-    case .array(let value):
-      return .array(try value.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
-    case .object(let value):
-      return .dictionary(AnyValue.AnyDictionary(uniqueKeysWithValues: try value.map { key, value in
-        (.string(key), try unbox(value, as: AnyValue.self, decoder: decoder))
-      }))
     }
   }
 
@@ -521,6 +546,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
 extension JSONDecoderTransform.Options {
 
+  // swiftlint:disable:next identifier_name
   var nonConformingFloatDecodingStrategyStrings: (posInf: String, negInf: String, nan: String)? {
     if case .convertFromString(positiveInfinity: let posInfStr, negativeInfinity: let negInfStr, nan: let nanStr)
         = nonConformingFloatDecodingStrategy {

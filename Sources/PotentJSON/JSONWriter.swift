@@ -20,7 +20,7 @@
 import Foundation
 
 
-struct JSONWriter {
+internal struct JSONWriter {
 
   enum Error: Swift.Error {
     case invalidNumber(Double)
@@ -32,7 +32,12 @@ struct JSONWriter {
   private let sortedKeys: Bool
   private let writer: (String) -> Void
 
-  init(escapeSlashes: Bool = false, pretty: Bool = false, sortedKeys: Bool = false, writer: @escaping (String) -> Void) {
+  init(
+    escapeSlashes: Bool = false,
+    pretty: Bool = false,
+    sortedKeys: Bool = false,
+    writer: @escaping (String) -> Void
+  ) {
     self.esccapeSlashes = escapeSlashes
     self.pretty = pretty
     self.sortedKeys = sortedKeys

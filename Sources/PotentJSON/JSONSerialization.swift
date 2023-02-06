@@ -75,7 +75,14 @@ public enum JSONSerialization {
   }
 
   public static func data(from json: JSON, options: WritingOptions = []) throws -> Data {
-    return try string(from: json, options: options).data(using: .utf8)!
+    guard let data = try string(from: json, options: options).data(using: .utf8) else {
+      throw DecodingError
+        .dataCorrupted(
+          DecodingError
+            .Context(codingPath: [], debugDescription: "String cannot be decoded as UTF-8", underlyingError: nil)
+        )
+    }
+    return data
   }
 
   public static func string(from json: JSON, options: WritingOptions = []) throws -> String {

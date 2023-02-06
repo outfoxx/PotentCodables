@@ -67,16 +67,20 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
+  static let interceptedTypes: [Any.Type] = [
+    CBOR.Half.self,
+    Date.self, NSDate.self,
+    Data.self, NSData.self,
+    URL.self, NSURL.self,
+    UUID.self, NSUUID.self,
+    Decimal.self, NSDecimalNumber.self,
+    BigInt.self,
+    BigUInt.self,
+    AnyValue.self,
+  ]
+
   public static func intercepts(_ type: Encodable.Type) -> Bool {
-    return type == CBOR.Half.self
-        || type == Date.self || type == NSDate.self
-        || type == Data.self || type == NSData.self
-        || type == URL.self || type == NSURL.self
-        || type == UUID.self || type == NSUUID.self
-        || type == Decimal.self || type == NSDecimalNumber.self
-        || type == BigInt.self
-        || type == BigUInt.self
-        || type == AnyValue.self
+    return interceptedTypes.contains { $0 == type }
   }
 
   public static func box(_ value: Any, interceptedType: Encodable.Type, encoder: IVE) throws -> CBOR {
@@ -146,7 +150,10 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
     let exp: CBOR = value.exponent < 0
       ? .negativeInt(UInt64(bitPattern: ~Int64(value.exponent)))
       : .unsignedInt(UInt64(value.exponent))
-    let sig = BigInt(value.significand.description)!
+    guard let sig = BigInt(value.significand.description) else {
+      throw EncodingError.invalidValue(value, .init(codingPath: encoder.codingPath,
+                                                    debugDescription: "Significand cannot be represented as integer"))
+    }
     let man: CBOR = value.sign == .plus
       ? .tagged(.positiveBignum, .byteString(sig.magnitude.serialize()))
       : .tagged(.negativeBignum, .byteString((sig.magnitude - 1).serialize()))
@@ -222,6 +229,10 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
     case .array(let value):
       return .array(.init(try value.map { try box($0, encoder: encoder) }))
     case .dictionary(let value):
+      return try encode(value)
+    }
+
+    func encode(_ value: AnyValue.AnyDictionary) throws -> CBOR {
       return .map(.init(uniqueKeysWithValues: try value.map { key, value in
         let key = try box(key, encoder: encoder)
         let value = try box(value, encoder: encoder)

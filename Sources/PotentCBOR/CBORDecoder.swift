@@ -69,16 +69,20 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
+  static let interceptedTypes: [Any.Type] = [
+    CBOR.Half.self,
+    Date.self, NSDate.self,
+    Data.self, NSData.self,
+    URL.self, NSURL.self,
+    UUID.self, NSUUID.self,
+    Decimal.self, NSDecimalNumber.self,
+    BigInt.self,
+    BigUInt.self,
+    AnyValue.self,
+  ]
+
   public static func intercepts(_ type: Decodable.Type) -> Bool {
-    return type == CBOR.Half.self
-        || type == Date.self || type == NSDate.self
-        || type == Data.self || type == NSData.self
-        || type == URL.self || type == NSURL.self
-        || type == UUID.self || type == NSUUID.self
-        || type == Decimal.self || type == NSDecimalNumber.self
-        || type == BigInt.self
-        || type == BigUInt.self
-        || type == AnyValue.self
+    return interceptedTypes.contains { $0 == type }
   }
 
   public static func unbox(_ value: CBOR, interceptedType: Decodable.Type, decoder: IVD) throws -> Any? {
@@ -187,6 +191,15 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .double(let dbl):
       return try coerce(dbl, at: decoder.codingPath)
     case .tagged(.decimalFraction, .array(let items)) where items.count == 2:
+      return try decode(fromDecimalFraction: items)
+    case .tagged(_, let untagged):
+      return try unbox(untagged, type: type, decoder: decoder)
+    case .null: return nil
+    default:
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    }
+
+    func decode(fromDecimalFraction items: [CBOR]) throws -> T {
       guard
         let exp = try? unbox(items[0], type: Int.self, decoder: decoder),
         let man = try? unbox(items[1], type: BigInt.self, decoder: decoder)
@@ -201,11 +214,6 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
         throw overflow(type, value: value, at: decoder.codingPath)
       }
       return result
-    case .tagged(_, let untagged):
-      return try unbox(untagged, type: type, decoder: decoder)
-    case .null: return nil
-    default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
     }
   }
 
@@ -234,6 +242,15 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .double(let dbl):
       return Decimal(dbl)
     case .tagged(.decimalFraction, .array(let items)) where items.count == 2:
+      return try decode(fromDecimalFraction: items)
+    case .tagged(_, let untagged):
+      return try unbox(untagged, type: type, decoder: decoder)
+    case .null: return nil
+    default:
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    }
+
+    func decode(fromDecimalFraction items: [CBOR]) throws -> Decimal {
       guard
         let exp = try? unbox(items[0], type: Int.self, decoder: decoder),
         let man = try? unbox(items[1], type: BigInt.self, decoder: decoder)
@@ -245,11 +262,6 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
         throw overflow(Decimal.self, value: value, at: decoder.codingPath)
       }
       return Decimal(sign: man.sign == .plus ? .plus : .minus, exponent: exp, significand: sig)
-    case .tagged(_, let untagged):
-      return try unbox(untagged, type: type, decoder: decoder)
-    case .null: return nil
-    default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
     }
   }
 
@@ -321,12 +333,24 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
   public static func unbox(_ value: CBOR, as type: UUID.Type, decoder: IVD) throws -> UUID? {
     switch value {
     case .utf8String(let string), .tagged(.uuid, .utf8String(let string)):
+      return try decode(from: string)
+    case .byteString(let data), .tagged(.uuid, .byteString(let data)):
+      return try decode(from: data)
+    case .tagged(_, let tagged): return try unbox(tagged, as: type, decoder: decoder)
+    case .null: return nil
+    default:
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    }
+
+    func decode(from string: String) throws -> UUID {
       guard let result = UUID(uuidString: string) else {
         throw DecodingError.typeMismatch(type, .init(codingPath: decoder.codingPath,
                                                      debugDescription: "Expected properly formatted UUID string"))
       }
       return result
-    case .byteString(let data), .tagged(.uuid, .byteString(let data)):
+    }
+
+    func decode(from data: Data) throws -> UUID {
       guard data.count == MemoryLayout<uuid_t>.size else {
         throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
       }
@@ -335,10 +359,6 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
         _ = data.copyBytes(to: ptr)
       }
       return UUID(uuid: uuid)
-    case .tagged(_, let tagged): return try unbox(tagged, as: type, decoder: decoder)
-    case .null: return nil
-    default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
     }
   }
 
@@ -358,7 +378,35 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: CBOR, as type: Date.Type, decoder: IVD) throws -> Date? {
 
-    func decodeUntaggedNumericDate(from value: TimeInterval, unitsPerSeconds: Double) -> Date {
+    switch value {
+    case .utf8String(let string), .tagged(.iso8601DateTime, .utf8String(let string)):
+      return try decode(from: string)
+    case .tagged(.epochDateTime, let number):
+      return try unbox(number, type: TimeInterval.self, decoder: decoder).map { Date(timeIntervalSince1970: $0) }
+    case .unsignedInt, .negativeInt, .simple, .tagged(.positiveBignum, _), .tagged(.negativeBignum, _):
+      return try unbox(value, type: Int64.self, decoder: decoder).map {
+        decode(fromUntaggedNumericDate: TimeInterval($0), unitsPerSeconds: 1000.0)
+      }
+    case .double, .float, .half, .tagged(.decimalFraction, _):
+      return try unbox(value, type: TimeInterval.self, decoder: decoder).map {
+        decode(fromUntaggedNumericDate: $0, unitsPerSeconds: 1.0)
+      }
+    case .tagged(_, let tagged):
+      return try unbox(tagged, as: type, decoder: decoder)
+    case .null: return nil
+    default:
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    }
+
+    func decode(from string: String) throws -> Date {
+      guard let date = ZonedDate(iso8601Encoded: string) else {
+        throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
+                                                debugDescription: "Expected date string to be ISO8601-formatted."))
+      }
+      return date.utcDate
+    }
+
+    func decode(fromUntaggedNumericDate value: TimeInterval, unitsPerSeconds: Double) -> Date {
       switch decoder.options.untaggedDateDecodingStrategy {
       case .unitsSince1970:
         return Date(timeIntervalSince1970: value / unitsPerSeconds)
@@ -367,30 +415,6 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       case .secondsSince1970:
         return Date(timeIntervalSince1970: value)
       }
-    }
-
-    switch value {
-    case .utf8String(let string), .tagged(.iso8601DateTime, .utf8String(let string)):
-      guard let date = ZonedDate(iso8601Encoded: string) else {
-        throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
-                                                debugDescription: "Expected date string to be ISO8601-formatted."))
-      }
-      return date.utcDate
-    case .tagged(.epochDateTime, let number):
-      return try unbox(number, type: TimeInterval.self, decoder: decoder).map { Date(timeIntervalSince1970: $0) }
-    case .unsignedInt, .negativeInt, .simple, .tagged(.positiveBignum, _), .tagged(.negativeBignum, _):
-      return try unbox(value, type: Int64.self, decoder: decoder).map {
-        decodeUntaggedNumericDate(from: TimeInterval($0), unitsPerSeconds: 1000.0)
-      }
-    case .double, .float, .half, .tagged(.decimalFraction, _):
-      return try unbox(value, type: TimeInterval.self, decoder: decoder).map {
-        decodeUntaggedNumericDate(from: $0, unitsPerSeconds: 1.0)
-      }
-    case .tagged(_, let tagged):
-      return try unbox(tagged, as: type, decoder: decoder)
-    case .null: return nil
-    default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
     }
   }
 
@@ -472,11 +496,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .array(let value):
       return .array(try value.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
     case .map(let value):
-      return .dictionary(.init(uniqueKeysWithValues: try value.map { key, value in
-        let key = try unbox(key, as: AnyValue.self, decoder: decoder)
-        let value = try unbox(value, as: AnyValue.self, decoder: decoder)
-        return (key, value)
-      }))
+      return try dictionary(from: value)
     case .tagged(.positiveBignum, _), .tagged(.negativeBignum, _):
       guard let int = try unbox(value, as: BigInt.self, decoder: decoder) else {
         throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: BigInt.self, reality: value)
@@ -500,6 +520,14 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return try unbox(value, as: Data.self, decoder: decoder).map { .data($0) } ?? .nil
     case .tagged(_, let untagged):
       return try unbox(untagged, as: AnyValue.self, decoder: decoder)
+    }
+
+    func dictionary(from value: CBOR.Map) throws -> AnyValue {
+      return .dictionary(.init(uniqueKeysWithValues: try value.map { key, value in
+        let key = try unbox(key, as: AnyValue.self, decoder: decoder)
+        let value = try unbox(value, as: AnyValue.self, decoder: decoder)
+        return (key, value)
+      }))
     }
   }
 

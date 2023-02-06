@@ -45,16 +45,20 @@ public struct AnyValueDecoderTransform: InternalDecoderTransform {
     return .nil
   }
 
+  static let interceptedTypes: [Any.Type] = [
+    Date.self, NSDate.self,
+    Data.self, NSData.self,
+    URL.self, NSURL.self,
+    UUID.self, NSUUID.self,
+    Float16.self,
+    Decimal.self, NSDecimalNumber.self,
+    BigInt.self,
+    BigUInt.self,
+    AnyValue.self,
+  ]
+
   public static func intercepts(_ type: Decodable.Type) -> Bool {
-    return type == Date.self || type == NSDate.self
-        || type == Data.self || type == NSData.self
-        || type == URL.self || type == NSURL.self
-        || type == UUID.self || type == NSUUID.self
-        || type == Float16.self
-        || type == Decimal.self || type == NSDecimalNumber.self
-        || type == BigInt.self
-        || type == BigUInt.self
-        || type is DictionaryAdapter.Type
+    return interceptedTypes.contains { $0 == type } || type is DictionaryAdapter.Type
   }
 
   public static func unbox(_ value: AnyValue, interceptedType: Decodable.Type, decoder: IVD) throws -> Any? {
@@ -95,13 +99,15 @@ public struct AnyValueDecoderTransform: InternalDecoderTransform {
       guard let key = try decoder.unbox(value: key, as: type.keyType) else {
         throw DecodingError.typeMismatch(
           type.keyType,
-          .init(codingPath: decoder.codingPath, debugDescription: "Expected to decode key of type'\(type.keyType)' but got nil instead")
+          .init(codingPath: decoder.codingPath,
+                debugDescription: "Expected to decode key of type'\(type.keyType)' but got nil instead")
         )
       }
       guard let value = try decoder.unbox(value: value, as: type.valueType) else {
         throw DecodingError.typeMismatch(
           type.valueType,
-          .init(codingPath: decoder.codingPath, debugDescription: "Expected to decode value of type'\(type.keyType)' but got nil instead")
+          .init(codingPath: decoder.codingPath,
+                debugDescription: "Expected to decode value of type'\(type.keyType)' but got nil instead")
         )
       }
       result = type.assign(value: value, forKey: key, to: result)
@@ -117,9 +123,9 @@ public struct AnyValueDecoderTransform: InternalDecoderTransform {
   public static func unbox(_ value: AnyValue, as type: Int.Type, decoder: IVD) throws -> Int? {
     switch MemoryLayout<Int>.size {
     case 4:
-      return try unbox(value, as: Int32.self, decoder: decoder).flatMap { Int(exactly: $0)! }
+      return try unbox(value, as: Int32.self, decoder: decoder).flatMap { Int(exactly: $0) }
     case 8:
-      return try unbox(value, as: Int64.self, decoder: decoder).flatMap { Int(exactly: $0)! }
+      return try unbox(value, as: Int64.self, decoder: decoder).flatMap { Int(exactly: $0) }
     default:
       fatalError("unknown memory layout")
     }
@@ -128,9 +134,9 @@ public struct AnyValueDecoderTransform: InternalDecoderTransform {
   public static func unbox(_ value: AnyValue, as type: UInt.Type, decoder: IVD) throws -> UInt? {
     switch MemoryLayout<UInt>.size {
     case 4:
-      return try unbox(value, as: UInt32.self, decoder: decoder).flatMap { UInt(exactly: $0)! }
+      return try unbox(value, as: UInt32.self, decoder: decoder).flatMap { UInt(exactly: $0) }
     case 8:
-      return try unbox(value, as: UInt64.self, decoder: decoder).flatMap { UInt(exactly: $0)! }
+      return try unbox(value, as: UInt64.self, decoder: decoder).flatMap { UInt(exactly: $0) }
     default:
       fatalError("unknown memory layout")
     }
@@ -289,9 +295,9 @@ extension Dictionary: DictionaryAdapter where Key: Decodable, Value: Decodable {
   static var valueType: Decodable.Type { Value.self }
   static func empty() -> Any { return Dictionary() }
   static func assign(value: Any, forKey key: Any, to dict: Any) -> Any {
-    var dict = dict as! Self // swiftlint:disable:this force_cast
-    let key = key as! Key // swiftlint:disable:this force_cast
-    let value = value as! Value // swiftlint:disable:this force_cast
+    var dict = (dict as? Self).unsafelyUnwrapped
+    let key = (key as? Key).unsafelyUnwrapped
+    let value = (value as? Value).unsafelyUnwrapped
     dict[key] = value
     return dict
   }
@@ -302,9 +308,9 @@ extension OrderedDictionary: DictionaryAdapter where Key: Decodable, Value: Deco
   static var valueType: Decodable.Type { Value.self }
   static func empty() -> Any { return OrderedDictionary() }
   static func assign(value: Any, forKey key: Any, to dict: Any) -> Any {
-    var dict = dict as! Self // swiftlint:disable:this force_cast
-    let key = key as! Key // swiftlint:disable:this force_cast
-    let value = value as! Value // swiftlint:disable:this force_cast
+    var dict = (dict as? Self).unsafelyUnwrapped
+    let key = (key as? Key).unsafelyUnwrapped
+    let value = (value as? Value).unsafelyUnwrapped
     dict[key] = value
     return dict
   }

@@ -60,7 +60,8 @@ public indirect enum ASN1 {
     case characterString = 29
     case bmpString = 30
 
-    /// Creates an ASN.1 tag from the tag code (``ASN1/AnyTag-swift.typealias``), ``Class``, and if the tag is constructed.
+    /// Creates an ASN.1 tag from the tag code (``ASN1/AnyTag-swift.typealias``), ``Class``,
+    /// and if the tag is constructed.
     public static func tag(from value: UInt8, in tagClass: Class, constructed: Bool) -> AnyTag {
       return (value & ~0xE0) | tagClass.rawValue | (constructed ? 0x20 : 0x00)
     }
@@ -335,10 +336,13 @@ public indirect enum ASN1 {
   /// Tag code for this ASN.1 value.
   ///
   public var anyTag: AnyTag {
-    guard case .tagged(let tag, _) = self else {
-      return knownTag!.universal
+    if let universal = knownTag?.universal {
+      return universal
     }
-    return tag
+    if case .tagged(let tag, _) = self {
+      return tag
+    }
+    fatalError()
   }
 
   /// Name of the tag for this value in ASN.1 notation.
@@ -533,14 +537,12 @@ extension ASN1: Decodable {
       self = .ia5String(try container.decode(String.self))
     case .utcTime:
       guard let time = ZonedDate(iso8601Encoded: try container.decode(String.self)) else {
-        throw DecodingError.dataCorruptedError(in: container,
-                                               debugDescription: "Invalid ISO8601 formatted date")
+        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid ISO8601 formatted date")
       }
       self = .utcTime(time)
     case .generalizedTime:
       guard let time = ZonedDate(iso8601Encoded: try container.decode(String.self)) else {
-        throw DecodingError.dataCorruptedError(in: container,
-                                               debugDescription: "Invalid ISO8601 formatted date")
+        throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid ISO8601 formatted date")
       }
       self = .generalizedTime(time)
     case .graphicString:
@@ -640,16 +642,25 @@ extension ASN1: Encodable {
       try container.encode(anyTag)
       try container.encode(value)
     case .tagged(let tagValue, let data):
-      if let tag = Tag(rawValue: tagValue) {
-        let value = try ASN1DERReader.parseItem(data, as: tag.rawValue)
-        try value.encode(to: encoder)
-      }
-      else {
-        try container.encode(tagValue)
-        try container.encode(data)
-      }
+      try encodeTagged(tagValue: tagValue, data: data, encoder: encoder, container: &container)
     case .default:
       break
+    }
+  }
+
+  private func encodeTagged(
+    tagValue: AnyTag,
+    data: Data,
+    encoder: Swift.Encoder,
+    container: inout UnkeyedEncodingContainer
+  ) throws {
+    if let tag = Tag(rawValue: tagValue) {
+      let value = try ASN1DERReader.parseItem(data, as: tag.rawValue)
+      try value.encode(to: encoder)
+    }
+    else {
+      try container.encode(tagValue)
+      try container.encode(data)
     }
   }
 

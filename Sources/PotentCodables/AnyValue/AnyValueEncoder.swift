@@ -49,16 +49,20 @@ public struct AnyValueEncoderTransform: InternalEncoderTransform {
     return .array([])
   }
 
+  static let interceptedTypes: [Any.Type] = [
+    Date.self, NSDate.self,
+    Data.self, NSData.self,
+    URL.self, NSURL.self,
+    UUID.self, NSUUID.self,
+    Float16.self,
+    Decimal.self, NSDecimalNumber.self,
+    BigInt.self,
+    BigUInt.self,
+    AnyValue.self,
+  ]
+
   public static func intercepts(_ type: Encodable.Type) -> Bool {
-    return type == Date.self || type == NSDate.self
-        || type == Data.self || type == NSData.self
-        || type == URL.self || type == NSURL.self
-        || type == UUID.self || type == NSUUID.self
-        || type == Float16.self
-        || type == Decimal.self || type == NSDecimalNumber.self
-        || type == BigInt.self
-        || type == BigUInt.self
-        || type is DictionaryAdapter.Type
+    return interceptedTypes.contains { $0 == type } || type is DictionaryAdapter.Type
   }
 
   public static func box(_ value: Any, interceptedType: Encodable.Type, encoder: IVE) throws -> AnyValue {
@@ -98,13 +102,15 @@ public struct AnyValueEncoderTransform: InternalEncoderTransform {
       guard let boxedKey = try encoder.box(value: key) else {
         throw EncodingError.invalidValue(
           key,
-          .init(codingPath: encoder.codingPath, debugDescription: "Expected to encode key '\(key)' but got nil instead")
+          .init(codingPath: encoder.codingPath,
+                debugDescription: "Expected to encode key '\(key)' but got nil instead")
         )
       }
       guard let boxedValue = try encoder.box(value: value) else {
         throw EncodingError.invalidValue(
           key,
-          .init(codingPath: encoder.codingPath, debugDescription: "Expected to encode value '\(value)' but got nil instead")
+          .init(codingPath: encoder.codingPath,
+                debugDescription: "Expected to encode value '\(value)' but got nil instead")
         )
       }
       dict[boxedKey] = boxedValue

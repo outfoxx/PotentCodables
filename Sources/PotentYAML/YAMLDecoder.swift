@@ -102,16 +102,20 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
+  static let interceptedTypes: [Any.Type] = [
+    Date.self, NSDate.self,
+    Data.self, NSData.self,
+    URL.self, NSURL.self,
+    UUID.self, NSUUID.self,
+    Float16.self,
+    Decimal.self, NSDecimalNumber.self,
+    BigInt.self,
+    BigUInt.self,
+    AnyValue.self,
+  ]
+
   public static func intercepts(_ type: Decodable.Type) -> Bool {
-    return type == Date.self || type == NSDate.self
-        || type == Data.self || type == NSData.self
-        || type == URL.self || type == NSURL.self
-        || type == UUID.self || type == NSUUID.self
-        || type == Float16.self
-        || type == Decimal.self || type == NSDecimalNumber.self
-        || type == BigInt.self
-        || type == BigUInt.self
-        || type == AnyValue.self
+    return interceptedTypes.contains { $0 == type }
   }
 
   public static func unbox(_ value: YAML, interceptedType: Decodable.Type, decoder: IVD) throws -> Any? {
@@ -174,6 +178,19 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
       throw overflow(T.self, value: from, at: codingPath)
     }
     return result
+  }
+
+  static func decode<T>(_ from: YAML.Number, at codingPath: [CodingKey]) throws -> T?
+  where T: BinaryFloatingPoint & LosslessStringConvertible {
+    if from.isNaN {
+      return T.nan
+    }
+    else if from.isInfinity {
+      return from.isNegative ? -T.infinity : +T.infinity
+    }
+    else {
+      return try coerce(from, at: codingPath)
+    }
   }
 
   public static func unbox(_ value: YAML, as type: Int.Type, decoder: IVD) throws -> Int? {
@@ -291,16 +308,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
   public static func unbox(_ value: YAML, as type: Float16.Type, decoder: IVD) throws -> Float16? {
     switch value {
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
-    case .float(let number, _):
-      if number.isNaN {
-        return Float16.nan
-      }
-      else if number.isInfinity {
-        return number.isNegative ? -Float16.infinity : +Float16.infinity
-      }
-      else {
-        return try coerce(number, at: decoder.codingPath)
-      }
+    case .float(let number, _): return try decode(number, at: decoder.codingPath)
     case .null: return nil
     default:
       break
@@ -311,16 +319,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
   public static func unbox(_ value: YAML, as type: Float.Type, decoder: IVD) throws -> Float? {
     switch value {
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
-    case .float(let number, _):
-      if number.isNaN {
-        return Float.nan
-      }
-      else if number.isInfinity {
-        return number.isNegative ? -Float.infinity : +Float.infinity
-      }
-      else {
-        return try coerce(number, at: decoder.codingPath)
-      }
+    case .float(let number, _): return try decode(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
       throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
@@ -330,16 +329,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
   public static func unbox(_ value: YAML, as type: Double.Type, decoder: IVD) throws -> Double? {
     switch value {
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
-    case .float(let number, _):
-      if number.isNaN {
-        return Double.nan
-      }
-      else if number.isInfinity {
-        return number.isNegative ? -Double.infinity : +Double.infinity
-      }
-      else {
-        return try coerce(number, at: decoder.codingPath)
-      }
+    case .float(let number, _): return try decode(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
       throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
@@ -348,7 +338,14 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: YAML, as type: Decimal.Type, decoder: IVD) throws -> Decimal? {
     switch value {
-    case .integer(let number, _):
+    case .integer(let number, _): return try decodeInteger(number)
+    case .float(let number, _): return try decodeFloat(number)
+    case .null: return nil
+    case let yaml:
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+    }
+
+    func decodeInteger(_ number: YAML.Number) throws -> Decimal {
       guard let decimal = Decimal(string: number.value) else {
         throw DecodingError.typeMismatch(
           Decimal.self,
@@ -356,7 +353,9 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
                 debugDescription: "Decimal unable to parse number"))
       }
       return decimal
-    case .float(let number, _):
+    }
+
+    func decodeFloat(_ number: YAML.Number) throws -> Decimal {
       if number.isNaN {
         return Decimal.nan
       }
@@ -373,9 +372,6 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
                 debugDescription: "Decimal unable to parse number"))
       }
       return decimal
-    case .null: return nil
-    case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
     }
   }
 
@@ -423,15 +419,25 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return try decoder.subDecode(with: value) { try Date(from: $0) }
 
     case .secondsSince1970:
-      let double = try unbox(value, as: Double.self, decoder: decoder)!
-      return Date(timeIntervalSince1970: double)
+      return try unbox(value, as: Double.self, decoder: decoder).map { Date(timeIntervalSince1970: $0) }
 
     case .millisecondsSince1970:
-      let double = try unbox(value, as: Double.self, decoder: decoder)!
-      return Date(timeIntervalSince1970: double / 1000.0)
+      return try unbox(value, as: Double.self, decoder: decoder).map { Date(timeIntervalSince1970: $0 / 1000.0) }
 
     case .iso8601:
-      let string = try unbox(value, as: String.self, decoder: decoder)!
+      return try decodeISO8601(from: value)
+
+    case .formatted(let formatter):
+      return try decodeFormatted(from: value, formatter: formatter)
+
+    case .custom(let closure):
+      return try decoder.subDecode(with: value) { try closure($0) }
+    }
+
+    func decodeISO8601(from value: YAML) throws -> Date? {
+      guard let string = try unbox(value, as: String.self, decoder: decoder) else {
+        return nil
+      }
       guard let date = ZonedDate(iso8601Encoded: string)?.utcDate else {
         throw DecodingError.dataCorrupted(.init(
           codingPath: decoder.codingPath,
@@ -439,9 +445,12 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
         ))
       }
       return date
+    }
 
-    case .formatted(let formatter):
-      let string = try unbox(value, as: String.self, decoder: decoder)!
+    func decodeFormatted(from value: YAML, formatter: DateFormatter) throws -> Date? {
+      guard let string = try unbox(value, as: String.self, decoder: decoder) else {
+        return nil
+      }
       guard let date = formatter.date(from: string) else {
         throw DecodingError.dataCorrupted(.init(
           codingPath: decoder.codingPath,
@@ -449,9 +458,6 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
         ))
       }
       return date
-
-    case .custom(let closure):
-      return try decoder.subDecode(with: value) { try closure($0) }
     }
   }
 
@@ -463,6 +469,13 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return try decoder.subDecode(with: value) { try Data(from: $0) }
 
     case .base64:
+      return try decodeBase64(from: value)
+
+    case .custom(let closure):
+      return try decoder.subDecode(with: value) { try closure($0) }
+    }
+
+    func decodeBase64(from value: YAML) throws -> Data {
       guard case .string(let string, _, _, _) = value else {
         throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
       }
@@ -475,18 +488,32 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
       }
 
       return data
-
-    case .custom(let closure):
-      return try decoder.subDecode(with: value) { try closure($0) }
     }
   }
 
   public static func unbox(_ value: YAML, as type: AnyValue.Type, decoder: IVD) throws -> AnyValue {
     switch value {
-    case .null: return .nil
-    case .bool(let value, _): return .bool(value)
-    case .string(let value, _, _, _): return .string(value)
+    case .null:
+      return .nil
+    case .bool(let value, _):
+      return .bool(value)
+    case .string(let value, _, _, _):
+      return .string(value)
     case .integer(let value, anchor: _), .float(let value, anchor: _):
+      return decode(from: value)
+    case .sequence(let value, _, _, _):
+      return .array(try value.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
+    case .mapping(let value, _, _, _):
+      return .dictionary(AnyValue.AnyDictionary(uniqueKeysWithValues: try value.map { entry in
+        (try unbox(entry.key, as: AnyValue.self, decoder: decoder),
+         try unbox(entry.value, as: AnyValue.self, decoder: decoder))
+      }))
+    default:
+      break
+    }
+    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+
+    func decode(from value: YAML.Number) -> AnyValue {
       switch value.numberValue {
       case .none: return .nil
       case let int as Int:
@@ -504,17 +531,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
       default:
         fatalError("numberValue returned unsupported value")
       }
-    case .sequence(let value, _, _, _):
-      return .array(try value.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
-    case .mapping(let value, _, _, _):
-      return .dictionary(AnyValue.AnyDictionary(uniqueKeysWithValues: try value.map { entry in
-        (try unbox(entry.key, as: AnyValue.self, decoder: decoder),
-         try unbox(entry.value, as: AnyValue.self, decoder: decoder))
-      }))
-    default:
-      break
     }
-    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
   }
 
   public static func valueToUnkeyedValues(_ value: YAML, decoder: IVD) throws -> UnkeyedValues? {
