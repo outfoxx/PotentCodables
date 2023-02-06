@@ -150,8 +150,8 @@ class YAMLTests: XCTestCase {
   }
 
   func testEncodingChildContainers() throws {
-    let yamlText = try YAMLEncoder().encodeTree(objects).stableText
-    XCTAssertEqual(yamlText, values.stableText)
+    let yamlText = try YAMLEncoder().encodeTree(objects).description
+    XCTAssertEqual(yamlText, values.description)
   }
 
   func testObjectKeySerializationExplicitOrder() throws {

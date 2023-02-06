@@ -9,12 +9,10 @@
 //
 
 import Foundation
+import PotentCodables
+
 
 public struct SuffixedDateFormatter {
-
-  public static func optionalFractionalSeconds(basePattern: String) -> SuffixedDateFormatter {
-    SuffixedDateFormatter(basePattern: basePattern, secondsPattern: ".S") { $0.contains(".") }
-  }
 
   private let noSuffixes: DateFormatter
   private let zoneSuffix: DateFormatter
@@ -64,13 +62,14 @@ public struct SuffixedDateFormatter {
 
   public func date(from string: String) -> ZonedDate? {
     let parsedDate: Date?
-    let zoneStartIndex = string.firstIndex { (ch: Character) in ch == "-" || ch == "+" || ch == "Z" } ?? string.endIndex
+    let zoneStartIndex = string.firstIndex { char in char == "-" || char == "+" || char == "Z" } ?? string.endIndex
     let stringWithoutZone = String(string[string.startIndex ..< zoneStartIndex])
+    let hasSeconds = checkHasSeconds(stringWithoutZone)
     let hasZone = string != stringWithoutZone
-    if checkHasSeconds(stringWithoutZone) && hasZone {
+    if hasSeconds && hasZone {
       parsedDate = zoneAndSecondsSuffixes.date(from: string)
     }
-    else if checkHasSeconds(stringWithoutZone) {
+    else if hasSeconds {
       parsedDate = secondsSuffix.date(from: string)
     }
     else if hasZone {
@@ -79,11 +78,11 @@ public struct SuffixedDateFormatter {
     else {
       parsedDate = noSuffixes.date(from: string)
     }
-    guard parsedDate != nil else {
+    guard let parsedDate = parsedDate else {
       return nil
     }
-    let parsedTimeZone = TimeZone.timeZone(from: string) ?? .current
-    return ZonedDate(date: parsedDate!, timeZone: parsedTimeZone)
+    let parsedTimeZone = TimeZone.timeZone(from: String(string[zoneStartIndex...])) ?? .current
+    return ZonedDate(date: parsedDate, timeZone: parsedTimeZone)
   }
 
 }

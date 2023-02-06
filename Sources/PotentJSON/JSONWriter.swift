@@ -20,18 +20,25 @@
 import Foundation
 
 
-struct JSONWriter {
+internal struct JSONWriter {
 
   enum Error: Swift.Error {
     case invalidNumber(Double)
   }
 
   private var indent = 0
+  private let esccapeSlashes: Bool
   private let pretty: Bool
   private let sortedKeys: Bool
   private let writer: (String) -> Void
 
-  init(pretty: Bool = false, sortedKeys: Bool = false, writer: @escaping (String) -> Void) {
+  init(
+    escapeSlashes: Bool = false,
+    pretty: Bool = false,
+    sortedKeys: Bool = false,
+    writer: @escaping (String) -> Void
+  ) {
+    self.esccapeSlashes = escapeSlashes
     self.pretty = pretty
     self.sortedKeys = sortedKeys
     self.writer = writer
@@ -60,9 +67,9 @@ struct JSONWriter {
       switch scalar {
       case "\"":
         writer("\\\"") // U+0022 quotation mark
-      case "\\":
+      case "\\" where esccapeSlashes:
         writer("\\\\") // U+005C reverse solidus
-      case "/":
+      case "/" where esccapeSlashes:
         writer("\\/") // U+002F solidus
       case "\u{8}":
         writer("\\b") // U+0008 backspace

@@ -11,7 +11,7 @@
 import Foundation
 
 
-public struct JSONSerialization {
+public enum JSONSerialization {
 
   public enum Error: Swift.Error {
     case fragmentDisallowed
@@ -71,15 +71,25 @@ public struct JSONSerialization {
 
     public static let sortedKeys = WritingOptions(rawValue: 1 << 0)
     public static let prettyPrinted = WritingOptions(rawValue: 1 << 1)
+    public static let escapeSlashes = WritingOptions(rawValue: 1 << 2)
   }
 
   public static func data(from json: JSON, options: WritingOptions = []) throws -> Data {
-    return try string(from: json, options: options).data(using: .utf8)!
+    guard let data = try string(from: json, options: options).data(using: .utf8) else {
+      throw DecodingError
+        .dataCorrupted(
+          DecodingError
+            .Context(codingPath: [], debugDescription: "String cannot be decoded as UTF-8", underlyingError: nil)
+        )
+    }
+    return data
   }
 
   public static func string(from json: JSON, options: WritingOptions = []) throws -> String {
     var output = String()
-    var writer = JSONWriter(pretty: options.contains(.prettyPrinted), sortedKeys: options.contains(.sortedKeys)) {
+    var writer = JSONWriter(escapeSlashes: options.contains(.escapeSlashes),
+                            pretty: options.contains(.prettyPrinted),
+                            sortedKeys: options.contains(.sortedKeys)) {
       output.append($0)
     }
 
@@ -87,7 +97,5 @@ public struct JSONSerialization {
 
     return output
   }
-
-  private init() {}
 
 }

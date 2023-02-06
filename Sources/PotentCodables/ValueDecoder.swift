@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import OrderedCollections
 
 
 /// Decoder options that will be passed through the decoding process
@@ -52,35 +53,32 @@ public protocol InternalDecoderTransform {
 
   static var nilValue: Value { get }
 
-  static func unbox(_ value: Value, as type: Bool.Type, decoder: InternalValueDecoder<Value, Self>) throws -> Bool?
-  static func unbox(_ value: Value, as type: Int.Type, decoder: InternalValueDecoder<Value, Self>) throws -> Int?
-  static func unbox(_ value: Value, as type: Int8.Type, decoder: InternalValueDecoder<Value, Self>) throws -> Int8?
-  static func unbox(_ value: Value, as type: Int16.Type, decoder: InternalValueDecoder<Value, Self>) throws -> Int16?
-  static func unbox(_ value: Value, as type: Int32.Type, decoder: InternalValueDecoder<Value, Self>) throws -> Int32?
-  static func unbox(_ value: Value, as type: Int64.Type, decoder: InternalValueDecoder<Value, Self>) throws -> Int64?
-  static func unbox(_ value: Value, as type: UInt.Type, decoder: InternalValueDecoder<Value, Self>) throws -> UInt?
-  static func unbox(_ value: Value, as type: UInt8.Type, decoder: InternalValueDecoder<Value, Self>) throws -> UInt8?
-  static func unbox(_ value: Value, as type: UInt16.Type, decoder: InternalValueDecoder<Value, Self>) throws -> UInt16?
-  static func unbox(_ value: Value, as type: UInt32.Type, decoder: InternalValueDecoder<Value, Self>) throws -> UInt32?
-  static func unbox(_ value: Value, as type: UInt64.Type, decoder: InternalValueDecoder<Value, Self>) throws -> UInt64?
-  static func unbox(_ value: Value, as type: Float.Type, decoder: InternalValueDecoder<Value, Self>) throws -> Float?
-  static func unbox(_ value: Value, as type: Double.Type, decoder: InternalValueDecoder<Value, Self>) throws -> Double?
-  static func unbox(_ value: Value, as type: String.Type, decoder: InternalValueDecoder<Value, Self>) throws -> String?
-  static func unbox(_ value: Value, as type: UUID.Type, decoder: InternalValueDecoder<Value, Self>) throws -> UUID?
-  static func unbox(_ value: Value, as type: Date.Type, decoder: InternalValueDecoder<Value, Self>) throws -> Date?
-  static func unbox(_ value: Value, as type: Data.Type, decoder: InternalValueDecoder<Value, Self>) throws -> Data?
-  static func unbox(_ value: Value, as type: Decimal.Type, decoder: InternalValueDecoder<Value, Self>) throws
-    -> Decimal?
+  typealias IVD = InternalValueDecoder<Value, Self>
+  typealias UnkeyedValues = [Value]
+  typealias KeyedValues = OrderedDictionary<String, Value>
+
+  static func unbox(_ value: Value, as type: Bool.Type, decoder: IVD) throws -> Bool?
+  static func unbox(_ value: Value, as type: Int.Type, decoder: IVD) throws -> Int?
+  static func unbox(_ value: Value, as type: Int8.Type, decoder: IVD) throws -> Int8?
+  static func unbox(_ value: Value, as type: Int16.Type, decoder: IVD) throws -> Int16?
+  static func unbox(_ value: Value, as type: Int32.Type, decoder: IVD) throws -> Int32?
+  static func unbox(_ value: Value, as type: Int64.Type, decoder: IVD) throws -> Int64?
+  static func unbox(_ value: Value, as type: UInt.Type, decoder: IVD) throws -> UInt?
+  static func unbox(_ value: Value, as type: UInt8.Type, decoder: IVD) throws -> UInt8?
+  static func unbox(_ value: Value, as type: UInt16.Type, decoder: IVD) throws -> UInt16?
+  static func unbox(_ value: Value, as type: UInt32.Type, decoder: IVD) throws -> UInt32?
+  static func unbox(_ value: Value, as type: UInt64.Type, decoder: IVD) throws -> UInt64?
+  static func unbox(_ value: Value, as type: Float.Type, decoder: IVD) throws -> Float?
+  static func unbox(_ value: Value, as type: Double.Type, decoder: IVD) throws -> Double?
+  static func unbox(_ value: Value, as type: String.Type, decoder: IVD) throws -> String?
 
   static func intercepts(_ type: Decodable.Type) -> Bool
-  static func unbox(_ value: Value, interceptedType: Decodable.Type, decoder: InternalValueDecoder<Value, Self>) throws
-    -> Any?
+  static func unbox(_ value: Value, interceptedType: Decodable.Type, decoder: IVD) throws -> Any?
 
-  static func unbox(_ value: Value, otherType: Decodable.Type, decoder: InternalValueDecoder<Value, Self>) throws
-    -> Any?
+  static func unbox(_ value: Value, otherType: Decodable.Type, decoder: IVD) throws -> Any?
 
-  static func valueToUnkeyedValues(_ value: Value, decoder: InternalValueDecoder<Value, Self>) throws -> [Value]?
-  static func valueToKeyedValues(_ value: Value, decoder: InternalValueDecoder<Value, Self>) throws -> [String: Value]?
+  static func valueToUnkeyedValues(_ value: Value, decoder: IVD) throws -> UnkeyedValues?
+  static func valueToKeyedValues(_ value: Value, decoder: IVD) throws -> KeyedValues?
 
 }
 
@@ -99,7 +97,7 @@ open class ValueDecoder<Value, Transform> where Transform: InternalDecoderTransf
   /// The options set on the top-level decoder.
   open var options: Transform.Options { fatalError() }
 
-  open var state: Transform.State!
+  open var state: Transform.State?
 
   // MARK: - Decoding Values
 
@@ -245,10 +243,12 @@ extension ValueDecoder where Transform: InternalValueParser {
 
 // MARK: - InternalValueDecoder
 
-/// `InternalValueDocoder` is the `Decoder` implementation that is passed to `Decodable` objects to allow them to perform decoding
+/// `InternalValueDocoder` is the `Decoder` implementation that is passed
+/// to `Decodable` objects to allow them to perform decoding
 ///
-/// Although the type represents an implementation of the public API for `Decodable` it can also be used by implementations of
-/// `InternalDecoderTransform` as the instance is also passed to all members of the transform.
+/// Although the type represents an implementation of the public API for
+/// `Decodable` it can also be used by implementations of `InternalDecoderTransform`
+///  as the instance is also passed to all members of the transform.
 public class InternalValueDecoder<Value, Transform>: Decoder where Transform: InternalDecoderTransform,
   Value == Transform.Value {
 
@@ -259,7 +259,7 @@ public class InternalValueDecoder<Value, Transform>: Decoder where Transform: In
 
   public let options: Transform.Options
 
-  public var state: Transform.State!
+  public var state: Transform.State?
 
   /// The path to the current point in encoding.
   public fileprivate(set) var codingPath: [CodingKey]
@@ -352,8 +352,10 @@ private struct ValueDecodingStorage<Value> where Value: PotentCodables.Value {
   }
 
   fileprivate var topContainer: Value {
-    precondition(containers.count > 0, "Empty container stack.")
-    return containers.last!
+    guard let container = containers.last else {
+      fatalError("Empty container stack.")
+    }
+    return container
   }
 
   fileprivate mutating func push(container: Value) {
@@ -379,7 +381,7 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
   private let decoder: InternalValueDecoder
 
   /// A reference to the container we're reading from.
-  private let container: [String: Value]
+  private let container: OrderedDictionary<String, Value>
 
   /// The path of coding keys taken to get to this point in decoding.
   public private(set) var codingPath: [CodingKey]
@@ -387,13 +389,18 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
   // MARK: - Initialization
 
   /// Initializes `self` by referencing the given decoder and container.
-  fileprivate init(referencing decoder: InternalValueDecoder, wrapping container: [String: Value]) throws {
+  fileprivate init(
+    referencing decoder: InternalValueDecoder,
+    wrapping container: OrderedDictionary<String, Value>
+  ) throws {
     self.decoder = decoder
     switch decoder.options.keyDecodingStrategy {
     case .convertFromSnakeCase:
       // Convert the snake case keys in the container to camel case.
-      // If we hit a duplicate key after conversion, then we'll use the first one we saw. Effectively an undefined behavior with dictionaries.
-      self.container = try Dictionary(
+      // If we hit a duplicate key after conversion, then we'll use
+      // the first one we saw. Effectively an undefined behavior with
+      // dictionaries.
+      self.container = try OrderedDictionary(
         container.map {
           (KeyDecodingStrategy.convertFromSnakeCase($0.key), $0.value)
         }, uniquingKeysWith: { _, _ in
@@ -403,7 +410,7 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
           ))
         })
     case .custom(let converter):
-      self.container = try Dictionary(
+      self.container = try OrderedDictionary(
         container.map { key, value in (
           converter(decoder.codingPath + [AnyCodingKey(stringValue: key, intValue: nil)]).stringValue,
           value)
@@ -457,14 +464,14 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
       let original = key.stringValue
       let converted = KeyEncodingStrategy.convertToSnakeCase(original)
       if converted == original {
-        return "\(key) (\"\(original)\")"
+        return #""\#(original)""#
       }
       else {
-        return "\(key) (\"\(original)\"), converted to \(converted)"
+        return #""\#(original)" (\#(converted))"#
       }
     default:
       // Otherwise, just report the converted string
-      return "\(key) (\"\(key.stringValue)\")"
+      return #""\#(key.stringValue)""#
     }
   }
 
@@ -499,11 +506,12 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
     defer { self.decoder.codingPath.removeLast() }
 
     guard let value = self.container[key.stringValue] else {
+      let container = KeyedDecodingContainer<NestedKey>.self
       throw DecodingError.keyNotFound(
         key,
         DecodingError.Context(
           codingPath: codingPath,
-          debugDescription: "Cannot get \(KeyedDecodingContainer<NestedKey>.self) -- no value found for key \(errorDescription(of: key))"
+          debugDescription: "Cannot get \(container) -- no value found for key \(errorDescription(of: key))"
         )
       )
     }
@@ -594,7 +602,7 @@ private struct ValueUnkeyedDecodingContainer<Value, Transform>: UnkeyedDecodingC
   }
 
   public var isAtEnd: Bool {
-    return currentIndex >= count!
+    return currentIndex >= container.count
   }
 
   public mutating func decodeNil() throws -> Bool {
@@ -1159,7 +1167,7 @@ private struct ValueUnkeyedDecodingContainer<Value, Transform>: UnkeyedDecodingC
   }
 }
 
-extension InternalValueDecoder: SingleValueDecodingContainer, TreeValueDecodingContainer {
+extension InternalValueDecoder: SingleValueDecodingContainer {
   // MARK: SingleValueDecodingContainer Methods
 
   private func expectNonNull<T>(_ type: T.Type) throws {
@@ -1172,12 +1180,15 @@ extension InternalValueDecoder: SingleValueDecodingContainer, TreeValueDecodingC
     }
   }
 
-  public func decodeTreeValue() -> Any? {
-    return storage.topContainer
-  }
-
-  public func decodeUnwrappedValue() -> Any? {
-    return storage.topContainer.unwrapped
+  private func unwrap<T>(_ value: T?) throws -> T {
+    guard let value = value else {
+      throw DecodingError.valueNotFound(
+        T.self,
+        DecodingError
+          .Context(codingPath: codingPath, debugDescription: "Expected \(T.self) but found null value instead.")
+      )
+    }
+    return value
   }
 
   public func decodeNil() -> Bool {
@@ -1186,77 +1197,77 @@ extension InternalValueDecoder: SingleValueDecodingContainer, TreeValueDecodingC
 
   public func decode(_ type: Bool.Type) throws -> Bool {
     try expectNonNull(Bool.self)
-    return try unbox(storage.topContainer, as: Bool.self)!
+    return try unwrap(unbox(storage.topContainer, as: Bool.self))
   }
 
   public func decode(_ type: Int.Type) throws -> Int {
     try expectNonNull(Int.self)
-    return try unbox(storage.topContainer, as: Int.self)!
+    return try unwrap(unbox(storage.topContainer, as: Int.self))
   }
 
   public func decode(_ type: Int8.Type) throws -> Int8 {
     try expectNonNull(Int8.self)
-    return try unbox(storage.topContainer, as: Int8.self)!
+    return try unwrap(unbox(storage.topContainer, as: Int8.self))
   }
 
   public func decode(_ type: Int16.Type) throws -> Int16 {
     try expectNonNull(Int16.self)
-    return try unbox(storage.topContainer, as: Int16.self)!
+    return try unwrap(unbox(storage.topContainer, as: Int16.self))
   }
 
   public func decode(_ type: Int32.Type) throws -> Int32 {
     try expectNonNull(Int32.self)
-    return try unbox(storage.topContainer, as: Int32.self)!
+    return try unwrap(unbox(storage.topContainer, as: Int32.self))
   }
 
   public func decode(_ type: Int64.Type) throws -> Int64 {
     try expectNonNull(Int64.self)
-    return try unbox(storage.topContainer, as: Int64.self)!
+    return try unwrap(unbox(storage.topContainer, as: Int64.self))
   }
 
   public func decode(_ type: UInt.Type) throws -> UInt {
     try expectNonNull(UInt.self)
-    return try unbox(storage.topContainer, as: UInt.self)!
+    return try unwrap(unbox(storage.topContainer, as: UInt.self))
   }
 
   public func decode(_ type: UInt8.Type) throws -> UInt8 {
     try expectNonNull(UInt8.self)
-    return try unbox(storage.topContainer, as: UInt8.self)!
+    return try unwrap(unbox(storage.topContainer, as: UInt8.self))
   }
 
   public func decode(_ type: UInt16.Type) throws -> UInt16 {
     try expectNonNull(UInt16.self)
-    return try unbox(storage.topContainer, as: UInt16.self)!
+    return try unwrap(unbox(storage.topContainer, as: UInt16.self))
   }
 
   public func decode(_ type: UInt32.Type) throws -> UInt32 {
     try expectNonNull(UInt32.self)
-    return try unbox(storage.topContainer, as: UInt32.self)!
+    return try unwrap(unbox(storage.topContainer, as: UInt32.self))
   }
 
   public func decode(_ type: UInt64.Type) throws -> UInt64 {
     try expectNonNull(UInt64.self)
-    return try unbox(storage.topContainer, as: UInt64.self)!
+    return try unwrap(unbox(storage.topContainer, as: UInt64.self))
   }
 
   public func decode(_ type: Float.Type) throws -> Float {
     try expectNonNull(Float.self)
-    return try unbox(storage.topContainer, as: Float.self)!
+    return try unwrap(unbox(storage.topContainer, as: Float.self))
   }
 
   public func decode(_ type: Double.Type) throws -> Double {
     try expectNonNull(Double.self)
-    return try unbox(storage.topContainer, as: Double.self)!
+    return try unwrap(unbox(storage.topContainer, as: Double.self))
   }
 
   public func decode(_ type: String.Type) throws -> String {
     try expectNonNull(String.self)
-    return try unbox(storage.topContainer, as: String.self)!
+    return try unwrap(unbox(storage.topContainer, as: String.self))
   }
 
   public func decode<T: Decodable>(_ type: T.Type) throws -> T {
     try expectNonNull(type)
-    return try unbox(storage.topContainer, as: type)!
+    return try unwrap(unbox(storage.topContainer, as: type))
   }
 }
 
@@ -1319,22 +1330,6 @@ private extension InternalValueDecoder {
     return try Transform.unbox(value, as: type, decoder: self)
   }
 
-  func unbox(_ value: Value, as type: UUID.Type) throws -> UUID? {
-    return try Transform.unbox(value, as: type, decoder: self)
-  }
-
-  func unbox(_ value: Value, as type: Date.Type) throws -> Date? {
-    return try Transform.unbox(value, as: type, decoder: self)
-  }
-
-  func unbox(_ value: Value, as type: Data.Type) throws -> Data? {
-    return try Transform.unbox(value, as: type, decoder: self)
-  }
-
-  func unbox(_ value: Value, as type: Decimal.Type) throws -> Decimal? {
-    return try Transform.unbox(value, as: type, decoder: self)
-  }
-
   func unbox<T>(_ value: Value, as type: ValueStringDictionaryDecodableMarker.Type) throws -> T? {
     guard !value.isNull else { return nil }
 
@@ -1347,45 +1342,32 @@ private extension InternalValueDecoder {
       codingPath.append(AnyCodingKey(stringValue: key, intValue: nil))
       defer { self.codingPath.removeLast() }
 
-      result[key] = try unbox_(value, as: elementType)
+      result[key] = try unbox(value: value, as: elementType)
     }
 
     return result as? T
   }
 
   func unbox<T: Decodable>(_ value: Value, as type: T.Type) throws -> T? {
-    return try unbox_(value, as: type) as? T
+    guard let unboxed = try unbox(value: value, as: type) else {
+      return nil
+    }
+    guard let result = unboxed as? T else {
+      throw DecodingError.typeMismatch(at: codingPath, expectation: type, reality: unboxed)
+    }
+    return result
   }
 
-  func unbox_(_ value: Value, as type: Decodable.Type) throws -> Any? {
-    if Transform.intercepts(type) {
+}
+
+public extension InternalValueDecoder {
+
+  func unbox(value: Value, as type: Decodable.Type) throws -> Any? {
+    if type == Value.self {
+      return value
+    }
+    else if Transform.intercepts(type) {
       return try Transform.unbox(value, interceptedType: type, decoder: self)
-    }
-    if type == Date.self || type == NSDate.self {
-      return try unbox(value, as: Date.self)
-    }
-    else if type == Data.self || type == NSData.self {
-      return try unbox(value, as: Data.self)
-    }
-    else if type == UUID.self || type == CFUUID.self {
-      return try unbox(value, as: UUID.self)
-    }
-    else if type == URL.self || type == NSURL.self {
-      guard let urlString = try unbox(value, as: String.self) else {
-        return nil
-      }
-
-      guard let url = URL(string: urlString) else {
-        throw DecodingError.dataCorrupted(DecodingError.Context(
-          codingPath: codingPath,
-          debugDescription: "Invalid URL string."
-        ))
-      }
-
-      return url
-    }
-    else if type == Decimal.self || type == NSDecimalNumber.self {
-      return try unbox(value, as: Decimal.self)
     }
     else if let stringKeyedDictType = type as? ValueStringDictionaryDecodableMarker.Type {
       return try unbox(value, as: stringKeyedDictType)
@@ -1394,7 +1376,9 @@ private extension InternalValueDecoder {
       return try Transform.unbox(value, otherType: type, decoder: self)
     }
   }
+
 }
+
 
 /// A marker protocol used to determine whether a value is a `String`-keyed `Dictionary`
 /// containing `Decodable` values (in which case it should be exempt from key conversion strategies).
@@ -1420,19 +1404,11 @@ public extension InternalDecoderTransform {
     return false
   }
 
-  static func unbox(
-    _ value: Value,
-    interceptedType: Decodable.Type,
-    decoder: InternalValueDecoder<Value, Self>
-  ) throws -> Any? {
-    fatalError()
+  static func unbox(_ value: Value, interceptedType: Decodable.Type, decoder: IVD) throws -> Any? {
+    fatalError("abstract")
   }
 
-  static func unbox(
-    _ value: Value,
-    otherType: Decodable.Type,
-    decoder: InternalValueDecoder<Value, Self>
-  ) throws -> Any? {
+  static func unbox(_ value: Value, otherType: Decodable.Type, decoder: IVD) throws -> Any? {
     return try decoder.subDecode(with: value) { decoder in try otherType.init(from: decoder) }
   }
 

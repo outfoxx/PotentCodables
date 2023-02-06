@@ -8,6 +8,7 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
+import BigInt
 import Foundation
 import PotentCodables
 
@@ -55,7 +56,8 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
 
     /// Encode the `Date` as a custom value encoded by the given closure.
     ///
-    /// If the closure fails to encode a value into the given encoder, the encoder will encode an empty automatic container in its place.
+    /// If the closure fails to encode a value into the given encoder, the encoder
+    ///  will encode an empty automatic container in its place.
     case custom((Date, Encoder) throws -> Void)
   }
 
@@ -70,18 +72,9 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
 
     /// Encode the `Data` as a custom value encoded by the given closure.
     ///
-    /// If the closure fails to encode a value into the given encoder, the encoder will encode an empty automatic container in its place.
+    /// If the closure fails to encode a value into the given encoder, the encoder
+    ///  will encode an empty automatic container in its place.
     case custom((Data, Encoder) throws -> Void)
-  }
-
-  /// The strategy to use for non-YAML-conforming floating-point values (IEEE 754 infinity and NaN).
-  public enum NonConformingFloatEncodingStrategy {
-
-    /// Throw upon encountering non-conforming values. This is the default strategy.
-    case `throw`
-
-    /// Encode the values using the given representation strings.
-    case convertToString(positiveInfinity: String, negativeInfinity: String, nan: String)
   }
 
   /// The output format to produce. Defaults to `[]`.
@@ -93,15 +86,11 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
   /// The strategy to use in encoding binary data. Defaults to `.base64`.
   public var dataEncodingStrategy: YAMLEncoder.DataEncodingStrategy = .base64
 
-  /// The strategy to use in encoding non-conforming numbers. Defaults to `.throw`.
-  public var nonConformingFloatEncodingStrategy: YAMLEncoder.NonConformingFloatEncodingStrategy = .throw
-
   /// The options set on the top-level encoder.
   override public var options: YAMLEncoderTransform.Options {
     return YAMLEncoderTransform.Options(
       dateEncodingStrategy: dateEncodingStrategy,
       dataEncodingStrategy: dataEncodingStrategy,
-      nonConformingFloatEncodingStrategy: nonConformingFloatEncodingStrategy,
       outputFormatting: outputFormatting,
       keyEncodingStrategy: keyEncodingStrategy,
       userInfo: userInfo
@@ -120,193 +109,240 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
 public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSerializer, InternalValueStringifier {
 
   public typealias Value = YAML
-  public typealias Encoder = InternalValueEncoder<Value, Self>
   public typealias State = Void
 
-  public static var emptyKeyedContainer = YAML.mapping([], style: .any, tag: nil, anchor: nil)
-  public static var emptyUnkeyedContainer = YAML.sequence([], style: .any, tag: nil, anchor: nil)
+  public static var emptyKeyedContainer = YAML.mapping([])
+  public static var emptyUnkeyedContainer = YAML.sequence([])
 
   public struct Options: InternalEncoderOptions {
     public let dateEncodingStrategy: YAMLEncoder.DateEncodingStrategy
     public let dataEncodingStrategy: YAMLEncoder.DataEncodingStrategy
-    public let nonConformingFloatEncodingStrategy: YAMLEncoder.NonConformingFloatEncodingStrategy
     public let outputFormatting: YAMLEncoder.OutputFormatting
     public let keyEncodingStrategy: KeyEncodingStrategy
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
-  public static func boxNil(encoder: Encoder) throws -> YAML { return .null(anchor: nil) }
-  public static func box(_ value: Bool, encoder: Encoder) throws -> YAML { return .bool(value, anchor: nil) }
-  public static func box(
-    _ value: Int,
-    encoder: Encoder
-  ) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(
-    _ value: Int8,
-    encoder: Encoder
-  ) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(
-    _ value: Int16,
-    encoder: Encoder
-  ) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(
-    _ value: Int32,
-    encoder: Encoder
-  ) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(
-    _ value: Int64,
-    encoder: Encoder
-  ) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(
-    _ value: UInt,
-    encoder: Encoder
-  ) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(
-    _ value: UInt8,
-    encoder: Encoder
-  ) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(
-    _ value: UInt16,
-    encoder: Encoder
-  ) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(
-    _ value: UInt32,
-    encoder: Encoder
-  ) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(
-    _ value: UInt64,
-    encoder: Encoder
-  ) throws -> YAML { return .integer(.init(value.description), anchor: nil) }
-  public static func box(
-    _ value: String,
-    encoder: Encoder
-  ) throws -> YAML { return .string(value, style: .any, tag: nil, anchor: nil) }
-  public static func box(
-    _ value: URL,
-    encoder: Encoder
-  ) throws -> YAML { return .string(value.absoluteString, style: .any, tag: nil, anchor: nil) }
-  public static func box(
-    _ value: UUID,
-    encoder: Encoder
-  ) throws -> YAML { return .string(value.uuidString, style: .any, tag: nil, anchor: nil) }
+  static let interceptedTypes: [Any.Type] = [
+    Date.self, NSDate.self,
+    Data.self, NSData.self,
+    URL.self, NSURL.self,
+    UUID.self, NSUUID.self,
+    Float16.self,
+    Decimal.self, NSDecimalNumber.self,
+    BigInt.self,
+    BigUInt.self,
+    AnyValue.self,
+  ]
 
-  public static func box(_ float: Float, encoder: Encoder) throws -> YAML {
+  public static func intercepts(_ type: Encodable.Type) -> Bool {
+    return interceptedTypes.contains { $0 == type }
+  }
+
+  public static func box(_ value: Any, interceptedType: Encodable.Type, encoder: IVE) throws -> YAML {
+    if let value = value as? Date {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? Data {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? URL {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? UUID {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? Float16 {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? Decimal {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? BigInt {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? BigUInt {
+      return try box(value, encoder: encoder)
+    }
+    else if let value = value as? AnyValue {
+      return try box(value, encoder: encoder)
+    }
+    fatalError("type not valid for intercept")
+  }
+
+  public static func boxNil(encoder: IVE) throws -> YAML { return .null(anchor: nil) }
+  public static func box(_ value: Bool, encoder: IVE) throws -> YAML { return .bool(value) }
+  public static func box(_ value: Int, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: Int8, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: Int16, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: Int32, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: Int64, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: UInt, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: UInt8, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: UInt16, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: UInt32, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: UInt64, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: BigInt, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: BigUInt, encoder: IVE) throws -> YAML { return .integer(.init(value)) }
+  public static func box(_ value: String, encoder: IVE) throws -> YAML { return .string(value) }
+  public static func box(_ value: URL, encoder: IVE) throws -> YAML { return .string(value.absoluteString) }
+  public static func box(_ value: UUID, encoder: IVE) throws -> YAML { return .string(value.uuidString) }
+
+  public static func box(_ float: Float16, encoder: IVE) throws -> YAML {
     guard !float.isInfinite, !float.isNaN else {
-      guard case .convertToString(
-        let posInfString,
-        let negInfString,
-        let nanString
-      ) = encoder.options.nonConformingFloatEncodingStrategy else {
-        throw EncodingError.invalidFloatingPointValue(float, at: encoder.codingPath)
+      if float == Float16.infinity {
+        return .float(YAML.Number("+.inf", isInteger: false, isNegative: false))
       }
+      else if float == -Float16.infinity {
+        return .float(YAML.Number("-.inf", isInteger: false, isNegative: true))
+      }
+      else {
+        return .float(YAML.Number(".nan", isInteger: false, isNegative: false))
+      }
+    }
 
+    return .float(.init(float))
+  }
+
+  public static func box(_ float: Float, encoder: IVE) throws -> YAML {
+    guard !float.isInfinite, !float.isNaN else {
       if float == Float.infinity {
-        return .string(posInfString, style: .any, tag: nil, anchor: nil)
+        return .float(YAML.Number("+.inf", isInteger: false, isNegative: false))
       }
       else if float == -Float.infinity {
-        return .string(negInfString, style: .any, tag: nil, anchor: nil)
+        return .float(YAML.Number("-.inf", isInteger: false, isNegative: true))
       }
       else {
-        return .string(nanString, style: .any, tag: nil, anchor: nil)
+        return .float(YAML.Number(".nan", isInteger: false, isNegative: false))
       }
     }
 
-    return .float(.init(float.description), anchor: nil)
+    return .float(.init(float))
   }
 
-  public static func box(_ double: Double, encoder: Encoder) throws -> YAML {
+  public static func box(_ double: Double, encoder: IVE) throws -> YAML {
     guard !double.isInfinite, !double.isNaN else {
-      guard case .convertToString(
-        let posInfString,
-        let negInfString,
-        let nanString
-      ) = encoder.options.nonConformingFloatEncodingStrategy else {
-        throw EncodingError.invalidFloatingPointValue(double, at: encoder.codingPath)
-      }
-
       if double == Double.infinity {
-        return .string(posInfString, style: .any, tag: nil, anchor: nil)
+        return .float(YAML.Number("+.inf", isInteger: false, isNegative: false))
       }
       else if double == -Double.infinity {
-        return .string(negInfString, style: .any, tag: nil, anchor: nil)
+        return .float(YAML.Number("-.inf", isInteger: false, isNegative: true))
       }
       else {
-        return .string(nanString, style: .any, tag: nil, anchor: nil)
+        return .float(YAML.Number(".nan", isInteger: false, isNegative: false))
       }
     }
 
-    return .float(.init(double.description), anchor: nil)
+    return .float(.init(double))
   }
 
-  public static func box(_ decimal: Decimal, encoder: Encoder) throws -> YAML {
+  public static func box(_ decimal: Decimal, encoder: IVE) throws -> YAML {
     guard !decimal.isInfinite, !decimal.isNaN else {
-      guard case .convertToString(
-        let posInfString,
-        let negInfString,
-        let nanString
-      ) = encoder.options.nonConformingFloatEncodingStrategy else {
+      if decimal.isNaN {
+        return .float(YAML.Number(".nan", isInteger: false, isNegative: false))
+      }
+      else {
         throw EncodingError.invalidFloatingPointValue(decimal, at: encoder.codingPath)
       }
-
-      if decimal.isInfinite, decimal.sign == .plus {
-        return .string(posInfString, style: .any, tag: nil, anchor: nil)
-      }
-      else if decimal.isInfinite, decimal.sign == .minus {
-        return .string(negInfString, style: .any, tag: nil, anchor: nil)
-      }
-      else {
-        return .string(nanString, style: .any, tag: nil, anchor: nil)
-      }
     }
 
-    var decimal = decimal
-    let rep = NSDecimalString(&decimal, NSLocale.system)
-
-    return .float(.init(rep.description), anchor: nil)
+    return .float(YAML.Number(decimal.description, isInteger: false, isNegative: false))
   }
 
-  public static func box(_ value: Data, encoder: Encoder) throws -> YAML {
+  public static func box(_ value: Data, encoder: IVE) throws -> YAML {
     switch encoder.options.dataEncodingStrategy {
     case .deferredToData:
-      return try encoder.subEncode { try value.encode(to: $0) } ?? emptyKeyedContainer
+      return try encoder.subEncode { try value.encode(to: $0.encoder) } ?? emptyKeyedContainer
 
     case .base64:
-      return .string(value.base64EncodedString(), style: .any, tag: nil, anchor: nil)
+      return .string(value.base64EncodedString())
 
     case .custom(let closure):
-      return try encoder.subEncode { try closure(value, $0) } ?? emptyKeyedContainer
+      return try encoder.subEncode { try closure(value, $0.encoder) } ?? emptyKeyedContainer
     }
   }
 
-  public static func box(_ value: Date, encoder: Encoder) throws -> YAML {
+  public static func box(_ value: Date, encoder: IVE) throws -> YAML {
     switch encoder.options.dateEncodingStrategy {
     case .deferredToDate:
-      return try encoder.subEncode { try value.encode(to: $0) } ?? emptyKeyedContainer
+      return try encoder.subEncode { try value.encode(to: $0.encoder) } ?? emptyKeyedContainer
 
     case .secondsSince1970:
-      return .float(.init(value.timeIntervalSince1970.description), anchor: nil)
+      return .float(.init(value.timeIntervalSince1970.description))
 
     case .millisecondsSince1970:
-      return .integer(.init((1000.0 * value.timeIntervalSince1970).description), anchor: nil)
+      return .integer(.init((1000.0 * value.timeIntervalSince1970).description))
 
     case .iso8601:
-      return .string(_iso8601Formatter.string(from: value), style: .any, tag: nil, anchor: nil)
+      return .string(ZonedDate(date: value, timeZone: .utc).iso8601EncodedString())
 
     case .formatted(let formatter):
-      return .string(formatter.string(from: value), style: .any, tag: nil, anchor: nil)
+      return .string(formatter.string(from: value))
 
     case .custom(let closure):
-      return try encoder.subEncode { try closure(value, $0) } ?? emptyKeyedContainer
+      return try encoder.subEncode { try closure(value, $0.encoder) } ?? emptyKeyedContainer
     }
   }
 
-  public static func unkeyedValuesToValue(_ values: [YAML], encoder: Encoder) -> YAML {
-    return .sequence(values, style: .any, tag: nil, anchor: nil)
+  public static func box(_ value: AnyValue, encoder: IVE) throws -> YAML {
+    switch value {
+    case .nil:
+      return .null(anchor: nil)
+    case .bool(let value):
+      return try box(value, encoder: encoder)
+    case .int8(let value):
+      return try box(value, encoder: encoder)
+    case .int16(let value):
+      return try box(value, encoder: encoder)
+    case .int32(let value):
+      return try box(value, encoder: encoder)
+    case .int64(let value):
+      return try box(value, encoder: encoder)
+    case .integer(let value):
+      return try box(value, encoder: encoder)
+    case .uint8(let value):
+      return try box(value, encoder: encoder)
+    case .uint16(let value):
+      return try box(value, encoder: encoder)
+    case .uint32(let value):
+      return try box(value, encoder: encoder)
+    case .uint64(let value):
+      return try box(value, encoder: encoder)
+    case .unsignedInteger(let value):
+      return try box(value, encoder: encoder)
+    case .float16(let value):
+      return try box(value, encoder: encoder)
+    case .float(let value):
+      return try box(value, encoder: encoder)
+    case .double(let value):
+      return try box(value, encoder: encoder)
+    case .decimal(let value):
+      return try box(value, encoder: encoder)
+    case .string(let value):
+      return try box(value, encoder: encoder)
+    case .data(let value):
+      return try box(value, encoder: encoder)
+    case .url(let value):
+      return try box(value, encoder: encoder)
+    case .date(let value):
+      return try box(value, encoder: encoder)
+    case .uuid(let value):
+      return try box(value, encoder: encoder)
+    case .array(let value):
+      return .sequence(try value.map { try box($0, encoder: encoder) })
+    case .dictionary(let value):
+      return .mapping(try value.map {
+        YAML.MappingEntry(key: try box($0, encoder: encoder), value: try box($1, encoder: encoder))
+      })
+    }
   }
 
-  public static func keyedValuesToValue(_ values: [String: YAML], encoder: Encoder) -> YAML {
+  public static func unkeyedValuesToValue(_ values: UnkeyedValues, encoder: IVE) -> YAML {
+    return .sequence(values)
+  }
+
+  public static func keyedValuesToValue(_ values: KeyedValues, encoder: IVE) -> YAML {
     return .mapping(
-      values.map { .init(key: .string($0.key, style: .any, tag: nil, anchor: nil), value: $0.value) },
+      values.map { YAML.MappingEntry(key: YAML($0), value: $1) },
       style: .any,
       tag: nil,
       anchor: nil
@@ -330,16 +366,6 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
   }
 
 }
-
-
-private let _iso8601Formatter: DateFormatter = {
-  let formatter = DateFormatter()
-  formatter.calendar = Calendar(identifier: .iso8601)
-  formatter.locale = Locale(identifier: "en_US_POSIX")
-  formatter.timeZone = TimeZone(secondsFromGMT: 0)
-  formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
-  return formatter
-}()
 
 
 #if canImport(Combine)

@@ -66,11 +66,131 @@ public protocol TypeIndex {
 ///
 public struct DefaultTypeIndex: TypeIndex {
 
-  fileprivate static var allowedTypes: [String: Decodable.Type] = [:]
+  fileprivate static var allowedTypes: [String: Decodable.Type] = [
+    typeId(of: Bool.self): Bool.self,
+    typeId(of: Int.self): Int.self,
+    typeId(of: Int8.self): Int8.self,
+    typeId(of: Int16.self): Int16.self,
+    typeId(of: Int32.self): Int32.self,
+    typeId(of: Int64.self): Int64.self,
+    typeId(of: UInt.self): UInt.self,
+    typeId(of: UInt8.self): UInt8.self,
+    typeId(of: UInt16.self): UInt16.self,
+    typeId(of: UInt32.self): UInt32.self,
+    typeId(of: UInt64.self): UInt64.self,
+    typeId(of: Float16.self): Float16.self,
+    typeId(of: Float.self): Float.self,
+    typeId(of: Double.self): Double.self,
+    typeId(of: Decimal.self): Decimal.self,
+    typeId(of: String.self): String.self,
+    typeId(of: URL.self): URL.self,
+    typeId(of: UUID.self): UUID.self,
+    typeId(of: Date.self): Date.self,
+    typeId(of: Bool?.self): Bool?.self,
+    typeId(of: Int?.self): Int?.self,
+    typeId(of: Int8?.self): Int8?.self,
+    typeId(of: Int16?.self): Int16?.self,
+    typeId(of: Int32?.self): Int32?.self,
+    typeId(of: Int64?.self): Int64?.self,
+    typeId(of: UInt?.self): UInt?.self,
+    typeId(of: UInt8?.self): UInt8?.self,
+    typeId(of: UInt16?.self): UInt16?.self,
+    typeId(of: UInt32?.self): UInt32?.self,
+    typeId(of: UInt64?.self): UInt64?.self,
+    typeId(of: Float16?.self): Float16?.self,
+    typeId(of: Float?.self): Float?.self,
+    typeId(of: Double?.self): Double?.self,
+    typeId(of: Decimal?.self): Decimal?.self,
+    typeId(of: String?.self): String?.self,
+    typeId(of: URL?.self): URL?.self,
+    typeId(of: UUID?.self): UUID?.self,
+    typeId(of: Date?.self): Date?.self,
+    typeId(of: [Bool].self): [Bool].self,
+    typeId(of: [Int].self): [Int].self,
+    typeId(of: [Int8].self): [Int8].self,
+    typeId(of: [Int16].self): [Int16].self,
+    typeId(of: [Int32].self): [Int32].self,
+    typeId(of: [Int64].self): [Int64].self,
+    typeId(of: [UInt].self): [UInt].self,
+    typeId(of: [UInt8].self): [UInt8].self,
+    typeId(of: [UInt16].self): [UInt16].self,
+    typeId(of: [UInt32].self): [UInt32].self,
+    typeId(of: [UInt64].self): [UInt64].self,
+    typeId(of: [Float16].self): [Float16].self,
+    typeId(of: [Float].self): [Float].self,
+    typeId(of: [Double].self): [Double].self,
+    typeId(of: [Decimal].self): [Decimal].self,
+    typeId(of: [String].self): [String].self,
+    typeId(of: [URL].self): [URL].self,
+    typeId(of: [UUID].self): [UUID].self,
+    typeId(of: [Date].self): [Date].self,
+    typeId(of: [Bool]?.self): [Bool]?.self,
+    typeId(of: [Int]?.self): [Int]?.self,
+    typeId(of: [Int8]?.self): [Int8]?.self,
+    typeId(of: [Int16]?.self): [Int16]?.self,
+    typeId(of: [Int32]?.self): [Int32]?.self,
+    typeId(of: [Int64]?.self): [Int64]?.self,
+    typeId(of: [UInt]?.self): [UInt]?.self,
+    typeId(of: [UInt8]?.self): [UInt8]?.self,
+    typeId(of: [UInt16]?.self): [UInt16]?.self,
+    typeId(of: [UInt32]?.self): [UInt32]?.self,
+    typeId(of: [UInt64]?.self): [UInt64]?.self,
+    typeId(of: [Float16]?.self): [Float16]?.self,
+    typeId(of: [Float]?.self): [Float]?.self,
+    typeId(of: [Double]?.self): [Double]?.self,
+    typeId(of: [Decimal]?.self): [Decimal]?.self,
+    typeId(of: [String]?.self): [String]?.self,
+    typeId(of: [URL]?.self): [URL]?.self,
+    typeId(of: [UUID]?.self): [UUID]?.self,
+    typeId(of: [Date]?.self): [Date]?.self,
+    typeId(of: [String: Bool].self): [String: Bool].self,
+    typeId(of: [String: Int].self): [String: Int].self,
+    typeId(of: [String: Int8].self): [String: Int8].self,
+    typeId(of: [String: Int16].self): [String: Int16].self,
+    typeId(of: [String: Int32].self): [String: Int32].self,
+    typeId(of: [String: Int64].self): [String: Int64].self,
+    typeId(of: [String: UInt].self): [String: UInt].self,
+    typeId(of: [String: UInt8].self): [String: UInt8].self,
+    typeId(of: [String: UInt16].self): [String: UInt16].self,
+    typeId(of: [String: UInt32].self): [String: UInt32].self,
+    typeId(of: [String: UInt64].self): [String: UInt64].self,
+    typeId(of: [String: Float16].self): [String: Float16].self,
+    typeId(of: [String: Float].self): [String: Float].self,
+    typeId(of: [String: Double].self): [String: Double].self,
+    typeId(of: [String: Decimal].self): [String: Decimal].self,
+    typeId(of: [String: String].self): [String: String].self,
+    typeId(of: [String: URL].self): [String: URL].self,
+    typeId(of: [String: UUID].self): [String: UUID].self,
+    typeId(of: [String: Date].self): [String: Date].self,
+    typeId(of: [String: Bool]?.self): [String: Bool]?.self,
+    typeId(of: [String: Int]?.self): [String: Int]?.self,
+    typeId(of: [String: Int8]?.self): [String: Int8]?.self,
+    typeId(of: [String: Int16]?.self): [String: Int16]?.self,
+    typeId(of: [String: Int32]?.self): [String: Int32]?.self,
+    typeId(of: [String: Int64]?.self): [String: Int64]?.self,
+    typeId(of: [String: UInt]?.self): [String: UInt]?.self,
+    typeId(of: [String: UInt8]?.self): [String: UInt8]?.self,
+    typeId(of: [String: UInt16]?.self): [String: UInt16]?.self,
+    typeId(of: [String: UInt32]?.self): [String: UInt32]?.self,
+    typeId(of: [String: UInt64]?.self): [String: UInt64]?.self,
+    typeId(of: [String: Float16]?.self): [String: Float16]?.self,
+    typeId(of: [String: Float]?.self): [String: Float]?.self,
+    typeId(of: [String: Double]?.self): [String: Double]?.self,
+    typeId(of: [String: Decimal]?.self): [String: Decimal]?.self,
+    typeId(of: [String: String]?.self): [String: String]?.self,
+    typeId(of: [String: URL]?.self): [String: URL]?.self,
+    typeId(of: [String: UUID]?.self): [String: UUID]?.self,
+    typeId(of: [String: Date]?.self): [String: Date]?.self,
+  ]
 
   // Set the allowed types to the given array after mapping them using `mapAllowedTypes(:)`.
   public static func setAllowedTypes(_ types: [Decodable.Type]) {
     Self.allowedTypes = mapAllowedTypes(types)
+  }
+
+  // Set the allowed types to the given array after mapping them using `mapAllowedTypes(:)`.
+  public static func addAllowedTypes(_ types: [Decodable.Type]) {
+    Self.allowedTypes = Self.allowedTypes.merging(mapAllowedTypes(types)) { $1 }
   }
 
   // Maps the given array of types to their generated type id and returns the dictionary.
@@ -79,8 +199,8 @@ public struct DefaultTypeIndex: TypeIndex {
   }
 
   public static func findType(id: String) -> Decodable.Type? { allowedTypes[id] }
-  public static func typeId(of type: Any.Type) -> String { "\(type)".split(separator: ".").last
-    .map { String($0) } ?? "\(type)"
+  public static func typeId(of type: Any.Type) -> String {
+    "\(type)".split(separator: ".").last.map { String($0) } ?? "\(type)"
   }
 
 }

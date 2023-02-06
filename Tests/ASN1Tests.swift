@@ -16,6 +16,24 @@ import XCTest
 
 class ASN1Tests: XCTestCase {
 
+  func testObjectIdentifierLiterals() {
+    XCTAssertEqual(
+      [1, 2, 3, 4] as ObjectIdentifier,
+      ObjectIdentifier([1, 2, 3, 4])
+    )
+    XCTAssertEqual(
+      "1.2.3.4" as ObjectIdentifier,
+      ObjectIdentifier([1, 2, 3, 4])
+    )
+  }
+
+  func testSerializationArrayCombined() throws {
+    XCTAssertEqual(
+      try ASN1Serialization.der(from: [.integer(1), .boolean(true)]),
+      Data(hexEncoded: "0201010101ff")
+    )
+  }
+
   func testExplicitSchema() throws {
 
     struct TestStruct: Codable, Equatable {
@@ -228,17 +246,6 @@ class ASN1Tests: XCTestCase {
     XCTAssertEqual(offset(4), -40920)
     XCTAssertEqual(date(5), 1_668_246_944.0)
     XCTAssertEqual(offset(5), -40920)
-  }
-
-}
-
-
-extension Date {
-
-  var truncatedToSecs: Date { Date(timeIntervalSinceReferenceDate: timeIntervalSinceReferenceDate.rounded()) }
-
-  var millisecondsFromReferenceDate: TimeInterval {
-    return (timeIntervalSinceReferenceDate * 1000.0).rounded() / 1000.0
   }
 
 }

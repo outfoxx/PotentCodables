@@ -36,12 +36,17 @@ public struct ZonedDate: Equatable, Hashable, Codable {
     self.timeZone = timeZone
   }
 
-}
+  private static let iso8601Parser = ISO8601FlexibleDateFormatter()
 
-extension ZonedDate: CustomStringConvertible {
+  public init?(iso8601Encoded string: String) {
+    guard let zonedDate = Self.iso8601Parser.date(from: string) else {
+      return nil
+    }
+    self.date = zonedDate.date
+    self.timeZone = zonedDate.timeZone
+  }
 
-  /// ISO8601 formatted date/time string.
-  public var description: String {
+  public func iso8601EncodedString() -> String {
     return Formatters.for(timeZone: timeZone).string(from: date)
   }
 
@@ -49,10 +54,10 @@ extension ZonedDate: CustomStringConvertible {
 
 private enum Formatters {
 
-  private static var formatters: [TimeZone: DateFormatter] = [:]
+  private static var formatters: [TimeZone: ISO8601DateFormatter] = [:]
   private static let formattersLock = NSLock()
 
-  static func `for`(timeZone: TimeZone) -> DateFormatter {
+  static func `for`(timeZone: TimeZone) -> ISO8601DateFormatter {
     formattersLock.lock()
     defer { formattersLock.unlock() }
 
@@ -60,15 +65,89 @@ private enum Formatters {
       return found
     }
 
-    let formatter = DateFormatter()
-    formatter.calendar = Calendar(identifier: .iso8601)
-    formatter.locale = Locale(identifier: "en_US_POSIX")
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds, .withTimeZone]
     formatter.timeZone = timeZone
-    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS XXXXX"
 
     formatters[timeZone] = formatter
 
     return formatter
+  }
+
+}
+
+private struct ISO8601FlexibleDateFormatter {
+
+  private let noSuffixes: ISO8601DateFormatter
+  private let zoneSuffix: ISO8601DateFormatter
+  private let fractionalSecondsSuffix: ISO8601DateFormatter
+  private let zoneAndFractionalSecondsSuffixes: ISO8601DateFormatter
+
+  public init() {
+    noSuffixes = {
+      let formatter = ISO8601DateFormatter()
+      formatter.formatOptions = [.withInternetDateTime]
+      formatter.timeZone = .utc
+      return formatter
+    }()
+
+    zoneSuffix = {
+      let formatter = ISO8601DateFormatter()
+      formatter.formatOptions = [.withInternetDateTime, .withTimeZone]
+      formatter.timeZone = .utc
+      return formatter
+    }()
+
+    fractionalSecondsSuffix = {
+      let formatter = ISO8601DateFormatter()
+      formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+      formatter.timeZone = .utc
+      return formatter
+    }()
+
+    zoneAndFractionalSecondsSuffixes = {
+      let formatter = ISO8601DateFormatter()
+      formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds, .withTimeZone]
+      formatter.timeZone = .utc
+      return formatter
+    }()
+  }
+
+  public func date(from string: String) -> ZonedDate? {
+    let parsedDate: Date?
+    let hasSeconds: Bool
+    let hasZone: Bool
+    let timeZone: TimeZone
+    if let timeStartIndex = string.firstIndex(of: "T") {
+      let time = string[timeStartIndex...]
+      let zoneStartIndex = time.firstIndex { char in char == "-" || char == "+" || char == "Z" } ?? time.endIndex
+      let timeWithoutZone = time[time.startIndex ..< zoneStartIndex]
+      hasSeconds = timeWithoutZone.contains(".")
+      hasZone = zoneStartIndex != time.endIndex
+      timeZone = TimeZone.timeZone(from: String(time[zoneStartIndex...])) ?? .current
+    }
+    else {
+      hasSeconds = false
+      hasZone = false
+      timeZone = .current
+    }
+
+    if hasSeconds && hasZone {
+      parsedDate = zoneAndFractionalSecondsSuffixes.date(from: string)
+    }
+    else if hasSeconds {
+      parsedDate = fractionalSecondsSuffix.date(from: string)
+    }
+    else if hasZone {
+      parsedDate = zoneSuffix.date(from: string)
+    }
+    else {
+      parsedDate = noSuffixes.date(from: string)
+    }
+    if let parsedDate = parsedDate {
+      return ZonedDate(date: parsedDate, timeZone: timeZone)
+    }
+    return nil
   }
 
 }

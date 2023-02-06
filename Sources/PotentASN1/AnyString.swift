@@ -63,7 +63,7 @@ public struct AnyString: Equatable, Hashable {
     case bmp
   }
 
-  /// Specifies the exact ``Kind`` of string.
+  /// Specifies the exact ``Kind-swift.enum`` of string.
   ///
   /// When encoding, selects the specific kind when the schema allows
   /// for multiple kinds of strings.
@@ -75,7 +75,7 @@ public struct AnyString: Equatable, Hashable {
   public var storage: String
 
   /// Initialize with a Swift String and explicit ASN.1 kind.
-  public init(_ value: String, kind: Kind? = nil) {
+  public init(_ value: String, kind: Kind?) {
     self.kind = kind
     storage = value
   }

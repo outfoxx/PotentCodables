@@ -9,27 +9,29 @@
 //
 
 public struct AnyCodingKey: CodingKey, Equatable, Hashable {
+
+  enum Error: Swift.Error {
+    case unsupportedKeyValue(Any)
+  }
+
   public var stringValue: String
   public var intValue: Int?
-
-  public init(stringValue: String) {
-    self.stringValue = stringValue
-    intValue = nil
-  }
-
-  public init(intValue: Int) {
-    stringValue = "\(intValue)"
-    self.intValue = intValue
-  }
 
   public init(stringValue: String, intValue: Int?) {
     self.stringValue = stringValue
     self.intValue = intValue
   }
 
+  public init(stringValue: String) {
+    self.init(stringValue: stringValue, intValue: nil)
+  }
+
+  public init(intValue: Int) {
+    self.init(stringValue: "\(intValue)", intValue: intValue)
+  }
+
   public init(index: Int) {
-    stringValue = "\(index)"
-    intValue = index
+    self.init(intValue: index)
   }
 
   public init<Key: CodingKey>(_ base: Key) {
@@ -42,43 +44,23 @@ public struct AnyCodingKey: CodingKey, Equatable, Hashable {
   }
 
   // swiftlint:disable:next force_unwrapping
-  public func key<K: CodingKey>() -> K {
+  public func key<K: CodingKey>() throws -> K {
     if let intValue = self.intValue {
-      return K(intValue: intValue)!
+      guard let key = K(intValue: intValue) else {
+        throw Error.unsupportedKeyValue(intValue)
+      }
+      return key
     }
     else {
-      return K(stringValue: stringValue)!
+      guard let key = K(stringValue: stringValue) else {
+        throw Error.unsupportedKeyValue(stringValue)
+      }
+      return key
     }
   }
 
   internal static let `super` = AnyCodingKey(stringValue: "super")
 
-}
-
-extension AnyCodingKey: Encodable {
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-    if let intValue = self.intValue {
-      try container.encode(intValue)
-    }
-    else {
-      try container.encode(stringValue)
-    }
-  }
-}
-
-extension AnyCodingKey: Decodable {
-  public init(from decoder: Decoder) throws {
-    let value = try decoder.singleValueContainer()
-    if let intValue = try? value.decode(Int.self) {
-      stringValue = "\(intValue)"
-      self.intValue = intValue
-    }
-    else {
-      stringValue = try value.decode(String.self)
-      intValue = nil
-    }
-  }
 }
 
 extension AnyCodingKey: ExpressibleByStringLiteral, ExpressibleByIntegerLiteral {

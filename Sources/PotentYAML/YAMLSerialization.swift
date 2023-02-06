@@ -13,7 +13,7 @@ import Foundation
 
 /// Convenience API for serializing and deserialization YAML items.
 ///
-public struct YAMLSerialization {
+public enum YAMLSerialization {
 
   /// Errors throws during serialization and deserialization
   ///
@@ -22,10 +22,10 @@ public struct YAMLSerialization {
   /// possible
   public enum Error: Swift.Error {}
 
-  /// Deserialize YAML encoded `Data` object.
+  /// Deserialize YAML encoded `Data`.
   ///
   /// - Parameters:
-  ///     - from: The `Data` value containing YAML encoded bytes
+  ///     - from: The `Data` value containing YAML encoded data
   /// - Throws:
   ///     - `YAMLSerialization.Error`: if any corrupted data is encountered
   ///     - 'Swift.Error`: if any stream I/O error is encountered
@@ -37,6 +37,23 @@ public struct YAMLSerialization {
     return .sequence(yamls, style: .any, tag: nil, anchor: nil)
   }
 
+  /// Deserialize YAML encoded `String`.
+  ///
+  /// - Parameters:
+  ///     - from: The `String` value containing YAML data.
+  /// - Throws:
+  ///     - `YAMLSerialization.Error`: if any corrupted data is encountered
+  ///     - 'Swift.Error`: if any stream I/O error is encountered
+  public static func yaml(from string: String) throws -> YAML {
+    guard let data = string.data(using: .utf8) else {
+      throw DecodingError
+        .dataCorrupted(
+          DecodingError
+            .Context(codingPath: [], debugDescription: "String cannot be encoded as UTF-8", underlyingError: nil)
+        )
+    }
+    return try yaml(from: data)
+  }
 
   public struct WritingOptions: OptionSet {
     public let rawValue: UInt
@@ -49,7 +66,14 @@ public struct YAMLSerialization {
   }
 
   public static func data(from yaml: YAML, options: WritingOptions = []) throws -> Data {
-    return try string(from: yaml, options: options).data(using: .utf8)!
+    guard let data = try string(from: yaml, options: options).data(using: .utf8) else {
+      throw DecodingError
+        .dataCorrupted(
+          DecodingError
+            .Context(codingPath: [], debugDescription: "String cannot be decoded as UTF-8", underlyingError: nil)
+        )
+    }
+    return data
   }
 
   public static func string(from yaml: YAML, options: WritingOptions = []) throws -> String {
@@ -63,7 +87,5 @@ public struct YAMLSerialization {
 
     return output
   }
-
-  private init() {}
 
 }

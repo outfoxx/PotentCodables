@@ -184,13 +184,9 @@ class CBORCodableRoundtripTests: XCTestCase {
     let oneTwoThree = try CBOREncoder().encode([1, 2, 3])
     let oneTwoThreeDecoded = try CBORDecoder().decode([Int].self, from: oneTwoThree)
     XCTAssertEqual(oneTwoThreeDecoded, [1, 2, 3])
-    let lotsOfInts = try CBOREncoder()
-      .encode([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25])
+    let lotsOfInts = try CBOREncoder().encode(Array(-512 ... 512))
     let lotsOfIntsDecoded = try CBORDecoder().decode([Int].self, from: lotsOfInts)
-    XCTAssertEqual(
-      lotsOfIntsDecoded,
-      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
-    )
+    XCTAssertEqual(lotsOfIntsDecoded, Array(-512 ... 512))
     let nestedSimple = try CBOREncoder().encode([[1], [2, 3], [4, 5]])
     let nestedSimpleDecoded = try CBORDecoder().decode([[Int]].self, from: nestedSimple)
     XCTAssertEqual(nestedSimpleDecoded, [[1], [2, 3], [4, 5]])

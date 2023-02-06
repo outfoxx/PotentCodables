@@ -21,22 +21,22 @@ public struct CBORReader {
     self.stream = stream
   }
 
-  private func readBinaryNumber(_ type: CBOR.Half.Type) throws -> CBOR.Half {
+  private func readHalf() throws -> CBOR.Half {
     return CBOR.Half(bitPattern: try stream.readInt(UInt16.self))
   }
 
-  private func readBinaryNumber(_ type: CBOR.Float.Type) throws -> CBOR.Float {
+  private func readFloat() throws -> CBOR.Float {
     return CBOR.Float(bitPattern: try stream.readInt(UInt32.self))
   }
 
-  private func readBinaryNumber(_ type: CBOR.Double.Type) throws -> CBOR.Double {
+  private func readDouble() throws -> CBOR.Double {
     return CBOR.Double(bitPattern: try stream.readInt(UInt64.self))
   }
 
   private func readVarUInt(_ initByte: UInt8, base: UInt8) throws -> UInt64 {
     guard initByte > base + 0x17 else { return UInt64(initByte - base) }
 
-    switch VarUIntSize(rawValue: initByte) {
+    switch try VarUIntSize.from(serialized: initByte) {
     case .uint8: return UInt64(try stream.readInt(UInt8.self))
     case .uint16: return UInt64(try stream.readInt(UInt16.self))
     case .uint32: return UInt64(try stream.readInt(UInt32.self))
@@ -158,27 +158,13 @@ public struct CBORReader {
       let numBytes = try readLength(initByte, base: 0x40)
       return .byteString(try stream.readBytes(count: numBytes))
     case 0x5F:
-      let values = try decodeItemsUntilBreak().map { cbor -> Data in
-        guard case .byteString(let bytes) = cbor else { throw CBORError.invalidIndefiniteElement }
-        return bytes
-      }
-      let numBytes = values.reduce(0) { $0 + $1.count }
-      var bytes = Data(capacity: numBytes)
-      values.forEach { bytes.append($0) }
-      return .byteString(bytes)
+      return .byteString(try readIndefiniteByteString())
 
     // utf-8 strings
     case 0x60 ... 0x7B:
-      let numBytes = try readLength(initByte, base: 0x60)
-      guard let string = String(data: try stream.readBytes(count: numBytes), encoding: .utf8) else {
-        throw CBORError.invalidUTF8String
-      }
-      return .utf8String(string)
+      return .utf8String(try readFiniteString(initByte: initByte))
     case 0x7F:
-      return .utf8String(try decodeItemsUntilBreak().map { item -> String in
-        guard case .utf8String(let string) = item else { throw CBORError.invalidIndefiniteElement }
-        return string
-      }.joined(separator: ""))
+      return .utf8String(try readIndefiniteString())
 
     // arrays
     case 0x80 ... 0x9B:
@@ -200,23 +186,60 @@ public struct CBORReader {
       let item = try decodeRequiredItem()
       return .tagged(CBOR.Tag(rawValue: tag), item)
 
-    case 0xE0 ... 0xF3: return .simple(initByte - 0xE0)
-    case 0xF4: return .boolean(false)
-    case 0xF5: return .boolean(true)
-    case 0xF6: return .null
-    case 0xF7: return .undefined
-    case 0xF8: return .simple(try stream.readByte())
+    case 0xE0 ... 0xF3:
+      return .simple(initByte - 0xE0)
+
+    case 0xF4:
+      return .boolean(false)
+
+    case 0xF5:
+      return .boolean(true)
+
+    case 0xF6:
+      return .null
+
+    case 0xF7:
+      return .undefined
+
+    case 0xF8:
+      return .simple(try stream.readByte())
 
     case 0xF9:
-      return .half(try readBinaryNumber(CBOR.Half.self))
+      return .half(try readHalf())
     case 0xFA:
-      return .float(try readBinaryNumber(CBOR.Float.self))
+      return .float(try readFloat())
     case 0xFB:
-      return .double(try readBinaryNumber(CBOR.Double.self))
+      return .double(try readDouble())
 
-    case 0xFF: return nil
-    default: throw CBORError.invalidItemType
+    case 0xFF:
+      return nil
+
+    default:
+      throw CBORError.invalidItemType
     }
+  }
+
+  private func readFiniteString(initByte: UInt8) throws -> String {
+    let numBytes = try readLength(initByte, base: 0x60)
+    guard let string = String(data: try stream.readBytes(count: numBytes), encoding: .utf8) else {
+      throw CBORError.invalidUTF8String
+    }
+    return string
+  }
+
+  private func readIndefiniteString() throws -> String {
+    return try decodeItemsUntilBreak().map { item -> String in
+      guard case .utf8String(let string) = item else { throw CBORError.invalidIndefiniteElement }
+      return string
+    }.joined(separator: "")
+  }
+
+  private func readIndefiniteByteString() throws -> Data {
+    let datas = try decodeItemsUntilBreak().map { cbor -> Data in
+      guard case .byteString(let bytes) = cbor else { throw CBORError.invalidIndefiniteElement }
+      return bytes
+    }.joined()
+    return Data(datas)
   }
 
 }
@@ -227,13 +250,15 @@ private enum VarUIntSize: UInt8 {
   case uint32 = 2
   case uint64 = 3
 
-  init(rawValue: UInt8) {
-    switch rawValue & 0b11 {
-    case 0: self = .uint8
-    case 1: self = .uint16
-    case 2: self = .uint32
-    case 3: self = .uint64
-    default: fatalError() // mask only allows values from 0-3
+  static func from(serialized value: UInt8) throws -> VarUIntSize {
+    switch value & 0b11 {
+    case 0: return .uint8
+    case 1: return .uint16
+    case 2: return .uint32
+    case 3: return .uint64
+    default:
+      // mask only allows values from 0-3
+      throw CBORError.invalidIntegerSize
     }
   }
 }

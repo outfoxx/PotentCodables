@@ -35,7 +35,7 @@ public struct CBORWriter {
     case .null: try encodeNull()
     case .undefined: try encodeUndefined()
     case .unsignedInt(let uint): try encodeVarUInt(uint)
-    case .negativeInt(let nint): try encodeNegativeInt(~Int64(bitPattern: nint))
+    case .negativeInt(let nint): try encodeNegativeInt(Int64(bitPattern: ~nint))
     case .byteString(let str): try encodeByteString(str)
     case .utf8String(let str): try encodeString(str)
     case .array(let array): try encodeArray(array)
@@ -113,7 +113,8 @@ public struct CBORWriter {
 
   /// Encodes any unsigned integer, `or`ing `modifier` with first byte
   private func encodeUInt<T>(_ val: T, modifier: UInt8) throws where T: FixedWidthInteger, T: UnsignedInteger {
-    try encodeVarUInt(UInt64(exactly: val)!, modifier: modifier)
+    guard let value = UInt64(exactly: val) else { fatalError("invalid unsigned integer") }
+    try encodeVarUInt(value, modifier: modifier)
   }
 
   /// Encodes any unsigned integer, `or`ing `modifier` with first byte
@@ -263,7 +264,7 @@ public struct CBORWriter {
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
   public func encodeHalf(_ val: CBOR.Half) throws {
-    try stream.writeByte(0xFA)
+    try stream.writeByte(0xF9)
     try stream.writeInt(val.bitPattern)
   }
 

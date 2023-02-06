@@ -51,8 +51,11 @@ public enum ASN1DERReader {
   /// - Parameter data: Data to be parsed.
   /// - Returns: Parsed tag and data.
   /// - Throws: ``ASN1DERReader/Error`` if `data` is unparsable or corrupted.
-  public static func parseTagged(data: Data) throws -> TaggedValue {
-    try data.withUnsafeBytes { ptr in
+  public static func parseTagged(data: Data) throws -> TaggedValue? {
+    if data.isEmpty {
+      return nil
+    }
+    return try data.withUnsafeBytes { ptr in
       var buffer = ptr.bindMemory(to: UInt8.self)
       let (tag, itemBuffer) = try parseTagged(&buffer)
       return TaggedValue(tag: tag, data: Data(itemBuffer))
@@ -120,7 +123,7 @@ public enum ASN1DERReader {
         return .set(try parseItems(&itemBuffer))
       default:
         // Default to saving tagged version
-        return .tagged(tagValue, Data(itemBuffer.popAll()))
+        return .tagged(tagValue, Data(try itemBuffer.popAll()))
       }
     }
 
@@ -129,16 +132,15 @@ public enum ASN1DERReader {
       return .boolean(try itemBuffer.pop() != 0)
 
     case .integer:
-      let data = Data(itemBuffer.popAll())
-      return .integer(BigInt(serialized: data))
+      return .integer(try parseInt(&itemBuffer))
 
     case .bitString:
       let unusedBits = try itemBuffer.pop()
-      let data = Data(itemBuffer.popAll())
+      let data = Data(try itemBuffer.popAll())
       return .bitString((data.count * 8) - Int(unusedBits), data)
 
     case .octetString:
-      return .octetString(Data(itemBuffer.popAll()))
+      return .octetString(Data(try itemBuffer.popAll()))
 
     case .null:
       return .null
@@ -168,18 +170,10 @@ public enum ASN1DERReader {
       return .ia5String(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
 
     case .utcTime:
-      let string = try parseString(&itemBuffer, tag: tag, encoding: .ascii)
-      guard let zonedDate = utcFormatter.date(from: string) else {
-        throw Error.invalidUTCTime
-      }
-      return .utcTime(zonedDate)
+      return .utcTime(try parseTime(&itemBuffer, formatter: utcFormatter))
 
     case .generalizedTime:
-      let string = try parseString(&itemBuffer, tag: tag, encoding: .ascii)
-      guard let zonedDate = generalizedFormatter.date(from: string) else {
-        throw Error.invalidGeneralizedTime
-      }
-      return .generalizedTime(zonedDate)
+      return .generalizedTime(try parseTime(&itemBuffer, formatter: generalizedFormatter))
 
     case .graphicString:
       return .graphicString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
@@ -204,9 +198,33 @@ public enum ASN1DERReader {
 
     case .objectDescriptor, .external, .enumerated, .embedded, .relativeOID:
       // Default to saving tagged version
-      return .tagged(tag.rawValue, Data(itemBuffer.popAll()))
+      return .tagged(tag.rawValue, Data(try itemBuffer.popAll()))
     }
 
+  }
+
+  private static func parseTime(
+    _ buffer: inout UnsafeBufferPointer<UInt8>,
+    formatter: SuffixedDateFormatter
+  ) throws -> ZonedDate {
+
+    guard let string = String(data: Data(try buffer.popAll()), encoding: .ascii) else {
+      throw Error.invalidStringEncoding
+    }
+
+    guard let zonedDate = formatter.date(from: string) else {
+      throw Error.invalidUTCTime
+    }
+
+    return zonedDate
+  }
+
+  private static func parseInt(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> BigInt {
+    if buffer.isEmpty {
+      return BigInt.zero
+    }
+    let data = Data(try buffer.popAll())
+    return BigInt(derEncoded: data)
   }
 
   private static func parseReal(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> Decimal {
@@ -214,9 +232,8 @@ public enum ASN1DERReader {
     if lead & 0x40 == 0x40 {
       return lead & 0x1 == 0 ? Decimal(Double.infinity) : Decimal(-Double.infinity)
     }
-    else if lead & 0x3F == 0 {
-      // Choose ISO-6093 NR3
-      let bytes = buffer.popAll()
+    else if lead & 0xC0 == 0 {
+      let bytes = try buffer.popAll()
       return Decimal(string: String(bytes: bytes, encoding: .ascii) ?? "") ?? .zero
     }
     else {
@@ -231,7 +248,7 @@ public enum ASN1DERReader {
     characterSet: CharacterSet? = nil
   ) throws -> String {
 
-    guard let string = String(data: Data(buffer.popAll()), encoding: encoding) else {
+    guard let string = String(data: Data(try buffer.popAll()), encoding: encoding) else {
       throw Error.invalidStringEncoding
     }
 
@@ -317,42 +334,38 @@ public enum ASN1DERReader {
 
 private extension UnsafeBufferPointer {
 
-  func peek() throws -> Element {
-    guard let byte = baseAddress?.pointee else {
+  mutating func popAll() throws -> UnsafeRawBufferPointer {
+    guard let baseAddress = baseAddress else {
       throw ASN1DERReader.Error.unexpectedEOF
     }
-    return byte
-  }
-
-  mutating func popAll() -> UnsafeRawBufferPointer {
     let buffer = UnsafeRawBufferPointer(start: baseAddress, count: count)
-    self = UnsafeBufferPointer(start: baseAddress?.advanced(by: count), count: 0)
+    self = UnsafeBufferPointer(start: baseAddress.advanced(by: count), count: 0)
     return buffer
   }
 
   mutating func pop(count: Int = 0) throws -> UnsafeBufferPointer {
-    guard self.count >= count else {
+    guard let baseAddress = baseAddress, self.count >= count else {
       throw ASN1DERReader.Error.unexpectedEOF
     }
     let buffer = UnsafeBufferPointer(start: baseAddress, count: count)
-    self = UnsafeBufferPointer(start: baseAddress?.advanced(by: count), count: self.count - count)
+    self = UnsafeBufferPointer(start: baseAddress.advanced(by: count), count: self.count - count)
     return buffer
   }
 
   mutating func pop() throws -> Element {
-    defer {
-      self = UnsafeBufferPointer(start: baseAddress?.advanced(by: 1), count: self.count - 1)
+    guard let baseAddress = baseAddress, self.count >= 1 else {
+      throw ASN1DERReader.Error.unexpectedEOF
     }
-    return baseAddress!.pointee
+    defer {
+      self = UnsafeBufferPointer(start: baseAddress.advanced(by: 1), count: self.count - 1)
+    }
+    return baseAddress.pointee
   }
 
 }
 
+private let utcFormatter =
+  SuffixedDateFormatter(basePattern: "yyMMddHHmm", secondsPattern: "ss") { $0.count > 10 }
 
-private extension String {
-  var hasFractionalSeconds: Bool { contains(".") }
-  var hasZone: Bool { contains("+") || contains("-") || contains("Z") }
-}
-
-private let utcFormatter = SuffixedDateFormatter(basePattern: "yyMMddHHmm", secondsPattern: "ss") { $0.count > 10 }
-private let generalizedFormatter = SuffixedDateFormatter.optionalFractionalSeconds(basePattern: "yyyyMMddHHmmss")
+private let generalizedFormatter =
+  SuffixedDateFormatter(basePattern: "yyyyMMddHHmmss", secondsPattern: ".S") { $0.contains(".") }

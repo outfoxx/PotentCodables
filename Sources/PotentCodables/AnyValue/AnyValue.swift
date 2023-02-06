@@ -10,6 +10,7 @@
 
 import Foundation
 import BigInt
+import OrderedCollections
 
 
 /// A `Codable` value that allows encoding/decoding values of any type or structure.
@@ -29,12 +30,15 @@ import BigInt
 ///     anyArray[0]
 ///
 @dynamicMemberLookup
-public enum AnyValue: Hashable {
+public enum AnyValue {
 
   public enum Error: Swift.Error {
     case unsupportedType
     case unsupportedValue(Any)
   }
+
+  public typealias AnyArray = [AnyValue]
+  public typealias AnyDictionary = OrderedDictionary<AnyValue, AnyValue>
 
   case `nil`
   case bool(Bool)
@@ -49,6 +53,7 @@ public enum AnyValue: Hashable {
   case uint64(UInt64)
   case integer(BigInt)
   case unsignedInteger(BigUInt)
+  case float16(Float16)
   case float(Float)
   case double(Double)
   case decimal(Decimal)
@@ -56,64 +61,34 @@ public enum AnyValue: Hashable {
   case url(URL)
   case uuid(UUID)
   case date(Date)
-  case array([AnyValue])
-  case dictionary([String: AnyValue])
+  case array(AnyArray)
+  case dictionary(AnyDictionary)
 
-  /// Wraps the value into an equivalent `AnyValue` tree
-  public static func wrapped(_ value: Any?) throws -> AnyValue {
-    guard let value = value else { return .nil }
-    switch value {
-    case let val as String: return .string(val)
-    case let val as Bool: return .bool(val)
-    case let val as NSNumber:
-      /// Use NSNumber's type identifier to determine exact numeric type because
-      /// Swift's `as`, `is` and `type(of:)` all coerce numeric types into the
-      /// requested type if they are compatible
-      switch UnicodeScalar(Int(val.objCType.pointee)) {
-      case "c": return .int8(val.int8Value)
-      case "C": return .uint8(val.uint8Value)
-      case "s": return .int16(val.int16Value)
-      case "S": return .uint16(val.uint16Value)
-      case "i": return .int32(val.int32Value)
-      case "I": return .uint32(val.uint32Value)
-      case "l": return MemoryLayout<Int>.size == 8 ? .int64(Int64(val.intValue)) : .int32(Int32(val.intValue))
-      case "L": return MemoryLayout<Int>.size == 8 ? .uint64(UInt64(val.uintValue)) : .uint32(UInt32(val.intValue))
-      case "q": return .int64(val.int64Value)
-      case "Q": return .uint64(val.uint64Value)
-      case "f": return .float(val.floatValue)
-      case "d": return .double(val.doubleValue)
-      default: fatalError("Invalid NSNumber type identifier")
-      }
-    case let val as BigInt: return .integer(val)
-    case let val as BigUInt: return .unsignedInteger(val)
-    case let val as Decimal: return .decimal(val)
-    case let val as Data: return .data(val)
-    case let val as URL: return .url(val)
-    case let val as UUID: return .uuid(val)
-    case let val as Date: return .date(val)
-    case let val as [Any]: return .array(try val.map { try wrapped($0) })
-    case let val as [String: Any]: return .dictionary(try val.mapValues { try wrapped($0) })
-    default: throw Error.unsupportedValue(value)
-    }
+  public static func int(_ value: Int) -> AnyValue {
+    return MemoryLayout<Int>.size == 8 ? .int64(Int64(value)) : .int32(Int32(value))
   }
 
-  public subscript(dynamicMember member: String) -> Any? {
+  public static func uint(_ value: UInt) -> AnyValue {
+    return MemoryLayout<UInt>.size == 8 ? .uint64(UInt64(value)) : .uint32(UInt32(value))
+  }
+
+  public subscript(dynamicMember member: String) -> AnyValue? {
+    if case .dictionary(let dict) = self {
+      return dict[.string(member)]
+    }
+    return nil
+  }
+
+  public subscript(member: AnyValue) -> AnyValue? {
     if case .dictionary(let dict) = self {
       return dict[member]
     }
     return nil
   }
 
-  public subscript(member: String) -> Any? {
-    if case .dictionary(let dict) = self {
-      return dict[member]
-    }
-    return nil
-  }
-
-  public subscript(position: Int) -> Any? {
-    if case .array(let array) = self {
-      return array[position]
+  public subscript(index: Int) -> AnyValue? {
+    if case .array(let array) = self, index < array.count {
+      return array[index]
     }
     return nil
   }
@@ -128,6 +103,16 @@ public enum AnyValue: Hashable {
     return value
   }
 
+  public var urlValue: URL? {
+    guard case .url(let value) = self else { return nil }
+    return value
+  }
+
+  public var uuidValue: UUID? {
+    guard case .uuid(let value) = self else { return nil }
+    return value
+  }
+
   public var dataValue: Data? {
     guard case .data(let value) = self else { return nil }
     return value
@@ -138,17 +123,103 @@ public enum AnyValue: Hashable {
     return value
   }
 
-  public var arrayValue: [AnyValue]? {
+  public var arrayValue: AnyArray? {
     guard case .array(let value) = self else { return nil }
     return value
   }
 
-  public var dictionaryValue: [String: AnyValue]? {
+  public var dictionaryValue: AnyDictionary? {
     guard case .dictionary(let value) = self else { return nil }
     return value
   }
 
-  public func integerValue<I: FixedWidthInteger>(as type: I.Type) -> I? {
+  public var intValue: Int? {
+    if MemoryLayout<Int>.size == 8 {
+      guard case .int64(let value) = self else {
+        return nil
+      }
+      return Int(value)
+    }
+    else {
+      guard case .int32(let value) = self else {
+        return nil
+      }
+      return Int(value)
+    }
+  }
+
+  public var uintValue: UInt? {
+    if MemoryLayout<UInt>.size == 8 {
+      guard case .uint64(let value) = self else {
+        return nil
+      }
+      return UInt(value)
+    }
+    else {
+      guard case .uint32(let value) = self else {
+        return nil
+      }
+      return UInt(value)
+    }
+  }
+
+  public var int8Value: Int8? {
+    guard case .int8(let int) = self else {
+      return nil
+    }
+    return int
+  }
+
+  public var uint8Value: UInt8? {
+    guard case .uint8(let uint) = self else {
+      return nil
+    }
+    return uint
+  }
+
+  public var int16Value: Int16? {
+    guard case .int16(let int) = self else {
+      return nil
+    }
+    return int
+  }
+
+  public var uint16Value: UInt16? {
+    guard case .uint16(let uint) = self else {
+      return nil
+    }
+    return uint
+  }
+
+  public var int32Value: Int32? {
+    guard case .int32(let int) = self else {
+      return nil
+    }
+    return int
+  }
+
+  public var uint32Value: UInt32? {
+    guard case .uint32(let uint) = self else {
+      return nil
+    }
+    return uint
+  }
+
+  public var int64Value: Int64? {
+    guard case .int64(let int) = self else {
+      return nil
+    }
+    return int
+  }
+
+  public var uint64Value: UInt64? {
+    guard case .uint64(let uint) = self else {
+      return nil
+    }
+    return uint
+  }
+
+  public func integerValue<I: FixedWidthInteger>(_ type: I.Type) -> I? {
     switch self {
     case .int8(let value): return I(value)
     case .int16(let value): return I(value)
@@ -158,9 +229,53 @@ public enum AnyValue: Hashable {
     case .uint16(let value): return I(value)
     case .uint32(let value): return I(value)
     case .uint64(let value): return I(value)
-    case .float(let value): return I(value)
-    case .double(let value): return I(value)
-    case .decimal(let value): return I(value.description)
+    default:
+      return nil
+    }
+  }
+
+  public var float16Value: Float16? {
+    guard case .float16(let float) = self else {
+      return nil
+    }
+    return float
+  }
+
+  public var floatValue: Float? {
+    guard case .float(let float) = self else {
+      return nil
+    }
+    return float
+  }
+
+  public var doubleValue: Double? {
+    guard case .double(let double) = self else {
+      return nil
+    }
+    return double
+  }
+
+  public var decimalValue: Decimal? {
+    guard case .decimal(let decimal) = self else {
+      return nil
+    }
+    return decimal
+  }
+
+  public func floatingPointValue<F: BinaryFloatingPoint & LosslessStringConvertible>(_ type: F.Type) -> F? {
+    switch self {
+    case .int8(let value): return F(value)
+    case .int16(let value): return F(value)
+    case .int32(let value): return F(value)
+    case .int64(let value): return F(value)
+    case .uint8(let value): return F(value)
+    case .uint16(let value): return F(value)
+    case .uint32(let value): return F(value)
+    case .uint64(let value): return F(value)
+    case .float16(let value): return F(value)
+    case .float(let value): return F(value)
+    case .double(let value): return F(value)
+    case .decimal(let value): return F(value.description)
     default:
       return nil
     }
@@ -168,7 +283,149 @@ public enum AnyValue: Hashable {
 }
 
 
-// MARK: ExpressibleBy<>Literal support
+// MARK: Conformances
+
+extension AnyValue: Equatable {}
+extension AnyValue: Hashable {}
+extension AnyValue: Value {
+
+  public var isNull: Bool {
+    guard case .nil = self else { return false }
+    return true
+  }
+
+}
+
+extension AnyValue: CustomStringConvertible {
+
+  public var description: String {
+    switch self {
+    case .nil: return "nil"
+    case .bool(let value): return value.description
+    case .int8(let value): return value.description
+    case .int16(let value): return value.description
+    case .int32(let value): return value.description
+    case .int64(let value): return value.description
+    case .uint8(let value): return value.description
+    case .uint16(let value): return value.description
+    case .uint32(let value): return value.description
+    case .uint64(let value): return value.description
+    case .integer(let value): return value.description
+    case .unsignedInteger(let value): return value.description
+    case .float16(let value): return value.description
+    case .float(let value): return value.description
+    case .double(let value): return value.description
+    case .decimal(let value): return value.description
+    case .string(let value): return value
+    case .date(let value): return ZonedDate(date: value, timeZone: .utc).iso8601EncodedString()
+    case .data(let value): return value.description
+    case .uuid(let value): return value.uuidString
+    case .url(let value): return value.absoluteString
+    case .array(let value): return value.description
+    case .dictionary(let value): return value.description
+    }
+  }
+
+}
+
+
+// MARK: Wrapping
+
+extension AnyValue {
+
+  /// Wraps the value into an equivalent `AnyValue` tree
+  public static func wrapped(_ value: Any?) throws -> AnyValue {
+    guard let value = value else { return .nil }
+    switch value {
+    case let val as AnyValue: return val
+    case let val as String: return .string(val)
+    case let val as Int: return .int(val)
+    case let val as UInt: return .uint(val)
+    case let val as Bool: return .bool(val)
+    case let val as Int8: return .int8(val)
+    case let val as UInt8: return .uint8(val)
+    case let val as Int16: return .int16(val)
+    case let val as UInt16: return .uint16(val)
+    case let val as Int32: return .int32(val)
+    case let val as UInt32: return .uint32(val)
+    case let val as Int64: return .int64(val)
+    case let val as UInt64: return .uint64(val)
+    case let val as Decimal: return .decimal(val) // Before other floats (Swift Decimal -> Double allowed)
+    case let val as Float16: return .float16(val)
+    case let val as Float: return .float(val)
+    case let val as Double: return .double(val)
+    case let val as BigInt: return .integer(val)
+    case let val as BigUInt: return .unsignedInteger(val)
+    case let val as Data: return .data(val)
+    case let val as URL: return .url(val)
+    case let val as UUID: return .uuid(val)
+    case let val as Date: return .date(val)
+    case let val as AnyArray: return .array(val)
+    case let val as [Any]: return .array(try val.map { try wrapped($0) })
+    case let val as AnyDictionary: return .dictionary(val)
+    case let val as [String: Any]:
+      return .dictionary(AnyDictionary(uniqueKeysWithValues: try val.map { (try wrapped($0), try wrapped($1)) }))
+    case let val as [Int: Any]:
+      return .dictionary(AnyDictionary(uniqueKeysWithValues: try val.map { (try wrapped($0), try wrapped($1)) }))
+    case let val as OrderedDictionary<String, Any>:
+      return .dictionary(AnyDictionary(uniqueKeysWithValues: try val.map { (try wrapped($0), try wrapped($1)) }))
+    case let val as OrderedDictionary<Int, Any>:
+      return .dictionary(AnyDictionary(uniqueKeysWithValues: try val.map { (try wrapped($0), try wrapped($1)) }))
+    default: throw Error.unsupportedValue(value)
+    }
+  }
+
+  public var unwrapped: Any? {
+    switch self {
+    case .nil: return nil
+    case .bool(let value): return value
+    case .string(let value): return value
+    case .int8(let value): return value
+    case .int16(let value): return value
+    case .int32(let value): return value
+    case .int64(let value): return value
+    case .uint8(let value): return value
+    case .uint16(let value): return value
+    case .uint32(let value): return value
+    case .uint64(let value): return value
+    case .integer(let value): return value
+    case .unsignedInteger(let value): return value
+    case .float16(let value): return value
+    case .float(let value): return value
+    case .double(let value): return value
+    case .decimal(let value): return value
+    case .data(let value): return value
+    case .url(let value): return value
+    case .uuid(let value): return value
+    case .date(let value): return value
+    case .array(let value): return Array(value.map(\.unwrapped))
+    case .dictionary(let value): return unwrap(dictionary: value)
+    }
+
+    func unwrap(dictionary: AnyDictionary) -> Any {
+      return Dictionary(uniqueKeysWithValues: dictionary.compactMap {
+        guard let value = $1.unwrapped else {
+          return nil
+        }
+        if let key = $0.stringValue {
+          return (AnyHashable(key), value)
+        }
+        else if let key = $0.integerValue(Int.self) {
+          return (AnyHashable(key), value)
+        }
+        else {
+          // It is an unsupported key type, but we are returning
+          // nil(s) rather than throwing errors
+          return nil
+        }
+      }) as [AnyHashable: Any]
+    }
+  }
+
+}
+
+
+// MARK: Literals
 
 extension AnyValue: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral,
   ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral,
@@ -200,231 +457,81 @@ extension AnyValue: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expres
     self = .array(elements)
   }
 
-  public typealias Key = String
+  public typealias Key = AnyValue
   public typealias Value = AnyValue
 
   public init(dictionaryLiteral elements: (Key, Value)...) {
-    self = .dictionary(Dictionary(uniqueKeysWithValues: elements))
+    self = .dictionary(AnyDictionary(uniqueKeysWithValues: elements.map { ($0, $1) }))
   }
 
 }
 
 
-// MARK: Value (tree) conformance
-
-extension AnyValue: Value {
-
-  public var isNull: Bool {
-    guard case .nil = self else { return false }
-    return true
-  }
-
-  public var unwrapped: Any? {
-    switch self {
-    case .nil: return nil
-    case .bool(let value): return value
-    case .string(let value): return value
-    case .int8(let value): return value
-    case .int16(let value): return value
-    case .int32(let value): return value
-    case .int64(let value): return value
-    case .uint8(let value): return value
-    case .uint16(let value): return value
-    case .uint32(let value): return value
-    case .uint64(let value): return value
-    case .integer(let value): return value
-    case .unsignedInteger(let value): return value
-    case .float(let value): return value
-    case .double(let value): return value
-    case .decimal(let value): return value
-    case .data(let value): return value
-    case .url(let value): return value
-    case .uuid(let value): return value
-    case .date(let value): return value
-    case .array(let value): return Array(value.map(\.unwrapped))
-    case .dictionary(let value): return Dictionary(uniqueKeysWithValues: value.map { ($0, $1.unwrapped) })
-    }
-  }
-
-  /// Unwraps all the values in the tree, filtering nils present in `array` or `dictionary` values
-  public var compactUnwrapped: Any? {
-    switch self {
-    case .nil: return nil
-    case .bool(let value): return value
-    case .string(let value): return value
-    case .int8(let value): return value
-    case .int16(let value): return value
-    case .int32(let value): return value
-    case .int64(let value): return value
-    case .uint8(let value): return value
-    case .uint16(let value): return value
-    case .uint32(let value): return value
-    case .uint64(let value): return value
-    case .integer(let value): return value
-    case .unsignedInteger(let value): return value
-    case .float(let value): return value
-    case .double(let value): return value
-    case .decimal(let value): return value
-    case .data(let value): return value
-    case .url(let value): return value
-    case .uuid(let value): return value
-    case .date(let value): return value
-    case .array(let value): return value.compactMap(\.compactUnwrapped)
-    case .dictionary(let value): return value.compactMapValues { $0.compactUnwrapped }
-    }
-  }
-
-}
-
-
-// MARK: Decodable support
+// MARK: Codable
 
 extension AnyValue: Decodable {
 
   public init(from decoder: Swift.Decoder) throws {
 
+    // Try as single value container
+    if let container = try? decoder.singleValueContainer() {
+
+      if container.decodeNil() {
+        self = .nil
+        return
+      }
+
+      if let value = try? container.decode(Bool.self) {
+        self = .bool(value)
+        return
+      }
+
+      if let value = try? container.decode(Int.self) {
+        self = .int(value)
+        return
+      }
+
+      if let value = try? container.decode(Int64.self) {
+        self = .int64(value)
+        return
+      }
+
+      if let value = try? container.decode(UInt64.self) {
+        self = .uint64(value)
+        return
+      }
+
+      if let value = try? container.decode(BigInt.self) {
+        self = .integer(value)
+        return
+      }
+
+      if let value = try? container.decode(Double.self) {
+        self = .double(value)
+        return
+      }
+
+      if let value = try? container.decode(String.self) {
+        self = .string(value)
+        return
+      }
+
+      if let value = try? container.decode([AnyValue].self) {
+        self = .array(value)
+        return
+      }
+
+    }
+
     // Try keyed container
     if let container = try? decoder.container(keyedBy: AnyCodingKey.self) {
 
-      var dictionary = [String: AnyValue]()
+      var dictionary = AnyDictionary()
       for key in container.allKeys {
-        dictionary[key.stringValue] = try container.decode(AnyValue.self, forKey: key)
+        dictionary[.string(key.stringValue)] = try container.decode(AnyValue.self, forKey: key)
       }
 
       self = .dictionary(dictionary)
-      return
-    }
-
-    // Try unkeyed container
-    if var container = try? decoder.unkeyedContainer() {
-
-      var array = [AnyValue]()
-      for _ in 0 ..< (container.count ?? 0) {
-        array.append(try container.decode(AnyValue.self))
-      }
-
-      self = .array(array)
-      return
-    }
-
-    // Treat as single value container
-    guard let container = try? decoder.singleValueContainer() else {
-      fatalError("Invalid decoder")
-    }
-
-    if let rawContainer = container as? TreeValueDecodingContainer {
-      self = try Self.wrapped(rawContainer.decodeUnwrappedValue())
-      return
-    }
-
-    if container.decodeNil() {
-      self = .nil
-      return
-    }
-
-    if let value = try? container.decode(Bool.self) {
-      self = .bool(value)
-      return
-    }
-
-    if let value = try? container.decode(String.self) {
-      self = .string(value)
-      return
-    }
-
-    if let value = try? container.decode(Int8.self) {
-      self = .int8(value)
-      return
-    }
-
-    if let value = try? container.decode(Int16.self) {
-      self = .int16(value)
-      return
-    }
-
-    if let value = try? container.decode(Int32.self) {
-      self = .int32(value)
-      return
-    }
-
-    if let value = try? container.decode(Int64.self) {
-      self = .int64(value)
-      return
-    }
-
-
-    if let value = try? container.decode(UInt8.self) {
-      self = .uint8(value)
-      return
-    }
-
-    if let value = try? container.decode(UInt16.self) {
-      self = .uint16(value)
-      return
-    }
-
-    if let value = try? container.decode(UInt32.self) {
-      self = .uint32(value)
-      return
-    }
-
-    if let value = try? container.decode(UInt64.self) {
-      self = .uint64(value)
-      return
-    }
-
-    if let value = try? container.decode(BigInt.self) {
-      self = .integer(value)
-      return
-    }
-
-    if let value = try? container.decode(BigUInt.self) {
-      self = .unsignedInteger(value)
-      return
-    }
-
-    if let value = try? container.decode(Float.self) {
-      self = .float(value)
-      return
-    }
-
-    if let value = try? container.decode(Double.self) {
-      self = .double(value)
-      return
-    }
-
-    if let value = try? container.decode(Decimal.self) {
-      self = .decimal(value)
-      return
-    }
-
-    if let value = try? container.decode(Data.self) {
-      self = .data(value)
-      return
-    }
-
-    if let value = try? container.decode(URL.self) {
-      self = .url(value)
-      return
-    }
-
-    if let value = try? container.decode(UUID.self) {
-      self = .uuid(value)
-      return
-    }
-
-    if let value = try? container.decode(Date.self) {
-      self = .date(value)
-      return
-    }
-
-    if let value = try? container.decode([AnyValue].self) {
-      self = .array(value)
-      return
-    }
-
-    if let value = try? container.decode([String: AnyValue].self) {
-      self = .dictionary(value)
       return
     }
 
@@ -432,8 +539,6 @@ extension AnyValue: Decodable {
   }
 
 }
-
-// MARK: Encodable support
 
 extension AnyValue: Encodable {
 
@@ -466,6 +571,8 @@ extension AnyValue: Encodable {
       try container.encode(value)
     case .unsignedInteger(let value):
       try container.encode(value)
+    case .float16(let value):
+      try container.encode(value)
     case .float(let value):
       try container.encode(value)
     case .double(let value):
@@ -490,11 +597,11 @@ extension AnyValue: Encodable {
 }
 
 
-/// Make encoders/decoders available in AnyValue namespace
-///
+// Make encoders/decoders available in AnyValue namespace
+
 public extension AnyValue {
 
   typealias Encoder = AnyValueEncoder
-  typealias Decoder = AnyValueEncoder
+  typealias Decoder = AnyValueDecoder
 
 }

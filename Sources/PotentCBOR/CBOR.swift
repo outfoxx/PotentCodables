@@ -11,9 +11,6 @@
 import Foundation
 import OrderedCollections
 import PotentCodables
-#if arch(x86_64)
-import Float16
-#endif
 
 
 /// General CBOR value.
@@ -35,7 +32,7 @@ import Float16
 ///     cborArray[0]
 ///
 @dynamicMemberLookup
-public indirect enum CBOR: Equatable, Hashable {
+public indirect enum CBOR {
 
   /// A CBOR `tag` for tagged values supported by the specification.
   ///
@@ -48,11 +45,7 @@ public indirect enum CBOR: Equatable, Hashable {
   }
 
 
-#if arch(x86_64)
-  public typealias Half = float16
-#else
   public typealias Half = Float16
-#endif
   public typealias Float = Float32
   public typealias Double = Float64
 
@@ -74,9 +67,77 @@ public indirect enum CBOR: Equatable, Hashable {
   case float(Float)
   case double(Double)
 
-  public var isNull: Bool {
-    if case .null = self { return true }
-    return false
+  public init(_ value: Bool) {
+    self = .boolean(value)
+  }
+
+  public init(_ value: String) {
+    self = .utf8String(value)
+  }
+
+  public init(_ value: Data) {
+    self = .byteString(value)
+  }
+
+  public init(_ value: Int) {
+    self.init(Int64(value))
+  }
+
+  public init(_ value: Int64) {
+    if value < 0 {
+      self = .negativeInt(UInt64(bitPattern: ~value))
+    }
+    else {
+      self = .unsignedInt(UInt64(value))
+    }
+  }
+
+  public init(_ value: UInt) {
+    self.init(UInt64(value))
+  }
+
+  public init(_ value: UInt64) {
+    self = .unsignedInt(value)
+  }
+
+  public init(_ value: Half) {
+    self = .half(value)
+  }
+
+  public init(_ value: Swift.Float) {
+    self = .float(value)
+  }
+
+  public init(_ value: Swift.Double) {
+    self = .double(value)
+  }
+
+  public subscript(dynamicMember member: CBOR) -> CBOR? {
+    if let map = mapValue {
+      return map[member]
+    }
+    return nil
+  }
+
+  public subscript(position: CBOR) -> CBOR? {
+    get {
+      switch (self, position) {
+      case (let .array(array), .unsignedInt(let index)) where index < array.count: return array[Int(index)]
+      case (let .map(map), let key): return map[key]
+      default: return nil
+      }
+    }
+    set {
+      switch (self, position) {
+      case (var .array(array), .unsignedInt(let index)):
+        array[Int(index)] = newValue ?? .null
+        self = .array(array)
+      case (var .map(map), let key):
+        map[key] = newValue ?? .null
+        self = .map(map)
+      default: break
+      }
+    }
   }
 
   public var booleanValue: Bool? {
@@ -124,94 +185,25 @@ public indirect enum CBOR: Equatable, Hashable {
     return simple
   }
 
-  public var isNumber: Bool {
-    switch untagged {
-    case .unsignedInt, .negativeInt, .half, .float, .double: return true
-    default: return false
-    }
-  }
+  @available(*, deprecated, message: "Use floatingPointValue or integerValue instead")
+  public var numberValue: Double? { floatingPointValue() }
 
-  public var numberValue: Double? {
+  public func integerValue<T: BinaryInteger>() -> T? {
     switch untagged {
-    case .unsignedInt(let uint): return Double(exactly: uint)
-    case .negativeInt(let nint): return Double(exactly: nint).map { -1 - $0 }
-    case .half(let half): return Double(half)
-    case .float(let float): return Double(float)
-    case .double(let double): return double
+    case .unsignedInt(let uint): return T(uint)
+    case .negativeInt(let nint): return T(Int64(bitPattern: ~nint))
     default: return nil
     }
   }
 
-  public init(_ value: Bool) {
-    self = .boolean(value)
-  }
-
-  public init(_ value: String) {
-    self = .utf8String(value)
-  }
-
-  public init(_ value: Data) {
-    self = .byteString(value)
-  }
-
-  public init(_ value: Int) {
-    self.init(Int64(value))
-  }
-
-  public init(_ value: Int64) {
-    if value < 0 {
-      self = .negativeInt(~UInt64(bitPattern: Int64(value)))
-    }
-    else {
-      self = .unsignedInt(UInt64(value))
-    }
-  }
-
-  public init(_ value: UInt) {
-    self.init(UInt64(value))
-  }
-
-  public init(_ value: UInt64) {
-    self = .unsignedInt(value)
-  }
-
-  public init(_ value: Half) {
-    self = .half(value)
-  }
-
-  public init(_ value: Swift.Float) {
-    self = .float(value)
-  }
-
-  public init(_ value: Swift.Double) {
-    self = .double(value)
-  }
-
-  public subscript(dynamicMember member: CBOR) -> CBOR? {
-    if let map = mapValue {
-      return map[member]
-    }
-    return nil
-  }
-
-  public subscript(position: CBOR) -> CBOR? {
-    get {
-      switch (self, position) {
-      case (let .array(array), .unsignedInt(let index)): return array[Int(index)]
-      case (let .map(map), let key): return map[key]
-      default: return nil
-      }
-    }
-    set {
-      switch (self, position) {
-      case (var .array(array), .unsignedInt(let index)):
-        array[Int(index)] = newValue ?? .null
-        self = .array(array)
-      case (var .map(map), let key):
-        map[key] = newValue ?? .null
-        self = .map(map)
-      default: break
-      }
+  public func floatingPointValue<T: BinaryFloatingPoint>() -> T? {
+    switch untagged {
+    case .unsignedInt(let uint): return T(uint)
+    case .negativeInt(let nint): return T(Int64(bitPattern: ~nint))
+    case .half(let half): return T(half)
+    case .float(let float): return T(float)
+    case .double(let double): return T(double)
+    default: return nil
     }
   }
 
@@ -229,6 +221,80 @@ public indirect enum CBOR: Equatable, Hashable {
   }
 
 }
+
+public extension CBOR.Tag {
+  static let iso8601DateTime = CBOR.Tag(rawValue: 0)
+  static let epochDateTime = CBOR.Tag(rawValue: 1)
+  static let positiveBignum = CBOR.Tag(rawValue: 2)
+  static let negativeBignum = CBOR.Tag(rawValue: 3)
+  static let decimalFraction = CBOR.Tag(rawValue: 4)
+  static let bigfloat = CBOR.Tag(rawValue: 5)
+
+  // 6...20 unassigned
+
+  static let expectedConversionToBase64URLEncoding = CBOR.Tag(rawValue: 21)
+  static let expectedConversionToBase64Encoding = CBOR.Tag(rawValue: 22)
+  static let expectedConversionToBase16Encoding = CBOR.Tag(rawValue: 23)
+  static let encodedCBORDataItem = CBOR.Tag(rawValue: 24)
+
+  // 25...31 unassigned
+
+  static let uri = CBOR.Tag(rawValue: 32)
+  static let base64Url = CBOR.Tag(rawValue: 33)
+  static let base64 = CBOR.Tag(rawValue: 34)
+  static let regularExpression = CBOR.Tag(rawValue: 35)
+  static let mimeMessage = CBOR.Tag(rawValue: 36)
+  static let uuid = CBOR.Tag(rawValue: 37)
+
+  // 38...55798 unassigned
+
+  static let selfDescribeCBOR = CBOR.Tag(rawValue: 55799)
+}
+
+
+// MARK: Conformances
+
+extension CBOR: Equatable {}
+extension CBOR: Hashable {}
+extension CBOR: Value {
+
+  public var isNull: Bool {
+    if case .null = self { return true }
+    return false
+  }
+
+}
+
+
+// MARK: Wrapping
+
+extension CBOR {
+
+  public var unwrapped: Any? {
+    switch self {
+    case .null: return nil
+    case .undefined: return nil
+    case .boolean(let value): return value
+    case .utf8String(let value): return value
+    case .byteString(let value): return value
+    case .simple(let value): return value
+    case .unsignedInt(let value): return value
+    case .negativeInt(let value): return Int64(bitPattern: ~value)
+    case .float(let value): return value
+    case .half(let value): return value
+    case .double(let value): return value
+    case .array(let value): return Swift.Array(value.map(\.unwrapped))
+    case .map(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in
+        (key.unwrapped as? AnyHashable, value.unwrapped)
+      })
+    case .tagged(_, let value): return value.unwrapped
+    }
+  }
+
+}
+
+
+// MARK: Literals
 
 extension CBOR: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, ExpressibleByStringLiteral,
   ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral, ExpressibleByBooleanLiteral,
@@ -272,63 +338,9 @@ extension CBOR: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, Expressibl
 
 }
 
-public extension CBOR.Tag {
-  static let iso8601DateTime = CBOR.Tag(rawValue: 0)
-  static let epochDateTime = CBOR.Tag(rawValue: 1)
-  static let positiveBignum = CBOR.Tag(rawValue: 2)
-  static let negativeBignum = CBOR.Tag(rawValue: 3)
-  static let decimalFraction = CBOR.Tag(rawValue: 4)
-  static let bigfloat = CBOR.Tag(rawValue: 5)
 
-  // 6...20 unassigned
+// Make encoders/decoders available in AnyValue namespace
 
-  static let expectedConversionToBase64URLEncoding = CBOR.Tag(rawValue: 21)
-  static let expectedConversionToBase64Encoding = CBOR.Tag(rawValue: 22)
-  static let expectedConversionToBase16Encoding = CBOR.Tag(rawValue: 23)
-  static let encodedCBORDataItem = CBOR.Tag(rawValue: 24)
-
-  // 25...31 unassigned
-
-  static let uri = CBOR.Tag(rawValue: 32)
-  static let base64Url = CBOR.Tag(rawValue: 33)
-  static let base64 = CBOR.Tag(rawValue: 34)
-  static let regularExpression = CBOR.Tag(rawValue: 35)
-  static let mimeMessage = CBOR.Tag(rawValue: 36)
-  static let uuid = CBOR.Tag(rawValue: 37)
-
-  // 38...55798 unassigned
-
-  static let selfDescribeCBOR = CBOR.Tag(rawValue: 55799)
-}
-
-extension CBOR: Value {
-
-  public var unwrapped: Any? {
-    switch self {
-    case .null: return nil
-    case .undefined: return nil
-    case .boolean(let value): return value
-    case .utf8String(let value): return value
-    case .byteString(let value): return value
-    case .simple(let value): return value
-    case .unsignedInt(let value): return value
-    case .negativeInt(let value): return -1 - Int(value)
-    case .float(let value): return value
-    case .half(let value): return value
-    case .double(let value): return value
-    case .array(let value): return Swift.Array(value.map(\.unwrapped))
-    case .map(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in
-        (key.unwrapped as? AnyHashable, value.unwrapped)
-      })
-    case .tagged(_, let value): return value.unwrapped
-    }
-  }
-
-}
-
-
-/// Make encoders/decoders available in CBOR namespace
-///
 public extension CBOR {
 
   typealias Encoder = CBOREncoder

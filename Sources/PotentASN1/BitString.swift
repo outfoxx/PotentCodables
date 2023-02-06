@@ -29,6 +29,7 @@ public struct BitString: Equatable, Hashable, CustomStringConvertible {
   ///   - bytes: Byte storage for bits.
   ///
   public init(length: Int, bytes: Data) {
+    precondition(bytes.count * 8 >= length)
     self.bytes = bytes
     self.length = length
   }
@@ -194,7 +195,7 @@ extension BitString: Codable {
   ///
   public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
-    try container.encode(description)
+    try container.encode(bitFlagString)
   }
 
 }

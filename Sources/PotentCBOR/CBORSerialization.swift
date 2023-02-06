@@ -16,7 +16,7 @@ import Foundation
 /// The API is simple and should fit most user's needs, if
 /// required users can drop down and use `CBORWriter`/
 /// `CBORReader` directly.
-public struct CBORSerialization {
+public enum CBORSerialization {
 
   /// Errors throws during serialization and deserialization
   ///
@@ -40,6 +40,8 @@ public struct CBORSerialization {
     case sequenceTooLong
     /// An invalid UTF-8 `string` sequence was encountered during deserialization
     case invalidUTF8String
+    /// Invalid integer size indicator
+    case invalidIntegerSize
   }
 
   /// Serialize `CBOR` value into a byte data.
@@ -76,7 +78,5 @@ public struct CBORSerialization {
   public static func cbor(from stream: CBORInputStream) throws -> CBOR {
     return try CBORReader(stream: stream).decodeRequiredItem()
   }
-
-  private init() {}
 
 }

@@ -8,9 +8,10 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-import CoreServices
+import BigInt
 import Foundation
 import PotentCodables
+
 
 /// General YAML value.
 ///
@@ -48,28 +49,32 @@ public enum YAML {
       self.rawValue = rawValue
     }
 
-    public static let null = Tag("!!null")
-    public static let bool = Tag("!!bool")
-    public static let int = Tag("!!int")
-    public static let float = Tag("!!float")
-    public static let str = Tag("!!str")
+    public static let null = Tag("tag:yaml.org,2002:null")
+    public static let bool = Tag("tag:yaml.org,2002:bool")
+    public static let int = Tag("tag:yaml.org,2002:int")
+    public static let float = Tag("tag:yaml.org,2002:float")
+    public static let str = Tag("tag:yaml.org,2002:str")
 
-    public static let seq = Tag("!!seq")
-    public static let map = Tag("!!map")
+    public static let seq = Tag("tag:yaml.org,2002:seq")
+    public static let map = Tag("tag:yaml.org,2002:map")
   }
 
   public typealias Anchor = String
 
   public enum Error: Swift.Error {
+    case unableToCreateParser
     case unexpectedEOF
     case unexpectedEvent
+    case invalidToken
+    case invalidTaggedBool
+    case parserError(message: String, line: Int, column: Int)
   }
 
   public struct Number: Equatable, Hashable, Codable {
 
-    public let value: String
-    public let isInteger: Bool
-    public let isNegative: Bool
+    public var value: String
+    public var isInteger: Bool
+    public var isNegative: Bool
 
     public init(_ value: String, isInteger: Bool, isNegative: Bool) {
       self.value = value
@@ -78,21 +83,33 @@ public enum YAML {
     }
 
     public init(_ value: String) {
-      self.value = value
-      isInteger = value.allSatisfy(\.isNumber)
-      isNegative = value.hasPrefix("-")
+      self.init(value, isInteger: value.allSatisfy { $0.isNumber || $0 == "-" }, isNegative: value.hasPrefix("-"))
     }
 
-    public init(_ value: Double) {
-      self.value = value.description
+    public init<T: FloatingPoint>(_ value: T) {
+      self.value = String(describing: value)
       isInteger = false
       isNegative = value < 0
     }
 
-    public init(_ value: Int) {
-      self.value = value.description
+    public init<T: SignedInteger>(_ value: T) {
+      self.value = String(value)
       isInteger = true
       isNegative = value < 0
+    }
+
+    public init<T: UnsignedInteger>(_ value: T) {
+      self.value = String(value)
+      isInteger = true
+      isNegative = false
+    }
+
+    public var isNaN: Bool {
+      return value == ".nan"
+    }
+
+    public var isInfinity: Bool {
+      return value.hasSuffix(".inf")
     }
 
     public var integerValue: Int? {
@@ -116,17 +133,40 @@ public enum YAML {
     public var numberValue: Any? {
       if isInteger {
         if isNegative {
-          if MemoryLayout<Int>.size == 4 {
-            return Int(value) ?? Int64(value) ?? Decimal(string: value)
+          guard let int = BigInt(value) else {
+            return nil
           }
-          return Int(value) ?? Decimal(string: value)
+          switch int.bitWidth {
+          case 0 ... (MemoryLayout<Int>.size * 8):
+            return Int(int)
+          case 0 ... (MemoryLayout<Int64>.size * 8):
+            return Int64(int)
+          default:
+            return BigInt(value)
+          }
         }
-        if MemoryLayout<Int>.size == 4 {
-          return Int(value) ?? Int64(value) ?? UInt(value) ?? UInt64(value) ?? Decimal(string: value)
+        else {
+          guard let int = BigUInt(value) else {
+            return nil
+          }
+          switch int.bitWidth {
+          case 0 ... (MemoryLayout<Int>.size * 8) - 1:
+            return Int(int)
+          case 0 ... (MemoryLayout<UInt>.size * 8):
+            return UInt(int)
+          case 0 ... (MemoryLayout<Int64>.size * 8) - 1:
+            return Int64(int)
+          case 0 ... (MemoryLayout<UInt64>.size * 8):
+            return UInt64(int)
+          default:
+            return BigInt(value)
+          }
         }
-        return Int(value) ?? UInt(value) ?? Decimal(string: value)
       }
-      return Double(value) ?? Decimal(string: value)
+      guard let double = Double(value) else {
+        return nil
+      }
+      return double
     }
 
     public static func == (lhs: Number, rhs: Number) -> Bool {
@@ -134,11 +174,21 @@ public enum YAML {
     }
   }
 
-  public typealias Array = [YAML]
+  public typealias Sequence = [YAML]
 
   public struct MappingEntry: Equatable, Hashable {
     var key: YAML
     var value: YAML
+
+    public init(key: YAML, value: YAML) {
+      self.key = key
+      self.value = value
+    }
+
+    public init(key: String, value: YAML) {
+      self.key = .string(key, style: .any, tag: nil, anchor: nil)
+      self.value = value
+    }
   }
 
   public typealias Mapping = [MappingEntry]
@@ -158,84 +208,17 @@ public enum YAML {
     case block
   }
 
-  case null(anchor: Anchor?)
-  case string(String, style: StringStyle, tag: Tag?, anchor: Anchor?)
-  case integer(Number, anchor: Anchor?)
-  case float(Number, anchor: Anchor?)
-  case bool(Bool, anchor: Anchor?)
-  case sequence([YAML], style: CollectionStyle, tag: Tag?, anchor: Anchor?)
-  case mapping(Mapping, style: CollectionStyle, tag: Tag?, anchor: Anchor?)
+  case null(anchor: Anchor? = nil)
+  case string(String, style: StringStyle = .any, tag: Tag? = nil, anchor: Anchor? = nil)
+  case integer(Number, anchor: Anchor? = nil)
+  case float(Number, anchor: Anchor? = nil)
+  case bool(Bool, anchor: Anchor? = nil)
+  case sequence([YAML], style: CollectionStyle = .any, tag: Tag? = nil, anchor: Anchor? = nil)
+  case mapping(Mapping, style: CollectionStyle = .any, tag: Tag? = nil, anchor: Anchor? = nil)
   case alias(String)
 
-  public var isNull: Bool {
-    if case .null = self {
-      return true
-    }
-    return false
-  }
-
-  public var stringValue: String? {
-    guard case .string(let value, _, _, _) = self else { return nil }
-    return value
-  }
-
-  public var integerValue: Int? {
-    switch self {
-    case .integer(let value, _):
-      return value.integerValue
-    case .float(let value, _):
-      return value.integerValue
-    default:
-      return nil
-    }
-  }
-
-  public var unsignedIntegerValue: UInt? {
-    switch self {
-    case .integer(let value, _):
-      return value.unsignedIntegerValue
-    case .float(let value, _):
-      return value.unsignedIntegerValue
-    default:
-      return nil
-    }
-  }
-
-  public var floatValue: Float? {
-    switch self {
-    case .integer(let value, _):
-      return value.floatValue
-    case .float(let value, _):
-      return value.floatValue
-    default:
-      return nil
-    }
-  }
-
-  public var doubleValue: Double? {
-    switch self {
-    case .integer(let value, _):
-      return value.doubleValue
-    case .float(let value, _):
-      return value.doubleValue
-    default:
-      return nil
-    }
-  }
-
-  public var boolValue: Bool? {
-    guard case .bool(let value, _) = self else { return nil }
-    return value
-  }
-
-  public var sequenceValue: Array? {
-    guard case .sequence(let value, _, _, _) = self else { return nil }
-    return value
-  }
-
-  public var mappingValue: Mapping? {
-    guard case .mapping(let value, _, _, _) = self else { return nil }
-    return value
+  public init(_ string: String) {
+    self = .string(string)
   }
 
   public subscript(dynamicMember member: String) -> YAML? {
@@ -246,8 +229,8 @@ public enum YAML {
   }
 
   public subscript(index: Int) -> YAML? {
-    if let sequence = sequenceValue {
-      return index < sequence.count ? sequence[index] : nil
+    if let sequence = sequenceValue, index < sequence.count {
+      return sequence[index]
     }
     return nil
   }
@@ -259,56 +242,88 @@ public enum YAML {
     return nil
   }
 
-}
-
-extension YAML: CustomStringConvertible {
-
-  public var description: String {
-
-    do {
-
-      var output = ""
-
-      try YAMLWriter.write([self]) { output += $0 ?? "" }
-
-      return output
+  public subscript(key: YAML) -> YAML? {
+    if let mapping = mappingValue {
+      return mapping.first { $0.key == key }?.value
     }
-    catch {
-      return "Invalid YAML: \(error)"
-    }
+    return nil
+  }
 
+  public var stringValue: String? {
+    guard case .string(let value, _, _, _) = self else { return nil }
+    return value
+  }
+
+  public var numberValue: Any? {
+    switch self {
+    case .integer(let value, _): return value.numberValue
+    case .float(let value, _): return value.numberValue
+    default: return nil
+    }
+  }
+
+  public var integerValue: Int? {
+    guard case .integer(let value, _) = self else { return nil }
+    return value.integerValue
+  }
+
+  public var unsignedIntegerValue: UInt? {
+    guard case .integer(let value, _) = self else { return nil }
+    return value.unsignedIntegerValue
+  }
+
+  public var floatValue: Float? {
+    guard case .float(let value, _) = self else { return nil }
+    return value.floatValue
+  }
+
+  public var doubleValue: Double? {
+    guard case .float(let value, _) = self else { return nil }
+    return value.doubleValue
+  }
+
+  public var boolValue: Bool? {
+    guard case .bool(let value, _) = self else { return nil }
+    return value
+  }
+
+  public var sequenceValue: Sequence? {
+    guard case .sequence(let value, _, _, _) = self else { return nil }
+    return value
+  }
+
+  public var mappingValue: Mapping? {
+    guard case .mapping(let value, _, _, _) = self else { return nil }
+    return value
   }
 
 }
 
+
+// MARK: Conformances
+
 extension YAML: Equatable {
 
   public static func == (lhs: YAML, rhs: YAML) -> Bool {
-    switch lhs {
-    case .null(let lanchor):
-      guard case .null(let ranchor) = rhs else { return false }
-      return lanchor == ranchor
-    case .string(let lstring, _, let ltag, let lanchor):
-      guard case .string(let rstring, _, let rtag, let ranchor) = rhs else { return false }
-      return lstring == rstring && ltag == rtag && lanchor == ranchor
-    case .integer(let lnumber, let lanchor):
-      guard case .integer(let rnumber, let ranchor) = rhs else { return false }
-      return lnumber == rnumber && lanchor == ranchor
-    case .float(let lnumber, let lanchor):
-      guard case .float(let rnumber, let ranchor) = rhs else { return false }
-      return lnumber == rnumber && lanchor == ranchor
-    case .bool(let lbool, let lanchor):
-      guard case .bool(let rbool, let ranchor) = rhs else { return false }
-      return lbool == rbool && lanchor == ranchor
-    case .sequence(let lsequence, _, let ltag, let lanchor):
-      guard case .sequence(let rsequence, _, let rtag, let ranchor) = rhs else { return false }
-      return lsequence == rsequence && ltag == rtag && lanchor == ranchor
-    case .mapping(let lentries, _, let ltag, let lanchor):
-      guard case .mapping(let rentries, _, let rtag, let ranchor) = rhs else { return false }
-      return lentries == rentries && ltag == rtag && lanchor == ranchor
-    case .alias(let lstring):
-      guard case .alias(let rstring) = rhs else { return false }
+    switch (lhs, rhs) {
+    case (.null(_), .null(_)):
+      return true
+    case (.string(let lstring, _, _, _), .string(let rstring, _, _, _)):
       return lstring == rstring
+    case (.integer(let lnumber, _), .integer(let rnumber, _)):
+      return lnumber == rnumber
+    case (.float(let lnumber, _), .float(let rnumber, _)):
+      return lnumber == rnumber
+    case (.bool(let lbool, _), .bool(let rbool, _)):
+      return lbool == rbool
+    case (.sequence(let lsequence, _, _, _), .sequence(let rsequence, _, _, _)):
+      return lsequence == rsequence
+    case (.mapping(let lentries, _, _, _), .mapping(let rentries, _, _, _)):
+      return lentries == rentries
+    case (.alias(let lstring), .alias(let rstring)):
+      return lstring == rstring
+    default:
+      return false
     }
   }
 
@@ -317,9 +332,39 @@ extension YAML: Equatable {
 extension YAML: Hashable {}
 extension YAML: Value {
 
+  public var isNull: Bool {
+    if case .null = self {
+      return true
+    }
+    return false
+  }
+
+}
+
+extension YAML: CustomStringConvertible {
+
+  public var description: String {
+    var output = ""
+
+    do {
+      try YAMLWriter.write([self]) { output += $0 ?? "" }
+    }
+    catch {
+      return "Invalid YAML: \(error)"
+    }
+    return output
+  }
+
+}
+
+
+// MARK: Wrapping
+
+extension YAML {
+
   public var unwrapped: Any? {
     switch self {
-    case .null: return nil
+    case .null, .alias: return nil
     case .bool(let value, _): return value
     case .string(let value, _, _, _): return value
     case .integer(let value, _): return value.numberValue
@@ -328,62 +373,41 @@ extension YAML: Value {
     case .mapping(let value, _, _, _): return Dictionary(uniqueKeysWithValues: value.map { entry in
         (entry.key.stringValue!, entry.value.unwrapped)
       })
-    case .alias: fatalError("Aliases not supported during unwrapping")
     }
   }
 
 }
 
-extension YAML: ExpressibleByNilLiteral {
+
+// MARK: Literals
+
+extension YAML: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, ExpressibleByStringLiteral,
+  ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral, ExpressibleByArrayLiteral,
+  ExpressibleByDictionaryLiteral {
 
   public init(nilLiteral: ()) {
     self = .null(anchor: nil)
   }
 
-}
-
-extension YAML: ExpressibleByBooleanLiteral {
-
   public init(booleanLiteral value: BooleanLiteralType) {
     self = .bool(value, anchor: nil)
   }
-
-}
-
-extension YAML: ExpressibleByIntegerLiteral {
 
   public init(integerLiteral value: IntegerLiteralType) {
     self = .integer(Number(value), anchor: nil)
   }
 
-}
-
-extension YAML: ExpressibleByFloatLiteral {
-
   public init(floatLiteral value: FloatLiteralType) {
     self = .float(Number(value), anchor: nil)
   }
-
-}
-
-extension YAML: ExpressibleByStringLiteral {
 
   public init(stringLiteral value: StringLiteralType) {
     self = .string(value, style: .any, tag: nil, anchor: nil)
   }
 
-}
-
-extension YAML: ExpressibleByArrayLiteral {
-
   public init(arrayLiteral elements: YAML...) {
     self = .sequence(elements, style: .any, tag: nil, anchor: nil)
   }
-
-}
-
-
-extension YAML: ExpressibleByDictionaryLiteral {
 
   public init(dictionaryLiteral elements: (YAML, YAML)...) {
     self = .mapping(elements.map { MappingEntry(key: $0, value: $1) }, style: .any, tag: nil, anchor: nil)
@@ -392,8 +416,25 @@ extension YAML: ExpressibleByDictionaryLiteral {
 }
 
 
-/// Make encoders/decoders available in JSON namespace
-///
+extension YAML.Number: ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, ExpressibleByStringLiteral {
+
+  public init(stringLiteral value: String) {
+    self.init(value)
+  }
+
+  public init(floatLiteral value: Double) {
+    self.init(value)
+  }
+
+  public init(integerLiteral value: Int) {
+    self.init(value)
+  }
+
+}
+
+
+// Make encoders/decoders available in AnyValue namespace
+
 public extension YAML {
 
   typealias Encoder = YAMLEncoder

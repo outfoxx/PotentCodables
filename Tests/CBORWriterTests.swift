@@ -51,6 +51,9 @@ class CBORWriterTests: XCTestCase {
       XCTAssertEqual(try encode { try $0.encodeInt(i) }, [UInt8(i)])
       XCTAssertEqual(try encode { try $0.encodeInt(-i) }.count, 1)
     }
+    for i in 24 ... UInt8.max {
+      XCTAssertEqual(try encode { try $0.encodeUInt(i) }, [0x18, UInt8(i)])
+    }
     XCTAssertEqual(try encode { try $0.encodeInt(-1) }, [0x20])
     XCTAssertEqual(try encode { try $0.encodeInt(-10) }, [0x29])
     XCTAssertEqual(try encode { try $0.encodeInt(-24) }, [0x37])

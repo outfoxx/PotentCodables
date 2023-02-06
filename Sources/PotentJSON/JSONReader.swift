@@ -21,7 +21,7 @@
 import Foundation
 
 
-struct JSONReader {
+internal struct JSONReader {
 
   public enum Error: Swift.Error {
 
@@ -30,9 +30,10 @@ struct JSONReader {
       case invalidEscapeSequence
       case invalidNumber
       case invalidArray
-      case expectedMapKey
-      case expectedMapSeparator
-      case expectedMapValue
+      case expectedObjectKey
+      case expectedObjectSeparator
+      case expectedObjectValue
+      case expectedArraySeparator
     }
 
     case unexpectedEndOfStream
@@ -77,10 +78,10 @@ struct JSONReader {
     func takeString(_ begin: Index, end: Index) throws -> String {
       let byteLength = begin.distance(to: end)
 
-      guard let chunk = String(
-        data: Data(bytes: buffer.baseAddress!.advanced(by: begin), count: byteLength),
-        encoding: .utf8
-      ) else {
+      guard
+        let baseAddress = buffer.baseAddress,
+        let chunk = String(data: Data(bytes: baseAddress.advanced(by: begin), count: byteLength), encoding: .utf8)
+      else {
         throw Error.invalidData(.invalidString, position: distanceFromStart(begin))
       }
       return chunk
@@ -211,7 +212,10 @@ struct JSONReader {
     guard isLeadSurrogate || isTrailSurrogate else {
       // The code units that are neither lead surrogates nor trail surrogates
       // form valid unicode scalars.
-      return (String(UnicodeScalar(codeUnit)!), index)
+      guard let scalar = UnicodeScalar(codeUnit) else {
+        throw Error.invalidData(.invalidEscapeSequence, position: source.distanceFromStart(input))
+      }
+      return (String(scalar), index)
     }
 
     // Surrogates must always come in pairs.
@@ -402,8 +406,7 @@ struct JSONReader {
       if let finalIndex = try consumeStructure(Structure.endObject, input: index) {
         return (output, finalIndex)
       }
-
-      if let (key, value, nextIndex) = try parseObjectMember(index, options: opt) {
+      else if let (key, value, nextIndex) = try parseObjectMember(index, options: opt) {
         output[key] = value
 
         if let finalParser = try consumeStructure(Structure.endObject, input: nextIndex) {
@@ -414,10 +417,10 @@ struct JSONReader {
           continue
         }
         else {
-          return nil
+          throw Error.invalidData(.expectedObjectSeparator, position: nextIndex)
         }
       }
-      return nil
+      throw Error.invalidData(.expectedObjectKey, position: index)
     }
   }
 
@@ -426,13 +429,13 @@ struct JSONReader {
     options opt: JSONSerialization.ReadingOptions
   ) throws -> (String, JSON, Index)? {
     guard let (name, index) = try parseString(input) else {
-      throw Error.invalidData(.expectedMapKey, position: source.distanceFromStart(input))
+      throw Error.invalidData(.expectedObjectKey, position: source.distanceFromStart(input))
     }
     guard let separatorIndex = try consumeStructure(Structure.nameSeparator, input: index) else {
-      throw Error.invalidData(.expectedMapSeparator, position: source.distanceFromStart(index))
+      throw Error.invalidData(.expectedObjectSeparator, position: source.distanceFromStart(index))
     }
     guard let (value, finalIndex) = try parseValue(separatorIndex, options: opt) else {
-      throw Error.invalidData(.expectedMapValue, position: source.distanceFromStart(separatorIndex))
+      throw Error.invalidData(.expectedObjectValue, position: source.distanceFromStart(separatorIndex))
     }
 
     return (name, value, finalIndex)
@@ -460,6 +463,9 @@ struct JSONReader {
         else if let nextIndex = try consumeStructure(Structure.valueSeparator, input: nextIndex) {
           index = nextIndex
           continue
+        }
+        else {
+          throw Error.invalidData(.expectedArraySeparator, position: nextIndex)
         }
       }
       throw Error.invalidData(.invalidArray, position: source.distanceFromStart(index))

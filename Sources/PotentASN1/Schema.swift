@@ -47,12 +47,12 @@ import PotentCodables
 ///   .decode(TBSCertificate.self, from: data)
 /// ```
 ///
-public indirect enum Schema {
+public indirect enum Schema: Equatable, Hashable {
 
   public typealias DynamicMap = [ASN1: Schema]
   public typealias StructureSequenceMap = OrderedDictionary<String, Schema>
 
-  public enum Size: CustomStringConvertible {
+  public enum Size: Equatable, Hashable {
     case min(Int)
     case max(Int)
     case `is`(Int)
@@ -67,17 +67,8 @@ public indirect enum Schema {
       }
     }
 
-    public func `in`(_ range: ClosedRange<Int>) -> Size {
+    public static func `in`(_ range: ClosedRange<Int>) -> Size {
       return .range(range.lowerBound, range.upperBound)
-    }
-
-    public var description: String {
-      switch self {
-      case .min(let min): return "\(min)..MAX"
-      case .max(let max): return "0..\(max)"
-      case .is(let size): return "\(size)..\(size)"
-      case .range(let min, let max): return "\(min)..\(max)"
-      }
     }
 
   }
@@ -113,43 +104,44 @@ public indirect enum Schema {
 
   public var possibleTags: [ASN1.AnyTag]? {
     switch self {
-    case .sequence, .sequenceOf: return [ASN1.Tag.sequence.universal]
-    case .setOf: return [ASN1.Tag.set.universal]
-    case .choiceOf(let schemas): return schemas.flatMap { $0.possibleTags ?? [] }
-    case .type(let schema): return schema.possibleTags
-    case .version(let schema): return schema.possibleTags
-    case .versioned(_, let schema): return schema.possibleTags
-    case .optional(let schema): return schema.possibleTags
-    case .implicit(let tag, let tagClass, let schema): return [ASN1.Tag.tag(from: tag, in: tagClass, constructed: schema.isCollection)]
-    case .explicit(let tag, let tagClass, _): return [ASN1.Tag.tag(from: tag, in: tagClass, constructed: true)]
-    case .boolean: return [ASN1.Tag.boolean.universal]
-    case .integer: return [ASN1.Tag.integer.universal]
-    case .real: return [ASN1.Tag.real.universal]
-    case .bitString: return [ASN1.Tag.bitString.universal]
-    case .octetString: return [ASN1.Tag.octetString.universal]
-    case .objectIdentifier: return [ASN1.Tag.objectIdentifier.universal]
+    case .sequence, .sequenceOf:
+      return [ASN1.Tag.sequence.universal]
+    case .setOf:
+      return [ASN1.Tag.set.universal]
+    case .choiceOf(let schemas):
+      return schemas.flatMap { $0.possibleTags ?? [] }
+    case .type(let schema):
+      return schema.possibleTags
+    case .version(let schema):
+      return schema.possibleTags
+    case .versioned(_, let schema):
+      return schema.possibleTags
+    case .optional(let schema):
+      return schema.possibleTags
+    case .implicit(let tag, let tagClass, let schema):
+      return [ASN1.Tag.tag(from: tag, in: tagClass, constructed: schema.isCollection)]
+    case .explicit(let tag, let tagClass, _):
+      return [ASN1.Tag.tag(from: tag, in: tagClass, constructed: true)]
+    case .boolean:
+      return [ASN1.Tag.boolean.universal]
+    case .integer:
+      return [ASN1.Tag.integer.universal]
+    case .real:
+      return [ASN1.Tag.real.universal]
+    case .bitString:
+      return [ASN1.Tag.bitString.universal]
+    case .octetString:
+      return [ASN1.Tag.octetString.universal]
+    case .objectIdentifier:
+      return [ASN1.Tag.objectIdentifier.universal]
     case .string(let kind, _):
-      switch kind {
-      case .utf8: return [ASN1.Tag.utf8String.universal]
-      case .numeric: return [ASN1.Tag.numericString.universal]
-      case .printable: return [ASN1.Tag.printableString.universal]
-      case .teletex: return [ASN1.Tag.teletexString.universal]
-      case .videotex: return [ASN1.Tag.videotexString.universal]
-      case .ia5: return [ASN1.Tag.ia5String.universal]
-      case .graphic: return [ASN1.Tag.graphicString.universal]
-      case .visible: return [ASN1.Tag.visibleString.universal]
-      case .general: return [ASN1.Tag.generalString.universal]
-      case .universal: return [ASN1.Tag.universalString.universal]
-      case .character: return [ASN1.Tag.characterString.universal]
-      case .bmp: return [ASN1.Tag.bmpString.universal]
-      }
+      return kind.possibleTags
     case .time(let kind):
-      switch kind {
-      case .utc: return [ASN1.Tag.utcTime.universal]
-      case .generalized: return [ASN1.Tag.generalizedTime.universal]
-      }
-    case .null: return [ASN1.Tag.null.universal]
-    case .any, .dynamic, .nothing: return nil
+      return kind.possibleTags
+    case .null:
+      return [ASN1.Tag.null.universal]
+    case .any, .dynamic, .nothing:
+      return nil
     }
   }
 
@@ -165,6 +157,13 @@ public indirect enum Schema {
     case .integer(_, let defaultValue): return defaultValue.map { .integer(BigInt($0)) }
     default: return nil
     }
+  }
+
+  public func defaultValueEncoded() throws -> ASN1? {
+    guard defaultValue != nil else {
+      return nil
+    }
+    return try SchemaState(initial: unwrapDirectives).encode(nil)
   }
 
   public var unwrapDirectives: Schema {
@@ -264,147 +263,237 @@ public indirect enum Schema {
 
 }
 
-extension Schema: CustomDebugStringConvertible {
+extension Schema: CustomStringConvertible {
 
-  public var debugDescription: String {
-    var result = ""
-    var indent = ""
-
-    func append(_ value: String) {
-      result.append(value.replacingOccurrences(of: "\n", with: "\n\(indent)"))
-    }
-
+  public var description: String {
+    var output = FormattedOutput()
     switch self {
     case .nothing:
       break
 
     case .sequence(let fields):
-      indent += "  "
-      defer {
-        indent.removeLast(2)
-        append("\n}")
-      }
-
-      append("SEQUENCE ::= {")
-
-      for (field, fieldSchema) in fields {
-        append("\n\(field) \(fieldSchema.debugDescription)")
-      }
+      sequenceDescription(&output, fields)
 
     case .sequenceOf(let schema, size: let size):
-      indent += "  "
-      defer {
-        indent.removeLast(2)
-      }
-
-      append("SEQUENCE ")
-
-      if let size = size {
-        append("SIZE (\(size)) ")
-      }
-
-      append("OF\n\(schema.debugDescription)")
+      sequenceOfDescription(&output, size, schema)
 
     case .setOf(let schema, size: let size):
-      indent += "  "
-      defer {
-        indent.removeLast(2)
-      }
-
-      append("SET ")
-
-      if let size = size {
-        append("SIZE (\(size)) ")
-      }
-
-      append("OF\n\(schema.debugDescription)")
+      setOfDescription(&output, size, schema)
 
     case .choiceOf(let schemas):
-      indent += "  "
-      defer {
-        indent.removeLast(2)
-        append("\n}")
-      }
-      append("CHOICE ::= {")
-
-      for schema in schemas {
-        append("\n\(schema.debugDescription)")
-      }
+      choiceOfDescription(&output, schemas)
 
     case .optional(let schema):
-      append("\(schema.debugDescription) OPTIONAL")
+      output.write("\(schema.description) OPTIONAL")
 
     case .implicit(let tag, let inClass, let schema):
       let tagPrefix = inClass != .contextSpecific ? String(describing: inClass).uppercased() : ""
-      append("[\(tagPrefix)\(tag)] \(schema.debugDescription) ")
+      output.write("[\(tagPrefix)\(tag)] IMPLICIT \(schema.description)")
 
     case .explicit(let tag, let inClass, let schema):
       let tagPrefix = inClass != .contextSpecific ? String(describing: inClass).uppercased() : ""
-      append("[\(tagPrefix)\(tag)] EXPLICIT \(schema.debugDescription) ")
+      output.write("[\(tagPrefix)\(tag)] EXPLICIT \(schema.description)")
 
     case .boolean(let def):
-      append("BOOLEAN")
+      output.write("BOOLEAN")
       if let def = def {
-        append(" DEFAULT \(String(def).uppercased())")
+        output.write(" DEFAULT \(String(def).uppercased())")
       }
 
     case .integer(let allowed, let def):
-      append("INTEGER")
-      if let allowed = allowed {
-        append(" { \(allowed.map { String($0) }.joined()) }")
-      }
-      if let def = def {
-        append(" DEFAULT \(String(def).uppercased())")
-      }
+      integerDescription(&output, allowed, def)
 
     case .bitString(let size):
-      append("BIT STRING")
+      output.write("BIT STRING")
       if let size = size {
-        append(" (\(size))")
+        output.write(" (\(size))")
       }
 
     case .octetString(let size):
-      append("OCTET STRING")
+      output.write("OCTET STRING")
       if let size = size {
-        append(" (\(size))")
+        output.write(" (\(size))")
       }
 
-    case .objectIdentifier:
-      append("OBJECT IDENTIFIER")
+    case .objectIdentifier(let allowed):
+      output.write("OBJECT IDENTIFIER")
+      if let allowed = allowed {
+        output.write(" { \(allowed.map { $0.description }.sorted().joined(separator: " , ")) }")
+      }
 
     case .real:
-      append("REAL")
+      output.write("REAL")
 
     case .string(let type, let size):
-      append("\(String(describing: type).uppercased())String")
+      output.write("\(String(describing: type).uppercased())String")
       if let size = size {
-        append(" (\(size))")
+        output.write(" (\(size))")
       }
 
     case .time(kind: let kind):
-      switch kind {
-      case .utc:
-        append("UTCTime")
-      case .generalized:
-        append("GeneralizedTime")
-      }
+      timeDescription(&output, kind)
 
     case .null:
-      append("NULL")
+      output.write("NULL")
 
-    case .dynamic, .any:
-      append("ANY")
+    case .any:
+      output.write("ANY")
+
+    case .dynamic(let unknownSchema, let map):
+      dynamicDescription(&output, map, unknownSchema)
 
     case .versioned(let versionRange, let versionedSchema):
-      append(
-        "\n\(versionedSchema.debugDescription) -- for version (\(versionRange.lowerBound)..\(versionRange.upperBound))"
+      output.write(
+        "\(versionedSchema.description) -- for version (\(versionRange.lowerBound)..\(versionRange.upperBound))"
       )
 
     case .type(let schema), .version(let schema):
-      append(schema.debugDescription)
+      output.write(schema.description)
     }
 
-    return result
+    return output.string
+  }
+
+  private func sequenceDescription(_ output: inout FormattedOutput, _ fields: Schema.StructureSequenceMap) {
+    output.indented(prefix: "SEQUENCE ::= {", suffix: "\n}") { writer in
+
+      for (field, fieldSchema) in fields {
+        writer("\n\(field) \(fieldSchema.description)")
+      }
+
+    }
+  }
+
+  private func sequenceOfDescription(_ output: inout FormattedOutput, _ size: Schema.Size?, _ schema: Schema) {
+    output.indented(prefix: "SEQUENCE ") { writer in
+
+      if let size = size {
+        writer("SIZE (\(size)) ")
+      }
+
+      writer("OF\n\(schema.description)")
+    }
+  }
+
+  private func setOfDescription(_ output: inout FormattedOutput, _ size: Schema.Size?, _ schema: Schema) {
+    output.indented(prefix: "SET ") { writer in
+
+      if let size = size {
+        writer("SIZE (\(size)) ")
+      }
+
+      writer("OF\n\(schema.description)")
+    }
+  }
+
+  private func choiceOfDescription(_ output: inout FormattedOutput, _ schemas: ([Schema])) {
+    output.indented(prefix: "CHOICE ::= {", suffix: "\n}") { writer in
+
+      for schema in schemas {
+        writer("\n\(schema.description)")
+      }
+    }
+  }
+
+  private func integerDescription(_ output: inout FormattedOutput, _ allowed: Range<BigInt>?, _ def: BigInt?) {
+    output.write("INTEGER")
+    if let allowed = allowed {
+      output.write(" { \(allowed.map { String($0) }.joined(separator: ", ")) }")
+    }
+    if let def = def {
+      output.write(" DEFAULT \(String(def).uppercased())")
+    }
+  }
+
+  private func timeDescription(_ output: inout FormattedOutput, _ kind: AnyTime.Kind) {
+    switch kind {
+    case .utc:
+      output.write("UTCTime")
+    case .generalized:
+      output.write("GeneralizedTime")
+    }
+  }
+
+  private func dynamicDescription(_ output: inout FormattedOutput, _ map: Schema.DynamicMap, _ unknownSchema: Schema?) {
+    output.indented(prefix: "DYNAMIC {", suffix: "\n}") { writer in
+
+      for (key, schema) in map {
+        writer("\nCASE \(key.unwrapped ?? key) (\(key.tagName)): \(schema.description)")
+      }
+
+      if let unknownSchema = unknownSchema {
+        writer("\nELSE: \(unknownSchema.description)")
+      }
+    }
+  }
+
+}
+
+private struct FormattedOutput: TextOutputStream {
+  var string: String = ""
+  private var indent: String = ""
+
+  mutating func write(_ string: String) {
+    self.string.append(string.replacingOccurrences(of: "\n", with: "\n\(indent)"))
+  }
+
+  mutating func indented(prefix: String = "", suffix: String = "", _ block: ((String) -> Void) -> Void) {
+    write(prefix)
+
+    let prevIndent = self.indent
+    self.indent.append("  ")
+
+    defer {
+      self.indent = prevIndent
+      write(suffix)
+    }
+
+    block { write($0) }
+  }
+
+}
+
+extension Schema.Size: CustomStringConvertible {
+
+  public var description: String {
+    switch self {
+    case .min(let min): return "\(min)..MAX"
+    case .max(let max): return "0..\(max)"
+    case .is(let size): return "\(size)"
+    case .range(let min, let max): return "\(min)..\(max)"
+    }
+  }
+
+}
+
+extension AnyString.Kind {
+
+  var possibleTags: [ASN1.AnyTag] {
+    switch self {
+    case .utf8: return [ASN1.Tag.utf8String.universal]
+    case .numeric: return [ASN1.Tag.numericString.universal]
+    case .printable: return [ASN1.Tag.printableString.universal]
+    case .teletex: return [ASN1.Tag.teletexString.universal]
+    case .videotex: return [ASN1.Tag.videotexString.universal]
+    case .ia5: return [ASN1.Tag.ia5String.universal]
+    case .graphic: return [ASN1.Tag.graphicString.universal]
+    case .visible: return [ASN1.Tag.visibleString.universal]
+    case .general: return [ASN1.Tag.generalString.universal]
+    case .universal: return [ASN1.Tag.universalString.universal]
+    case .character: return [ASN1.Tag.characterString.universal]
+    case .bmp: return [ASN1.Tag.bmpString.universal]
+    }
+  }
+
+}
+
+extension AnyTime.Kind {
+
+  var possibleTags: [ASN1.AnyTag] {
+    switch self {
+    case .utc: return [ASN1.Tag.utcTime.universal]
+    case .generalized: return [ASN1.Tag.generalizedTime.universal]
+    }
   }
 
 }

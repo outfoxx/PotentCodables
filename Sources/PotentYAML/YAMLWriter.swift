@@ -11,7 +11,7 @@
 import Cfyaml
 import Foundation
 
-struct YAMLWriter {
+internal struct YAMLWriter {
 
   enum Error: Swift.Error {
     case createEmitterFailed
@@ -20,7 +20,7 @@ struct YAMLWriter {
 
   typealias Writer = (String?) -> Void
 
-  public static func write(_ documents: YAML.Array, sortedKeys: Bool = false, writer: @escaping Writer) throws {
+  public static func write(_ documents: YAML.Sequence, sortedKeys: Bool = false, writer: @escaping Writer) throws {
 
     func output(
       emitter: OpaquePointer?,
@@ -29,7 +29,9 @@ struct YAMLWriter {
       len: Int32,
       userInfo: UnsafeMutableRawPointer?
     ) -> Int32 {
-      let writer = userInfo!.assumingMemoryBound(to: Writer.self).pointee
+      guard let writer = userInfo?.assumingMemoryBound(to: Writer.self).pointee else {
+        fatalError()
+      }
       guard let str = str else {
         writer(nil)
         return 0
@@ -80,13 +82,8 @@ struct YAMLWriter {
       emit(emitter: emitter, scalar: "null", style: FYSS_PLAIN, anchor: anchor, tag: nil)
 
     case .string(let string, style: let style, tag: let tag, anchor: let anchor):
-      emit(
-        emitter: emitter,
-        scalar: string,
-        style: fy_scalar_style(rawValue: style.rawValue),
-        anchor: anchor,
-        tag: tag?.rawValue
-      )
+      let scalarStyle = fy_scalar_style(rawValue: style.rawValue)
+      emit(emitter: emitter, scalar: string, style: scalarStyle, anchor: anchor, tag: tag?.rawValue)
 
     case .integer(let integer, anchor: let anchor):
       emit(emitter: emitter, scalar: integer.value, style: FYSS_PLAIN, anchor: anchor, tag: nil)
@@ -98,41 +95,64 @@ struct YAMLWriter {
       emit(emitter: emitter, scalar: bool ? "true" : "false", style: FYSS_PLAIN, anchor: anchor, tag: nil)
 
     case .sequence(let sequence, style: let style, tag: let tag, anchor: let anchor):
-      emit(
-        emitter: emitter,
-        type: FYET_SEQUENCE_START,
-        args: style.nodeStyle.rawValue,
-        anchor.varArg,
-        (tag?.rawValue).varArg
-      )
-      try sequence.forEach { element in
-        try emit(emitter: emitter, value: element, sortedKeys: sortedKeys)
-      }
-      emit(emitter: emitter, type: FYET_SEQUENCE_END)
+      try emit(emitter: emitter, sequence: sequence, sortedKeys: sortedKeys, style: style, anchor: anchor, tag: tag)
 
-    case .mapping(var mapping, style: let style, tag: let tag, anchor: let anchor):
-      emit(
-        emitter: emitter,
-        type: FYET_MAPPING_START,
-        args: style.nodeStyle.rawValue,
-        anchor.varArg,
-        (tag?.rawValue).varArg
-      )
-      if sortedKeys {
-        mapping = mapping.sorted {
-          $0.key.description < $1.key.description
-        }
-      }
-      try mapping.forEach { entry in
-        try emit(emitter: emitter, value: entry.key, sortedKeys: sortedKeys)
-        try emit(emitter: emitter, value: entry.value, sortedKeys: sortedKeys)
-      }
-      emit(emitter: emitter, type: FYET_MAPPING_END)
+    case .mapping(let mapping, style: let style, tag: let tag, anchor: let anchor):
+      try emit(emitter: emitter, mapping: mapping, sortedKeys: sortedKeys, style: style, anchor: anchor, tag: tag)
 
     case .alias(let alias):
-      emit(emitter: emitter, type: FYET_ALIAS, args: alias)
+      emit(emitter: emitter, alias: alias)
 
     }
+  }
+
+  private static func emit(
+    emitter: OpaquePointer,
+    mapping: YAML.Mapping,
+    sortedKeys: Bool,
+    style: YAML.CollectionStyle,
+    anchor: String?,
+    tag: YAML.Tag?
+  ) throws {
+    var mapping = mapping
+    emit(
+      emitter: emitter,
+      type: FYET_MAPPING_START,
+      args: style.nodeStyle.rawValue,
+      anchor.varArg,
+      (tag?.rawValue).varArg
+    )
+    if sortedKeys {
+      mapping = mapping.sorted {
+        $0.key.description < $1.key.description
+      }
+    }
+    try mapping.forEach { entry in
+      try emit(emitter: emitter, value: entry.key, sortedKeys: sortedKeys)
+      try emit(emitter: emitter, value: entry.value, sortedKeys: sortedKeys)
+    }
+    emit(emitter: emitter, type: FYET_MAPPING_END)
+  }
+
+  private static func emit(
+    emitter: OpaquePointer,
+    sequence: [YAML],
+    sortedKeys: Bool,
+    style: YAML.CollectionStyle,
+    anchor: String?,
+    tag: YAML.Tag?
+  ) throws {
+    emit(
+      emitter: emitter,
+      type: FYET_SEQUENCE_START,
+      args: style.nodeStyle.rawValue,
+      anchor.varArg,
+      (tag?.rawValue).varArg
+    )
+    try sequence.forEach { element in
+      try emit(emitter: emitter, value: element, sortedKeys: sortedKeys)
+    }
+    emit(emitter: emitter, type: FYET_SEQUENCE_END)
   }
 
   private static func emit(
@@ -148,6 +168,15 @@ struct YAMLWriter {
           emit(emitter: emitter, type: FYET_SCALAR, args: style.rawValue, scalarPtr, FY_NT, anchorPtr, tagPtr)
         }
       }
+    }
+  }
+
+  private static func emit(
+    emitter: OpaquePointer,
+    alias: String
+  ) {
+    alias.withCString { aliasPtr in
+      emit(emitter: emitter, type: FYET_ALIAS, args: aliasPtr)
     }
   }
 

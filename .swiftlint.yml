@@ -38,6 +38,10 @@ line_length:
   - 150
   - 175
 
+function_parameter_count:
+- 8
+- 11
+
 function_body_length:
   - 300
   - 350  
