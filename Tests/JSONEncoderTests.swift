@@ -1129,7 +1129,7 @@ class JSONEncoderTests: XCTestCase {
     XCTAssertNoThrow(try JSON.Encoder.default.encodeString(TestValue(dict: [1: 1])))
   }
 
-  let prettyEncoder = {
+  let prettyEncoder: JSON.Encoder = {
     let enc = JSON.Encoder()
     enc.outputFormatting = .prettyPrinted
     return enc

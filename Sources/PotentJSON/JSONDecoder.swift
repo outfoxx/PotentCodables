@@ -394,27 +394,6 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
   }
 
   public static func unbox(_ value: JSON, as type: Date.Type, decoder: IVD) throws -> Date? {
-    guard !value.isNull else { return nil }
-
-    switch decoder.options.dateDecodingStrategy {
-    case .deferredToDate:
-      return try decoder.subDecode(with: value) { try Date(from: $0) }
-
-    case .secondsSince1970:
-      return try unbox(value, as: Double.self, decoder: decoder).map { Date(timeIntervalSince1970: $0) }
-
-    case .millisecondsSince1970:
-      return try unbox(value, as: Double.self, decoder: decoder).map { Date(timeIntervalSince1970: $0 / 1000.0) }
-
-    case .iso8601:
-      return try decodeISO8601(from: value)
-
-    case .formatted(let formatter):
-      return try decodeFormatted(from: value, formatter: formatter)
-
-    case .custom(let closure):
-      return try decoder.subDecode(with: value) { try closure($0) }
-    }
 
     func decodeISO8601(from value: JSON) throws -> Date? {
       guard let string = try unbox(value, as: String.self, decoder: decoder) else {
@@ -441,21 +420,31 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       }
       return date
     }
-  }
 
-  public static func unbox(_ value: JSON, as type: Data.Type, decoder: IVD) throws -> Data? {
     guard !value.isNull else { return nil }
 
-    switch decoder.options.dataDecodingStrategy {
-    case .deferredToData:
-      return try decoder.subDecode(with: value) { try Data(from: $0) }
+    switch decoder.options.dateDecodingStrategy {
+    case .deferredToDate:
+      return try decoder.subDecode(with: value) { try Date(from: $0) }
 
-    case .base64:
-      return try decodeBase64(from: value)
+    case .secondsSince1970:
+      return try unbox(value, as: Double.self, decoder: decoder).map { Date(timeIntervalSince1970: $0) }
+
+    case .millisecondsSince1970:
+      return try unbox(value, as: Double.self, decoder: decoder).map { Date(timeIntervalSince1970: $0 / 1000.0) }
+
+    case .iso8601:
+      return try decodeISO8601(from: value)
+
+    case .formatted(let formatter):
+      return try decodeFormatted(from: value, formatter: formatter)
 
     case .custom(let closure):
       return try decoder.subDecode(with: value) { try closure($0) }
     }
+  }
+
+  public static func unbox(_ value: JSON, as type: Data.Type, decoder: IVD) throws -> Data? {
 
     func decodeBase64(from value: JSON) throws -> Data {
       guard case .string(let string) = value else {
@@ -471,25 +460,22 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
       return data
     }
+
+    guard !value.isNull else { return nil }
+
+    switch decoder.options.dataDecodingStrategy {
+    case .deferredToData:
+      return try decoder.subDecode(with: value) { try Data(from: $0) }
+
+    case .base64:
+      return try decodeBase64(from: value)
+
+    case .custom(let closure):
+      return try decoder.subDecode(with: value) { try closure($0) }
+    }
   }
 
   public static func unbox(_ value: JSON, as type: AnyValue.Type, decoder: IVD) throws -> AnyValue {
-    switch value {
-    case .null:
-      return .nil
-    case .bool(let value):
-      return .bool(value)
-    case .string(let value):
-      return .string(value)
-    case .number(let value):
-      return decode(from: value)
-    case .array(let value):
-      return .array(try value.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
-    case .object(let value):
-      return .dictionary(AnyValue.AnyDictionary(uniqueKeysWithValues: try value.map { key, value in
-        (.string(key), try unbox(value, as: AnyValue.self, decoder: decoder))
-      }))
-    }
 
     func decode(from value: JSON.Number) -> AnyValue {
       switch value.numberValue {
@@ -509,6 +495,23 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       default:
         fatalError("numberValue returned unsupported value")
       }
+    }
+
+    switch value {
+    case .null:
+      return .nil
+    case .bool(let value):
+      return .bool(value)
+    case .string(let value):
+      return .string(value)
+    case .number(let value):
+      return decode(from: value)
+    case .array(let value):
+      return .array(try value.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
+    case .object(let value):
+      return .dictionary(AnyValue.AnyDictionary(uniqueKeysWithValues: try value.map { key, value in
+        (.string(key), try unbox(value, as: AnyValue.self, decoder: decoder))
+      }))
     }
   }
 

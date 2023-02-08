@@ -62,7 +62,9 @@ public struct SuffixedDateFormatter {
 
   public func date(from string: String) -> ZonedDate? {
     let parsedDate: Date?
-    let zoneStartIndex = string.firstIndex { char in char == "-" || char == "+" || char == "Z" } ?? string.endIndex
+    let zoneStartIndex = string.firstIndex { (char: Character) in
+      char == "-" || char == "+" || char == "Z"
+    } ?? string.endIndex
     let stringWithoutZone = String(string[string.startIndex ..< zoneStartIndex])
     let hasSeconds = checkHasSeconds(stringWithoutZone)
     let hasZone = string != stringWithoutZone

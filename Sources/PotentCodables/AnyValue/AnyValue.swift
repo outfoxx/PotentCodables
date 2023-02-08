@@ -376,6 +376,26 @@ extension AnyValue {
   }
 
   public var unwrapped: Any? {
+
+    func unwrap(dictionary: AnyDictionary) -> Any {
+      return Dictionary(uniqueKeysWithValues: dictionary.compactMap {
+        guard let value = $1.unwrapped else {
+          return nil
+        }
+        if let key = $0.stringValue {
+          return (AnyHashable(key), value)
+        }
+        else if let key = $0.integerValue(Int.self) {
+          return (AnyHashable(key), value)
+        }
+        else {
+          // It is an unsupported key type, but we are returning
+          // nil(s) rather than throwing errors
+          return nil
+        }
+      }) as [AnyHashable: Any]
+    }
+
     switch self {
     case .nil: return nil
     case .bool(let value): return value
@@ -400,25 +420,6 @@ extension AnyValue {
     case .date(let value): return value
     case .array(let value): return Array(value.map(\.unwrapped))
     case .dictionary(let value): return unwrap(dictionary: value)
-    }
-
-    func unwrap(dictionary: AnyDictionary) -> Any {
-      return Dictionary(uniqueKeysWithValues: dictionary.compactMap {
-        guard let value = $1.unwrapped else {
-          return nil
-        }
-        if let key = $0.stringValue {
-          return (AnyHashable(key), value)
-        }
-        else if let key = $0.integerValue(Int.self) {
-          return (AnyHashable(key), value)
-        }
-        else {
-          // It is an unsupported key type, but we are returning
-          // nil(s) rather than throwing errors
-          return nil
-        }
-      }) as [AnyHashable: Any]
     }
   }
 

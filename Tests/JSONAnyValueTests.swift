@@ -17,7 +17,7 @@ import XCTest
 
 class JSONAnyValueTests: XCTestCase {
 
-  let prettyEncoder = {
+  let prettyEncoder: JSON.Encoder = {
     let enc = JSON.Encoder()
     enc.outputFormatting = .prettyPrinted
     return enc
