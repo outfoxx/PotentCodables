@@ -346,7 +346,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       guard data.count == MemoryLayout<uuid_t>.size else {
         throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
       }
-      var uuid = UUID_NULL
+      var uuid = uuid_t(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       withUnsafeMutableBytes(of: &uuid) { ptr in
         _ = data.copyBytes(to: ptr)
       }
