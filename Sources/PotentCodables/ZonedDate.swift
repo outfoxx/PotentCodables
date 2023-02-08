@@ -120,7 +120,9 @@ private struct ISO8601FlexibleDateFormatter {
     let timeZone: TimeZone
     if let timeStartIndex = string.firstIndex(of: "T") {
       let time = string[timeStartIndex...]
-      let zoneStartIndex = time.firstIndex { char in char == "-" || char == "+" || char == "Z" } ?? time.endIndex
+      let zoneStartIndex = time.firstIndex { (char: Character) in
+        char == "-" || char == "+" || char == "Z"
+      } ?? time.endIndex
       let timeWithoutZone = time[time.startIndex ..< zoneStartIndex]
       hasSeconds = timeWithoutZone.contains(".")
       hasZone = zoneStartIndex != time.endIndex

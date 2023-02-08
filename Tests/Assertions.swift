@@ -15,7 +15,7 @@ import XCTest
 
 public func AssertDecodingTypeMismatch(_ error: Error, file: StaticString = #file, line: UInt = #line) {
   func check() -> Bool {
-    if case DecodingError.typeMismatch = error {
+    if case DecodingError.typeMismatch(_, _) = error {
       return true
     }
     else {

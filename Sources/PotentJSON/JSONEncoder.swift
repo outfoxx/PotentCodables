@@ -346,6 +346,21 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
   }
 
   public static func box(_ value: AnyValue, encoder: IVE) throws -> JSON {
+
+    func encodeObject(from value: AnyValue.AnyDictionary) throws -> JSON.Object {
+      return JSON.Object(uniqueKeysWithValues: try value.map { key, value in
+        let boxedValue = try box(value, encoder: encoder)
+        if let stringKey = key.stringValue {
+          return (stringKey, boxedValue)
+        }
+        else if let intKey = key.integerValue(Int.self) {
+          return (String(intKey), boxedValue)
+        }
+        throw EncodingError.invalidValue(value, .init(codingPath: encoder.codingPath,
+                                                      debugDescription: "Dictionary contains non-string values"))
+      })
+    }
+
     switch value {
     case .nil:
       return .null
@@ -393,20 +408,6 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
       return .array(try value.map { try box($0, encoder: encoder) })
     case .dictionary(let value):
       return .object(try encodeObject(from: value))
-    }
-
-    func encodeObject(from value: AnyValue.AnyDictionary) throws -> JSON.Object {
-      return JSON.Object(uniqueKeysWithValues: try value.map { key, value in
-        let boxedValue = try box(value, encoder: encoder)
-        if let stringKey = key.stringValue {
-          return (stringKey, boxedValue)
-        }
-        else if let intKey = key.integerValue(Int.self) {
-          return (String(intKey), boxedValue)
-        }
-        throw EncodingError.invalidValue(value, .init(codingPath: encoder.codingPath,
-                                                      debugDescription: "Dictionary contains non-string values"))
-      })
     }
   }
 

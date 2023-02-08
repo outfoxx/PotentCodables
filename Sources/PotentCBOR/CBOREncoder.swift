@@ -183,6 +183,15 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
   }
 
   public static func box(_ value: AnyValue, encoder: IVE) throws -> CBOR {
+
+    func encode(_ value: AnyValue.AnyDictionary) throws -> CBOR {
+      return .map(.init(uniqueKeysWithValues: try value.map { key, value in
+        let key = try box(key, encoder: encoder)
+        let value = try box(value, encoder: encoder)
+        return (key, value)
+      }))
+    }
+
     switch value {
     case .nil:
       return .null
@@ -230,14 +239,6 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
       return .array(.init(try value.map { try box($0, encoder: encoder) }))
     case .dictionary(let value):
       return try encode(value)
-    }
-
-    func encode(_ value: AnyValue.AnyDictionary) throws -> CBOR {
-      return .map(.init(uniqueKeysWithValues: try value.map { key, value in
-        let key = try box(key, encoder: encoder)
-        let value = try box(value, encoder: encoder)
-        return (key, value)
-      }))
     }
   }
 
