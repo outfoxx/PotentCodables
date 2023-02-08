@@ -23,13 +23,16 @@ public class CBOREncoder: ValueEncoder<CBOR, CBOREncoderTransform>, EncodesToDat
 
   /// The strategy to use for encoding `Date` values.
   public enum DateEncodingStrategy {
-    /// Encode the `Date` as a UNIX timestamp (floating point seconds since epoch).
+    /// Encode the `Date` as a UNIX timestamp (floating point seconds since
+    ///  epoch) tagged as ``CBOR/Tag/epochDateTime``.
     case secondsSince1970
 
-    /// Encode the `Date` as UNIX millisecond timestamp (integer milliseconds since epoch).
+    /// Encode the `Date` as UNIX millisecond timestamp (integer milliseconds
+    ///  since epoch), untagged.
     case millisecondsSince1970
 
-    /// Encode the `Date` as an ISO-8601-formatted string (in RFC 3339 format).
+    /// Encode the `Date` as an ISO-8601-formatted string (in RFC 3339 format)
+    ///  tagged as ``CBOR/Tag/epochDateTime``.
     case iso8601
   }
 
@@ -178,7 +181,7 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
     case .secondsSince1970:
       return .tagged(.epochDateTime, CBOR(value.timeIntervalSince1970))
     case .millisecondsSince1970:
-      return .tagged(.epochDateTime, CBOR(Int64(value.timeIntervalSince1970 * 1000.0)))
+      return CBOR(Int64(value.timeIntervalSince1970 * 1000.0))
     }
   }
 
