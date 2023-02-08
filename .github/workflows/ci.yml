@@ -80,3 +80,26 @@ jobs:
           title: Test Results ${{ matrix.platform }}
           path: ./TestResults/${{ matrix.platform }}.xcresult
 
+  build-test-linux:
+
+    runs-on: ubuntu-latest
+
+    needs: [check-build-test]
+
+    steps:
+
+    - uses: actions/checkout@v3
+
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v1
+
+    - name: Build/Test
+      run: swift test --parallel --xunit-output test-results.xml
+
+    - name: Report Test Results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Test Results linux
+        path: test-results.xml
+        reporter: java-junit
