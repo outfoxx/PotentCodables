@@ -307,7 +307,7 @@ private enum UTCFormatters {
     formatter.calendar = Calendar(identifier: .iso8601)
     formatter.locale = Locale(identifier: "en_US_POSIX")
     formatter.timeZone = timeZone
-    formatter.dateFormat = timeZone == .utc ? "yyMMddHHmmss'Z'" : "yyMMddHHmmssZ"
+    formatter.dateFormat = timeZone == .utc ? "yyMMddHHmmss'Z'" : "yyMMddHHmmssXX"
 
     utcFormatters[timeZone] = formatter
 
@@ -333,7 +333,7 @@ private enum GeneralizedFormatters {
     formatter.calendar = Calendar(identifier: .iso8601)
     formatter.locale = Locale(identifier: "en_US_POSIX")
     formatter.timeZone = timeZone
-    formatter.dateFormat = "yyyyMMddHHmmss.SSSXXXXX"
+    formatter.dateFormat = "yyyyMMddHHmmss.SSSXXXX"
 
     generalizedFormatters[timeZone] = formatter
 
