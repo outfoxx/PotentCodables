@@ -152,22 +152,22 @@ public enum ASN1DERReader {
       return .real(try parseReal(&itemBuffer))
 
     case .utf8String:
-      return .utf8String(try parseString(&itemBuffer, tag: tag, encoding: .utf8))
+      return .utf8String(try parseString(&itemBuffer, encoding: .utf8))
 
     case .numericString:
-      return .numericString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .numericString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .printableString:
-      return .printableString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .printableString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .teletexString:
-      return .teletexString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .teletexString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .videotexString:
-      return .videotexString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .videotexString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .ia5String:
-      return .ia5String(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .ia5String(try parseString(&itemBuffer, encoding: .ascii))
 
     case .utcTime:
       return .utcTime(try parseTime(&itemBuffer, formatter: utcFormatter))
@@ -176,22 +176,22 @@ public enum ASN1DERReader {
       return .generalizedTime(try parseTime(&itemBuffer, formatter: generalizedFormatter))
 
     case .graphicString:
-      return .graphicString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .graphicString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .visibleString:
-      return .visibleString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .visibleString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .generalString:
-      return .generalString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .generalString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .universalString:
-      return .universalString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .universalString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .characterString:
-      return .characterString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .characterString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .bmpString:
-      return .bmpString(try parseString(&itemBuffer, tag: tag, encoding: .ascii))
+      return .bmpString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .sequence, .set:
       throw Error.nonConstructedCollection
@@ -243,7 +243,6 @@ public enum ASN1DERReader {
 
   private static func parseString(
     _ buffer: inout UnsafeBufferPointer<UInt8>,
-    tag: ASN1.Tag,
     encoding: String.Encoding,
     characterSet: CharacterSet? = nil
   ) throws -> String {
@@ -252,10 +251,8 @@ public enum ASN1DERReader {
       throw Error.invalidStringEncoding
     }
 
-    if let characterSet = characterSet {
-      if !string.unicodeScalars.allSatisfy({ characterSet.contains($0) }) {
-        throw Error.invalidStringCharacters
-      }
+    if let characterSet = characterSet, !string.unicodeScalars.allSatisfy({ characterSet.contains($0) }) {
+      throw Error.invalidStringCharacters
     }
 
     return string

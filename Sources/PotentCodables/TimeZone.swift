@@ -12,7 +12,7 @@ import Foundation
 
 public extension TimeZone {
 
-  static let utc = TimeZone(identifier: "UTC")!
+  static let utc = TimeZone(identifier: "UTC").unsafelyUnwrapped
 
   static func timeZone(from date: String) -> TimeZone? {
     guard let offset = offset(from: date) else {
@@ -52,12 +52,16 @@ public extension TimeZone {
       }
     }
     else if timeZone.count == 6 { // assume HHMMSS
-      if let hour = Int(timeZone.dropLast(4)), let min = Int(timeZone.dropFirst(2).dropLast(2)), let sec = Int(timeZone.dropFirst(4)) {
+      if let hour = Int(timeZone.dropLast(4)),
+         let min = Int(timeZone.dropFirst(2).dropLast(2)),
+         let sec = Int(timeZone.dropFirst(4)) {
         return build(seconds: (hour * 60 + min) * 60 + sec)
       }
     }
     else if timeZone.count == 8 { // assime HH:MM:SS
-      if let hour = Int(timeZone.dropLast(6)), let min = Int(timeZone.dropFirst(3).dropLast(3)), let sec = Int(timeZone.dropFirst(6)) {
+      if let hour = Int(timeZone.dropLast(6)),
+         let min = Int(timeZone.dropFirst(3).dropLast(3)),
+         let sec = Int(timeZone.dropFirst(6)) {
         return build(seconds: (hour * 60 + min) * 60 + sec)
       }
     }

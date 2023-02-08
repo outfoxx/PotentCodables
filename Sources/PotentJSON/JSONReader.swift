@@ -269,7 +269,7 @@ internal struct JSONReader {
   }()
 
 
-  func parseNumber(_ input: Index, options opt: JSONSerialization.ReadingOptions) throws -> (JSON.Number, Index)? {
+  func parseNumber(_ input: Index) throws -> (JSON.Number, Index)? {
 
     var isNegative = false
     var string = ""
@@ -362,7 +362,7 @@ internal struct JSONReader {
       return true
     }
 
-    guard try checkJSONNumber() == true else { return nil }
+    guard try checkJSONNumber() else { return nil }
 
     return (.init(string, isInteger: isInteger, isNegative: isNegative), index)
   }
@@ -388,7 +388,7 @@ internal struct JSONReader {
     else if let (array, parser) = try parseArray(input, options: opt) {
       return (.array(array), parser)
     }
-    else if let (number, parser) = try parseNumber(input, options: opt) {
+    else if let (number, parser) = try parseNumber(input) {
       return (.number(number), parser)
     }
     return nil

@@ -99,7 +99,10 @@ public class CBORDataStream: CBORInputStream, CBOROutputStream {
   }
 
   public func writeBytes(_ ptr: UnsafeBufferPointer<UInt8>) throws {
-    data.append(ptr.baseAddress!, count: ptr.count)
+    guard let baseAddress = ptr.baseAddress else {
+      return
+    }
+    data.append(baseAddress, count: ptr.count)
   }
 
   public func writeBytes(_ data: Data) throws {

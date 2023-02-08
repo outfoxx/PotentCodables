@@ -118,10 +118,10 @@ public indirect enum ASN1 {
 
   /// Unwrap the ``default(_:)`` modifier, if present.
   public var absolute: ASN1 {
-    switch self {
-    case .default(let value): return value
-    default: return self
+    if case .default(let value) = self {
+      return value
     }
+    return self
   }
 
   /// Values as boolean or `nil` if this is not a ``boolean(_:)``.

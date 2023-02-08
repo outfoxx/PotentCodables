@@ -259,7 +259,9 @@ extension CBOR: Hashable {}
 extension CBOR: Value {
 
   public var isNull: Bool {
-    if case .null = self { return true }
+    if case .null = self {
+      return true
+    }
     return false
   }
 
