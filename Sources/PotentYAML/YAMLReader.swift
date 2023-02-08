@@ -70,11 +70,10 @@ public enum YAMLReader {
         break
       }
 
-      switch event.type {
-      case FYET_DOCUMENT_START:
+      if event.type == FYET_DOCUMENT_START {
         documents.append(try document(parser: parser))
-
-      default:
+      }
+      else {
         throw parser.error(fallback: .unexpectedEvent)
       }
     }
@@ -377,11 +376,11 @@ private class RegEx {
     public static let lastCharacterNotAtEndOfLine = MatchOptions(rawValue: REG_NOTEOL)
   }
 
-  private var regex = regex_t()
+  private var posixRegex = regex_t()
 
   init(pattern: String, options: Options = [.extended]) {
     let res = pattern.withCString { patternPtr in
-      regcomp(&regex, patternPtr, options.rawValue)
+      regcomp(&posixRegex, patternPtr, options.rawValue)
     }
     guard res == 0 else {
       fatalError("invalid pattern")
@@ -389,12 +388,12 @@ private class RegEx {
   }
 
   deinit {
-    regfree(&regex)
+    regfree(&posixRegex)
   }
 
   func matches(string: String, options: MatchOptions = []) -> Bool {
     return string.withCString { stringPtr in
-      regexec(&regex, stringPtr, 0, nil, options.rawValue) == 0
+      regexec(&posixRegex, stringPtr, 0, nil, options.rawValue) == 0
     }
   }
 

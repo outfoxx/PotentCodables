@@ -458,8 +458,7 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
   }
 
   private func errorDescription(of key: CodingKey) -> String {
-    switch decoder.options.keyDecodingStrategy {
-    case .convertFromSnakeCase:
+    if case .convertFromSnakeCase = decoder.options.keyDecodingStrategy {
       // In this case we can attempt to recover the original value by reversing the transform
       let original = key.stringValue
       let converted = KeyEncodingStrategy.convertToSnakeCase(original)
@@ -469,7 +468,8 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
       else {
         return #""\#(original)" (\#(converted))"#
       }
-    default:
+    }
+    else {
       // Otherwise, just report the converted string
       return #""\#(key.stringValue)""#
     }
