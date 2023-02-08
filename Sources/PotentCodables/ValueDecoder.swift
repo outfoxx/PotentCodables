@@ -1167,7 +1167,7 @@ private struct ValueUnkeyedDecodingContainer<Value, Transform>: UnkeyedDecodingC
   }
 }
 
-extension InternalValueDecoder: SingleValueDecodingContainer {
+extension InternalValueDecoder: SingleValueDecodingContainer, TreeValueDecodingContainer {
   // MARK: SingleValueDecodingContainer Methods
 
   private func expectNonNull<T>(_ type: T.Type) throws {
@@ -1189,6 +1189,14 @@ extension InternalValueDecoder: SingleValueDecodingContainer {
       )
     }
     return value
+  }
+
+  public func decodeTreeValue() -> Any? {
+    return storage.topContainer
+  }
+
+  public func decodeUnwrappedValue() -> Any? {
+    return storage.topContainer.unwrapped
   }
 
   public func decodeNil() -> Bool {

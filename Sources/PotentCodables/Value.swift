@@ -19,4 +19,6 @@ public protocol Value: Hashable {
 
   var isNull: Bool { get }
 
+  var unwrapped: Any? { get }
+
 }

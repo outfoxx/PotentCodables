@@ -16,6 +16,68 @@ import XCTest
 
 class ValueCoderTests: XCTestCase {
 
+  func testDecodeTreeValue() throws {
+
+    struct TestValue: Codable, Equatable {
+      var test: JSON
+
+      init(test: JSON) {
+        self.test = test
+      }
+
+      enum CodingKeys: CodingKey {
+        case test
+      }
+
+      init(from decoder: Decoder) throws {
+        guard let container = try decoder.singleValueContainer() as? TreeValueDecodingContainer else {
+          self.test = "not a tree container"
+          return
+        }
+        self.test = (container.decodeTreeValue() as? JSON) ?? .null
+      }
+
+      func encode(to encoder: Encoder) throws {
+      }
+    }
+
+    XCTAssertEqual(
+      try JSON.Decoder.default.decodeTree(TestValue.self, from: .string("Hello World!")),
+      TestValue(test: "Hello World!")
+    )
+  }
+
+  func testDecodeUnwrappedTreeValue() throws {
+
+    struct TestValue: Codable, Equatable {
+      var test: String
+
+      init(test: String) {
+        self.test = test
+      }
+
+      enum CodingKeys: CodingKey {
+        case test
+      }
+
+      init(from decoder: Decoder) throws {
+        guard let container = try decoder.singleValueContainer() as? TreeValueDecodingContainer else {
+          self.test = "not a tree container"
+          return
+        }
+        self.test = (container.decodeUnwrappedValue() as? String) ?? "Not a JSON string value"
+      }
+
+      func encode(to encoder: Encoder) throws {
+      }
+    }
+
+    XCTAssertEqual(
+      try JSON.Decoder.default.decodeTree(TestValue.self, from: .string("Hello World!")),
+      TestValue(test: "Hello World!")
+    )
+  }
+
   func testUnkeyedContainerDecodeFromEmptyNil() throws {
 
     struct TestValue: Codable {
