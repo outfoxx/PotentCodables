@@ -83,7 +83,13 @@ public struct SuffixedDateFormatter {
     guard let parsedDate = parsedDate else {
       return nil
     }
-    let parsedTimeZone = TimeZone.timeZone(from: String(string[zoneStartIndex...])) ?? .current
+    let parsedTimeZone: TimeZone
+    if string[zoneStartIndex...] == "Z" {
+      parsedTimeZone = .utc
+    }
+    else {
+      parsedTimeZone = TimeZone.timeZone(from: String(string[zoneStartIndex...])) ?? .current
+    }
     return ZonedDate(date: parsedDate, timeZone: parsedTimeZone)
   }
 

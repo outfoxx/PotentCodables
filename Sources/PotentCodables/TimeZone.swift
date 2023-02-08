@@ -18,6 +18,9 @@ public extension TimeZone {
     guard let offset = offset(from: date) else {
       return nil
     }
+    if offset == 0 {
+      return utc
+    }
     return TimeZone(secondsFromGMT: offset)
   }
 
@@ -25,7 +28,7 @@ public extension TimeZone {
     guard let start = date.firstIndex(of: "+") ?? date.firstIndex(of: "-") ?? date.firstIndex(of: "Z") else {
       return nil
     }
-    guard date[start] != "Z" else {
+    guard date[start...] != "Z" else {
       return 0
     }
 
