@@ -532,7 +532,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
           debugDescription: "Failed to decode UUID from binary data that is not 16 bytes"
         )
       }
-      return UUID(uuid: data.withUnsafeBytes { $0.bindMemory(to: uuid_t.self).first ?? UUID_NULL })
+      return UUID(uuid: data.withUnsafeBytes { $0.bindMemory(to: uuid_t.self).first ?? nullUUID })
     case let invalid:
       throw DecodingError.typeMismatch(
         at: decoder.codingPath,
@@ -933,3 +933,5 @@ extension SchemaState {
   }
 
 #endif
+
+private let nullUUID = uuid_t(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
