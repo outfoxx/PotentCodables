@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.4
 //
 //  Package.swift
 //  PotentCodables
@@ -10,6 +10,13 @@
 //
 
 import PackageDescription
+
+// Limit Float16 to x86_64 on macOS or Linux
+ #if swift(>=5.5)
+ let pcDeps: [Target.Dependency] = ["BigInt", .byName(name: "Float16", condition: .when(platforms: [.macOS, .linux]))]
+ #else
+ let pcDeps: [Target.Dependency] = ["BigInt", "Float16"]
+ #endif
 
 let package = Package(
   name: "PotentCodables",
@@ -33,7 +40,7 @@ let package = Package(
   targets: [
     .target(
       name: "PotentCodables",
-      dependencies: ["BigInt", "Float16"]
+      dependencies: pcDeps
     ),
     .target(
       name: "PotentJSON",

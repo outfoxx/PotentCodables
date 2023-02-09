@@ -8,7 +8,7 @@
 //  Distributed under the MIT License, See LICENSE for details.
 //
 
-#if arch(x86_64)
+#if arch(x86_64) && (os(macOS) || os(Linux))
 
 import Float16
 
