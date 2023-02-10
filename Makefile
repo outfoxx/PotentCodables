@@ -58,3 +58,17 @@ update-fyaml:
 	cd Sources/Cfyaml && ./bootstrap.sh
 	cd Sources/Cfyaml && ./configure
 	cd Sources/Cfyaml && sed -i '' 's/HAVE_LIBYAML 1/HAVE_LIBYAML 0/g' config.h
+
+doc-symbol-graphs:
+	rm -rf .build/all-symbol-graphs || 0
+	rm -rf .build/symbol-graphs || 0
+	mkdir -p .build/all-symbol-graphs
+	mkdir -p .build/symbol-graphs
+	swift build -Xswiftc -emit-symbol-graph -Xswiftc -emit-symbol-graph-dir -Xswiftc .build/all-symbol-graphs
+	cp .build/all-symbol-graphs/Potent*.json .build/symbol-graphs
+
+generate-docs: doc-symbol-graphs
+	swift package --allow-writing-to-directory .build/docs generate-documentation --enable-inherited-docs --additional-symbol-graph-dir .build/symbol-graphs --target PotentCodables --output-path .build/docs --transform-for-static-hosting --hosting-base-path PotentCodable
+
+preview-docs: doc-symbol-graphs
+	swift package --disable-sandbox preview-documentation --enable-inherited-docs --additional-symbol-graph-dir .build/symbol-graphs --target PotentCodables

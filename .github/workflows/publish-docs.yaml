@@ -38,6 +38,7 @@ jobs:
         swift package 
         --allow-writing-to-directory docs/${{ github.ref_name }}
         generate-documentation
+        --enable-inherited-docs
         --additional-symbol-graph-dir sgs
         --target PotentCodables
         --output-path docs/${{ github.ref_name }}

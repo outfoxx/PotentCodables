@@ -40,7 +40,10 @@ let package = Package(
   targets: [
     .target(
       name: "PotentCodables",
-      dependencies: pcDeps
+      dependencies: pcDeps,
+      resources: [
+        .process("PotentCodables.docc")
+      ]
     ),
     .target(
       name: "PotentJSON",

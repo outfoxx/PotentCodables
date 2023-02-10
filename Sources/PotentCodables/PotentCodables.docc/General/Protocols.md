@@ -1,5 +1,6 @@
 # Encoder/Decoder Protocols
 
+Details of all the protocols PotentCodables `Encoder`s and `Decoder`s implement.
 
 ## Native Value Trees
 
