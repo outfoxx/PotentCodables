@@ -287,18 +287,30 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
   /// {"@type" : "MyApp.VyValue", "value": {"name" : "Foo"}}
   /// ```
   ///
-  public struct Value<EncodedValue: Encodable>: Encodable {
+  public struct Value: Encodable {
 
-    public let value: EncodedValue
+    public let value: Any?
 
-    public init(_ value: EncodedValue) {
+    public init<T>(_ value: T?) {
+      precondition(value == nil || value is Encodable)
+      self.value = value
+    }
+
+    public init(_ value: Any) {
+      precondition(value is Encodable)
       self.value = value
     }
 
     public func encode(to encoder: Encoder) throws {
-      var container = encoder.container(keyedBy: AnyCodingKey.self)
-      try container.encode(TI.typeId(of: EncodedValue.self), forKey: TKP.typeKey)
-      try container.encode(value, forKey: VKP.valueKey)
+      if let value = value {
+        var container = encoder.container(keyedBy: AnyCodingKey.self)
+        try container.encode(TI.typeId(of: type(of: value)), forKey: TKP.typeKey)
+        try container.encode((value as? Encodable).unsafelyUnwrapped, forKey: VKP.valueKey)
+      }
+      else {
+        var container = encoder.singleValueContainer()
+        try container.encodeNil()
+      }
     }
 
   }
@@ -397,18 +409,30 @@ public struct CustomEmbeddedRef<TKP: TypeKeyProvider, TI: TypeIndex>: Decodable 
   /// {"@type" : "MyApp.VyValue", "name" : "Foo"}
   /// ```
   ///
-  public struct Value<EncodedValue: Encodable>: Encodable {
+  public struct Value: Encodable {
 
-    public let value: EncodedValue
+    public let value: Any?
 
-    public init(_ value: EncodedValue) {
+    public init<T>(_ value: T?) {
+      precondition(value == nil || value is Encodable)
+      self.value = value
+    }
+
+    public init(_ value: Any) {
+      precondition(value is Encodable)
       self.value = value
     }
 
     public func encode(to encoder: Encoder) throws {
-      var container = encoder.container(keyedBy: AnyCodingKey.self)
-      try container.encode(TI.typeId(of: EncodedValue.self), forKey: TKP.typeKey)
-      try value.encode(to: encoder)
+      if let value = value {
+        var container = encoder.container(keyedBy: AnyCodingKey.self)
+        try container.encode(TI.typeId(of: type(of: value)), forKey: TKP.typeKey)
+        try (value as? Encodable).unsafelyUnwrapped.encode(to: encoder)
+      }
+      else {
+        var container = encoder.singleValueContainer()
+        try container.encodeNil()
+      }
     }
 
   }
@@ -420,7 +444,7 @@ public struct CustomEmbeddedRef<TKP: TypeKeyProvider, TI: TypeIndex>: Decodable 
 ///
 public enum Refs {
 
-  enum Error: Swift.Error {
+  public enum Error: Swift.Error {
     case typeNotFound(String)
     case invalidValue(String)
   }
