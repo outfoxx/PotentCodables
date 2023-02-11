@@ -54,7 +54,7 @@ public extension CBOROutputStream {
 }
 
 
-/// A `CBORInputStream` & `CBOROutputStream` targeting a single `Data` value
+/// A ``CBORInputStream`` & ``CBOROutputStream`` targeting a single `Data` value
 public class CBORDataStream: CBORInputStream, CBOROutputStream {
 
   public private(set) var data: Data

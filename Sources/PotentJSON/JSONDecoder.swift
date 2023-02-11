@@ -14,7 +14,7 @@ import OrderedCollections
 import PotentCodables
 
 
-/// `JSONDecoder` facilitates the decoding of JSON into semantic `Decodable` types.
+/// ``JSONDecoder`` facilitates the decoding of JSON into semantic `Decodable` types.
 ///
 public class JSONDecoder: ValueDecoder<JSON, JSONDecoderTransform>, DecodesFromString {
 

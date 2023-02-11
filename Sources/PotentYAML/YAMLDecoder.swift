@@ -13,7 +13,7 @@ import Foundation
 import PotentCodables
 
 
-/// `YAMLDecoder` facilitates the decoding of YAML into semantic `Decodable` types.
+/// ``YAMLDecoder`` facilitates the decoding of YAML into semantic `Decodable` types.
 ///
 public class YAMLDecoder: ValueDecoder<YAML, YAMLDecoderTransform>, DecodesFromString {
 
