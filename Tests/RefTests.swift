@@ -48,6 +48,40 @@ class RefTests: XCTestCase {
     XCTAssertEqual(src.name, try ref.as(AValue.self).name)
   }
 
+  func testNestedRef() throws {
+
+    struct TestValue: Codable {
+      var value: RefTestValue
+
+      init(value: RefTestValue) {
+        self.value = value
+      }
+
+      enum CodingKeys: CodingKey {
+        case value
+      }
+
+      init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.value = try container.decode(Ref.self, forKey: .value).as(RefTestValue.self)
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(Ref.Value(value), forKey: .value)
+      }
+    }
+
+    let src = TestValue(value: AValue(name: "test"))
+
+    let json = try JSON.Encoder.default.encodeTree(src)
+    XCTAssertNotNil(json["value"]?["@type"], "AValue")
+    XCTAssertEqual(json.value?.value?.name, "test")
+
+    let testValue = try JSONDecoder.default.decodeTree(TestValue.self, from: json)
+    XCTAssertEqual((testValue.value as? AValue)?.name, (src.value as? AValue)?.name)
+  }
+
   func testCustomRef() throws {
 
     struct MyTypeKeys: TypeKeyProvider, ValueKeyProvider {
@@ -279,13 +313,13 @@ class RefTests: XCTestCase {
 
   func testRefSingleNil() throws {
 
-    let json = try JSON.Encoder.default.encodeTree(Ref.Value(nil as Bool?))
-    XCTAssertNotNil(json["@type"])
-    XCTAssertEqual(json["value"], .null)
+    let nullValue: RefTestValue? = nil
+    let json = try JSON.Encoder.default.encodeTree(Ref.Value(nullValue))
+    XCTAssertEqual(json, .null)
 
-    let ref = try JSONDecoder.default.decodeTree(Ref.self, from: json)
+    let ref = try JSONDecoder.default.decodeTreeIfPresent(Ref.self, from: json)
 
-    XCTAssertEqual(try ref.as(Bool?.self), nil)
+    XCTAssertNil(ref)
   }
 
   func testRefSingleBoolArray() throws {
@@ -321,6 +355,17 @@ class RefTests: XCTestCase {
     XCTAssertEqual(json["value"], .object(["value": true]))
 
     XCTAssertThrowsError(try JSONDecoder.default.decodeTree(Ref.self, from: json))
+  }
+
+  func testEmbeddedRefSingleNil() throws {
+
+    let nullValue: RefTestValue? = nil
+    let json = try JSON.Encoder.default.encodeTree(EmbeddedRef.Value(nullValue))
+    XCTAssertEqual(json, .null)
+
+    let ref = try JSONDecoder.default.decodeTreeIfPresent(EmbeddedRef.self, from: json)
+
+    XCTAssertNil(ref)
   }
 
   func testEmbeddedRefDecodeFailsWhenTypeNotAuthorized() throws {
