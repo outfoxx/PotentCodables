@@ -14,21 +14,13 @@ import Foundation
 
 /// Write ASN.1/DER encoded data.
 ///
-public class ASN1DERWriter {
-
-  /// ASN.1 Writing Errors
-  public enum Error: Swift.Error {
-    /// Encoded value length could not be stored.
-    case lengthOverflow
-    case invalidObjectIdentifierLength
-    case invalidStringCharacters
-  }
+ internal class ASN1DERWriter {
 
   /// Write a collection of ``ASN1`` values in ASN.1/DER format.
   ///
   /// - Parameter values: Values to write.
   /// - Throws: `Error` when unable to write data.
-  public static func write(_ values: [ASN1]) throws -> Data {
+  static func write(_ values: [ASN1]) throws -> Data {
     let writer = ASN1DERWriter()
     for value in values {
       try writer.write(value)
@@ -40,15 +32,15 @@ public class ASN1DERWriter {
   ///
   /// - Parameter value: Value to write.
   /// - Throws: `Error` when unable to write data.
-  public static func write(_ value: ASN1) throws -> Data {
+  static func write(_ value: ASN1) throws -> Data {
     let writer = ASN1DERWriter()
     try writer.write(value)
     return writer.data
   }
 
-  public private(set) var data: Data
+  internal private(set) var data: Data
 
-  public required init() {
+  required init() {
     data = Data(capacity: 256)
   }
 
@@ -81,29 +73,29 @@ public class ASN1DERWriter {
   private func append(length: BigUInt) throws {
     let bytes = length.derEncoded()
     guard let byteCount = Int8(exactly: bytes.count) else {
-      throw Error.lengthOverflow
+      throw ASN1Serialization.Error.lengthOverflow
     }
     append(byte: 0x80 | UInt8(byteCount))
     append(data: bytes)
   }
 
-  public func append(data: Data) {
+  private func append(data: Data) {
     self.data.append(data)
   }
 
-  public func append(tag: UInt8, length: Int) throws {
+  func append(tag: UInt8, length: Int) throws {
     append(byte: tag)
     try append(length: length)
   }
 
-  public func append(tag: ASN1.Tag, length: Int) throws {
+  private func append(tag: ASN1.Tag, length: Int) throws {
     append(byte: tag.rawValue)
     try append(length: length)
   }
 
   private static let zero = Data(repeating: 0, count: 1)
 
-  public func write(_ value: ASN1) throws {
+  private func write(_ value: ASN1) throws {
     switch value {
     case .boolean(let value):
       try append(tag: .boolean, length: 1)
@@ -249,7 +241,7 @@ public class ASN1DERWriter {
     var iter = fields.makeIterator()
 
     guard let first = iter.next(), let second = iter.next() else {
-      throw Error.invalidObjectIdentifierLength
+      throw ASN1Serialization.Error.invalidObjectIdentifierLength
     }
 
     var bytes = field(val: first * 40 + second)
@@ -283,7 +275,7 @@ public class ASN1DERWriter {
 
   private func data(forString string: String, encoding: String.Encoding) throws -> Data {
     guard let data = string.data(using: encoding) else {
-      throw Error.invalidStringCharacters
+      throw ASN1Serialization.Error.invalidStringCharacters
     }
     return data
   }

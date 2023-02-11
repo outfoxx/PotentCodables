@@ -9,7 +9,7 @@
 //
 
 import Foundation
-import PotentASN1
+@testable import PotentASN1
 import PotentCodables
 import XCTest
 
@@ -102,36 +102,37 @@ class ASN1Tests: XCTestCase {
 
   func testGeneralizedTimeReadingWriting() throws {
 
-    let writer = ASN1DERWriter()
-    try writer.write(ASN1.tagged(24, "22221111223344".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567".data(using: .ascii)!))
+    let data = try ASN1DERWriter.write([
+      ASN1.tagged(24, "22221111223344".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567".data(using: .ascii)!),
 
-    try writer.write(ASN1.tagged(24, "22221111223344Z".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567Z".data(using: .ascii)!))
+      ASN1.tagged(24, "22221111223344Z".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567Z".data(using: .ascii)!),
 
-    try writer.write(ASN1.tagged(24, "22221111223344+11:22:33".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567+11:22:33".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344+112233".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567+112233".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344+11:22".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567+11:22".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344+1122".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567+1122".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344+11".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567+11".data(using: .ascii)!))
+      ASN1.tagged(24, "22221111223344+11:22:33".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567+11:22:33".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344+112233".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567+112233".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344+11:22".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567+11:22".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344+1122".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567+1122".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344+11".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567+11".data(using: .ascii)!),
 
-    try writer.write(ASN1.tagged(24, "22221111223344-11:22:33".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567-11:22:33".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344-112233".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567-112233".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344-11:22".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567-11:22".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344-1122".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567-1122".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344-11".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(24, "22221111223344.567-11".data(using: .ascii)!))
+      ASN1.tagged(24, "22221111223344-11:22:33".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567-11:22:33".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344-112233".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567-112233".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344-11:22".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567-11:22".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344-1122".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567-1122".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344-11".data(using: .ascii)!),
+      ASN1.tagged(24, "22221111223344.567-11".data(using: .ascii)!),
+    ])
 
-    let values = try ASN1DERReader.parse(data: writer.data)
+    let values = try ASN1DERReader.parse(data: data)
 
     func date(_ index: Int) -> TimeInterval { values[index].generalizedTimeValue!.zonedDate.date.timeIntervalSince1970 }
     func tz(_ index: Int) -> TimeZone { values[index].generalizedTimeValue!.zonedDate.timeZone }
@@ -215,18 +216,18 @@ class ASN1Tests: XCTestCase {
 
   func testUTCTimeReadingWriting() throws {
 
-    let writer = ASN1DERWriter()
+    let data = try ASN1DERWriter.write([
+      ASN1.tagged(23, "2211112233Z".data(using: .ascii)!),
+      ASN1.tagged(23, "221111223344Z".data(using: .ascii)!),
 
-    try writer.write(ASN1.tagged(23, "2211112233Z".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(23, "221111223344Z".data(using: .ascii)!))
+      ASN1.tagged(23, "2211112233+1122".data(using: .ascii)!),
+      ASN1.tagged(23, "221111223344+1122".data(using: .ascii)!),
 
-    try writer.write(ASN1.tagged(23, "2211112233+1122".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(23, "221111223344+1122".data(using: .ascii)!))
+      ASN1.tagged(23, "2211112233-1122".data(using: .ascii)!),
+      ASN1.tagged(23, "221111223344-1122".data(using: .ascii)!),
+    ])
 
-    try writer.write(ASN1.tagged(23, "2211112233-1122".data(using: .ascii)!))
-    try writer.write(ASN1.tagged(23, "221111223344-1122".data(using: .ascii)!))
-
-    let values = try ASN1DERReader.parse(data: writer.data)
+    let values = try ASN1DERReader.parse(data: data)
 
     func date(_ index: Int) -> TimeInterval { values[index].utcTimeValue!.zonedDate.date.timeIntervalSince1970 }
     func tz(_ index: Int) -> TimeZone { values[index].utcTimeValue!.zonedDate.timeZone }

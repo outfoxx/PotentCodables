@@ -254,7 +254,7 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
   }
 
   public static func data(from value: CBOR, options: Options) throws -> Data {
-    return try CBORSerialization.data(with: value)
+    return try CBORSerialization.data(from: value)
   }
 
 }

@@ -61,15 +61,6 @@ public enum YAML {
 
   public typealias Anchor = String
 
-  public enum Error: Swift.Error {
-    case unableToCreateParser
-    case unexpectedEOF
-    case unexpectedEvent
-    case invalidToken
-    case invalidTaggedBool
-    case parserError(message: String, line: Int, column: Int)
-  }
-
   public struct Number: Equatable, Hashable, Codable {
 
     public var value: String

@@ -13,14 +13,11 @@ import Foundation
 
 internal struct YAMLWriter {
 
-  enum Error: Swift.Error {
-    case createEmitterFailed
-    case emitFailed
-  }
+  typealias Error = YAMLSerialization.Error
 
   typealias Writer = (String?) -> Void
 
-  public static func write(_ documents: YAML.Sequence, sortedKeys: Bool = false, writer: @escaping Writer) throws {
+  static func write(_ documents: YAML.Sequence, sortedKeys: Bool = false, writer: @escaping Writer) throws {
 
     func output(
       emitter: OpaquePointer?,
@@ -56,7 +53,7 @@ internal struct YAMLWriter {
       )
 
       guard let emitter = fy_emitter_create(&emitterCfg) else {
-        throw Error.createEmitterFailed
+        throw Error.unableToCreateEmitter
       }
       defer { fy_emitter_destroy(emitter) }
 

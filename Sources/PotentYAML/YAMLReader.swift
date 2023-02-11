@@ -11,9 +11,11 @@
 import Cfyaml
 import Foundation
 
-public enum YAMLReader {
+internal enum YAMLReader {
 
-  public static func read(data: Data) throws -> YAML.Sequence {
+  typealias Error = YAMLSerialization.Error
+
+  static func read(data: Data) throws -> YAML.Sequence {
 
     var diagCfg =
       fy_diag_cfg(
@@ -39,7 +41,7 @@ public enum YAMLReader {
     var parseCfg = fy_parse_cfg(search_path: nil, flags: FYPCF_QUIET, userdata: nil, diag: diag)
 
     guard let parser = fy_parser_create(&parseCfg).map({ Parser(rawParser: $0, rawDiag: diag) }) else {
-      throw YAML.Error.unableToCreateParser
+      throw Error.unableToCreateParser
     }
 
     defer { parser.destroy() }
@@ -230,7 +232,7 @@ public enum YAMLReader {
       return .bool(false, anchor: anchor)
     }
 
-    throw YAML.Error.invalidTaggedBool
+    throw Error.invalidTaggedBool
   }
 
   static func value(event: Parser.Event, parser: Parser) throws -> YAML {
@@ -311,14 +313,14 @@ public enum YAMLReader {
       return event
     }
 
-    func error(fallback: YAML.Error) -> YAML.Error {
+    func error(fallback: Error) -> Error {
       guard let diag = rawDiag else { return fallback }
 
       var prev: UnsafeMutableRawPointer?
       if let error = fy_diag_errors_iterate(diag, &prev) {
-        return YAML.Error.parserError(message: String(cString: error.pointee.msg),
-                                      line: Int(error.pointee.line),
-                                      column: Int(error.pointee.column))
+        return Error.parserError(message: String(cString: error.pointee.msg),
+                                 line: Int(error.pointee.line),
+                                 column: Int(error.pointee.column))
       }
 
       return fallback
@@ -351,29 +353,29 @@ extension String {
 
 private class RegEx {
 
-  public struct Options: OptionSet {
-    public let rawValue: Int32
+  struct Options: OptionSet {
+    let rawValue: Int32
 
-    public init(rawValue: Int32) {
+    init(rawValue: Int32) {
       self.rawValue = rawValue
     }
 
-    public static let basic = Options([])
-    public static let extended = Options(rawValue: 1 << 0)
-    public static let caseInsensitive = Options(rawValue: 1 << 1)
-    public static let resultOnly = Options(rawValue: 1 << 2)
-    public static let newLineSensitive = Options(rawValue: 1 << 3)
+    static let basic = Options([])
+    static let extended = Options(rawValue: 1 << 0)
+    static let caseInsensitive = Options(rawValue: 1 << 1)
+    static let resultOnly = Options(rawValue: 1 << 2)
+    static let newLineSensitive = Options(rawValue: 1 << 3)
   }
 
-  public struct MatchOptions: OptionSet {
-    public let rawValue: Int32
+  struct MatchOptions: OptionSet {
+    let rawValue: Int32
 
-    public init(rawValue: Int32) {
+    init(rawValue: Int32) {
       self.rawValue = rawValue
     }
 
-    public static let firstCharacterNotAtBeginningOfLine = MatchOptions(rawValue: REG_NOTBOL)
-    public static let lastCharacterNotAtEndOfLine = MatchOptions(rawValue: REG_NOTEOL)
+    static let firstCharacterNotAtBeginningOfLine = MatchOptions(rawValue: REG_NOTBOL)
+    static let lastCharacterNotAtEndOfLine = MatchOptions(rawValue: REG_NOTEOL)
   }
 
   private var posixRegex = regex_t()

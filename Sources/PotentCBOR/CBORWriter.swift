@@ -11,9 +11,11 @@
 import Foundation
 
 
-public struct CBORWriter {
+internal struct CBORWriter {
 
-  public enum StreamableItemType: UInt8 {
+  typealias Error = CBORSerialization.Error
+
+  enum StreamableItemType: UInt8 {
     case map = 0xBF
     case array = 0x9F
     case string = 0x7F
@@ -22,7 +24,7 @@ public struct CBORWriter {
 
   private(set) var stream: CBOROutputStream
 
-  public init(stream: CBOROutputStream) {
+  init(stream: CBOROutputStream) {
     self.stream = stream
   }
 
@@ -30,7 +32,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encode(_ value: CBOR) throws {
+  func encode(_ value: CBOR) throws {
     switch value {
     case .null: try encodeNull()
     case .undefined: try encodeUndefined()
@@ -50,26 +52,8 @@ public struct CBORWriter {
   }
 
   /// Encodes any signed/unsigned integer, `or`ing `majorType` and `additional` data with first byte
-  private func encodeInt(_ val: Int, majorType: UInt8, additional: UInt8 = 0) throws {
-    try encodeInt(val, modifier: (majorType << 5) | (additional & 0x1F))
-  }
-
-  /// Encodes any signed/unsigned integer, `or`ing `modifier` with first byte
-  private func encodeInt<T>(_ val: T, modifier: UInt8) throws where T: FixedWidthInteger, T: SignedInteger {
-    if val < 0 {
-      try encodeNegativeInt(Int64(val), modifier: modifier)
-    }
-    else {
-      try encodeVarUInt(UInt64(val), modifier: modifier)
-    }
-  }
-
-  /// Encodes any standard signed integer item.
-  ///
-  /// - Throws:
-  ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeInt<T>(_ val: T) throws where T: FixedWidthInteger, T: SignedInteger {
-    try encodeInt(val, modifier: 0)
+  private func encodeLength(_ val: Int, majorType: UInt8) throws {
+    try encodeVarUInt(UInt64(val), modifier: (majorType << 5))
   }
 
   // MARK: - major 0: unsigned integer
@@ -103,20 +87,6 @@ public struct CBORWriter {
     try stream.writeInt(val)
   }
 
-  /// Encodes any standard unsigned integer item.
-  ///
-  /// - Throws:
-  ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeUInt<T>(_ val: T) throws where T: FixedWidthInteger, T: UnsignedInteger {
-    try encodeUInt(val, modifier: 0)
-  }
-
-  /// Encodes any unsigned integer, `or`ing `modifier` with first byte
-  private func encodeUInt<T>(_ val: T, modifier: UInt8) throws where T: FixedWidthInteger, T: UnsignedInteger {
-    guard let value = UInt64(exactly: val) else { fatalError("invalid unsigned integer") }
-    try encodeVarUInt(value, modifier: modifier)
-  }
-
   /// Encodes any unsigned integer, `or`ing `modifier` with first byte
   private func encodeVarUInt(_ val: UInt64, modifier: UInt8 = 0) throws {
     switch val {
@@ -133,7 +103,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeNegativeInt(_ val: Int64) throws {
+  private func encodeNegativeInt(_ val: Int64) throws {
     try encodeNegativeInt(val, modifier: 0)
   }
 
@@ -148,8 +118,8 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeByteString(_ str: Data) throws {
-    try encodeInt(str.count, majorType: 0b010)
+  private func encodeByteString(_ str: Data) throws {
+    try encodeLength(str.count, majorType: 0b010)
     try stream.writeBytes(str)
   }
 
@@ -159,9 +129,9 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeString(_ str: String) throws {
+  private func encodeString(_ str: String) throws {
     let len = str.utf8.count
-    try encodeInt(len, majorType: 0b011)
+    try encodeLength(len, majorType: 0b011)
     try str.withCString { ptr in
       try ptr.withMemoryRebound(to: UInt8.self, capacity: len) { ptr in
         try stream.writeBytes(UnsafeBufferPointer(start: ptr, count: len))
@@ -175,8 +145,8 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeArray(_ array: CBOR.Array) throws {
-    try encodeInt(array.count, majorType: 0b100)
+  private func encodeArray(_ array: CBOR.Array) throws {
+    try encodeLength(array.count, majorType: 0b100)
     try encodeArrayChunk(array)
   }
 
@@ -188,7 +158,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeArrayChunk(_ chunk: CBOR.Array) throws {
+  func encodeArrayChunk(_ chunk: CBOR.Array) throws {
     for item in chunk {
       try encode(item)
     }
@@ -200,8 +170,8 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeMap(_ map: CBOR.Map) throws {
-    try encodeInt(map.count, majorType: 0b101)
+  private func encodeMap(_ map: CBOR.Map) throws {
+    try encodeLength(map.count, majorType: 0b101)
     try encodeMapChunk(map)
   }
 
@@ -213,7 +183,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeMapChunk(_ map: CBOR.Map) throws {
+  func encodeMapChunk(_ map: CBOR.Map) throws {
     for (key, value) in map {
       try encode(key)
       try encode(value)
@@ -226,14 +196,14 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeTagged(tag: CBOR.Tag, value: CBOR) throws {
+  private func encodeTagged(tag: CBOR.Tag, value: CBOR) throws {
     try encodeVarUInt(tag.rawValue, modifier: 0b1100_0000)
     try encode(value)
   }
 
   // MARK: - major 7: floats, simple values, the 'break' stop code
 
-  public func encodeSimpleValue(_ val: UInt8) throws {
+  private func encodeSimpleValue(_ val: UInt8) throws {
     if val < 24 {
       try stream.writeByte(0b1110_0000 | val)
     }
@@ -247,7 +217,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeNull() throws {
+  private func encodeNull() throws {
     try stream.writeByte(0xF6)
   }
 
@@ -255,7 +225,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeUndefined() throws {
+  private func encodeUndefined() throws {
     try stream.writeByte(0xF7)
   }
 
@@ -263,7 +233,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeHalf(_ val: CBOR.Half) throws {
+  private func encodeHalf(_ val: CBOR.Half) throws {
     try stream.writeByte(0xF9)
     try stream.writeInt(val.bitPattern)
   }
@@ -272,7 +242,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeFloat(_ val: CBOR.Float) throws {
+  private func encodeFloat(_ val: CBOR.Float) throws {
     try stream.writeByte(0xFA)
     try stream.writeInt(val.bitPattern)
   }
@@ -281,7 +251,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeDouble(_ val: CBOR.Double) throws {
+  private func encodeDouble(_ val: CBOR.Double) throws {
     try stream.writeByte(0xFB)
     try stream.writeInt(val.bitPattern)
   }
@@ -290,7 +260,7 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeBool(_ val: Bool) throws {
+  private func encodeBool(_ val: Bool) throws {
     try stream.writeByte(val ? 0xF5 : 0xF4)
   }
 
@@ -310,7 +280,7 @@ public struct CBORWriter {
   ///         - byteString: Indefinite string item (requires encoding zero or more `byte-string` items only)
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeIndefiniteStart(for type: StreamableItemType) throws {
+  private func encodeIndefiniteStart(for type: StreamableItemType) throws {
     try stream.writeByte(type.rawValue)
   }
 
@@ -318,8 +288,14 @@ public struct CBORWriter {
   ///
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
-  public func encodeIndefiniteEnd() throws {
+  private func encodeIndefiniteEnd() throws {
     try stream.writeByte(0xFF)
+  }
+
+  func encodeStream(_ type: CBORWriter.StreamableItemType, block: (CBORWriter) throws -> Void) throws {
+    try encodeIndefiniteStart(for: type)
+    defer { try? encodeIndefiniteEnd() }
+    try block(self)
   }
 
 }

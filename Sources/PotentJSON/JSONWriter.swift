@@ -22,9 +22,7 @@ import Foundation
 
 internal struct JSONWriter {
 
-  enum Error: Swift.Error {
-    case invalidNumber(Double)
-  }
+  typealias Error = JSONSerialization.Error
 
   private var indent = 0
   private let esccapeSlashes: Bool
