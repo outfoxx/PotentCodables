@@ -10,7 +10,7 @@
 
 import Foundation
 
-/// Provides a static `typeKey` property that `Ref` and `EmbeddedRef`
+/// Provides a static ``typeKey`` property that ``Ref`` and ``EmbeddedRef``
 /// use to determine which key to use when encoding/decoding the Swift
 /// type name.
 ///
@@ -18,24 +18,20 @@ public protocol TypeKeyProvider {
   static var typeKey: AnyCodingKey { get }
 }
 
-/// Default type key provider using `@type` as the `typeKey`
-///
-/// - See Also: `TypeKeyProvider`
+/// Default type key provider using `@type` as the ``typeKey``
 ///
 public struct DefaultTypeKey: TypeKeyProvider {
   public static var typeKey: AnyCodingKey = "@type"
 }
 
-/// Provides a static `valueKey` property that `Ref` and `EmbeddedRef`
+/// Provides a static ``valueKey`` property that `Ref` and ``EmbeddedRef``
 /// use to determine which key to use when encoding/decoding a value.
 ///
 public protocol ValueKeyProvider {
   static var valueKey: AnyCodingKey { get }
 }
 
-/// Default value key provider using `value` as the `valueKey`
-///
-/// - See Also: `ValueKeyProvider`
+/// Default value key provider using `value` as the ``valueKey``
 ///
 public struct DefaultValueKey: ValueKeyProvider {
   public static var valueKey: AnyCodingKey = "value"
@@ -60,9 +56,7 @@ public protocol TypeIndex {
 /// provided type and assign them to the map of allowed types.
 ///
 /// Note: The initial map of allowed types is empty and must be provided
-/// by clients prior to using `Ref` or `EmbeddedRef`.
-///
-/// - See Also: `TypeIndex`
+/// by clients prior to using ``Ref`` or ``EmbeddedRef``.
 ///
 public struct DefaultTypeIndex: TypeIndex {
 
@@ -183,22 +177,25 @@ public struct DefaultTypeIndex: TypeIndex {
     typeId(of: [String: Date]?.self): [String: Date]?.self,
   ]
 
-  // Set the allowed types to the given array after mapping them using `mapAllowedTypes(:)`.
+  /// Set the allowed types to the given array after mapping them using ``DefaultTypeIndex/mapAllowedTypes(_:)``.
   public static func setAllowedTypes(_ types: [Decodable.Type]) {
     Self.allowedTypes = mapAllowedTypes(types)
   }
 
-  // Set the allowed types to the given array after mapping them using `mapAllowedTypes(:)`.
+  /// Set the allowed types to the given array after mapping them using ``DefaultTypeIndex/mapAllowedTypes(_:)``.
   public static func addAllowedTypes(_ types: [Decodable.Type]) {
     Self.allowedTypes = Self.allowedTypes.merging(mapAllowedTypes(types)) { $1 }
   }
 
-  // Maps the given array of types to their generated type id and returns the dictionary.
+  /// Maps the given array of types to their generated type id and returns the dictionary.
   public static func mapAllowedTypes(_ types: [Decodable.Type]) -> [String: Decodable.Type] {
     return Dictionary(uniqueKeysWithValues: types.map { (key: Self.typeId(of: $0), value: $0) })
   }
 
+  /// Find the associated tyoe for the given type id.
   public static func findType(id: String) -> Decodable.Type? { allowedTypes[id] }
+
+  /// Find the type id of the given type.
   public static func typeId(of type: Any.Type) -> String {
     "\(type)".split(separator: ".").last.map { String($0) } ?? "\(type)"
   }
@@ -208,7 +205,7 @@ public struct DefaultTypeIndex: TypeIndex {
 
 /// A decodable type for decoding general polymorphic types.
 ///
-/// `Ref` relies upon the encoded value being wrapped in a keyed container that contains a
+/// ``Ref`` relies upon the encoded value being wrapped in a keyed container that contains a
 /// Swift type name in its key-value pairs. By default the key `@type` is used but this can be
 /// customized.
 ///
@@ -217,7 +214,7 @@ public struct DefaultTypeIndex: TypeIndex {
 /// {"@type" : "MyValue", "value": {"name" : "Foo"}}
 /// ```
 ///
-/// Decoding a `Ref` instance will decode the value to its `value` property,
+/// Decoding a ``Ref`` instance will decode the value to its `value` property,
 /// which can then be accesed in a number of ways.
 ///
 /// # Example:
@@ -227,60 +224,23 @@ public struct DefaultTypeIndex: TypeIndex {
 ///     myValue = container.decode(Ref.self).value as! MyValue
 ///
 /// In the example, `MyValue` can be a concrete type or protocol, either works fine. Alternatively, the
-/// `Ref.as(: Any.Type)` method can be used to require the value be of a specific
-/// type and throw a decoding error if it is not, as in:
+/// ``CustomRef/as(_:)`` method can be used to require the value be of a specific type and throw a decoding
+/// related error if it is not, as in:
 ///
 ///     myValue = container.decode(Ref.self).as(MyValue.self)
-///
-///
-/// # Customizing Keys:
-/// The key used to store the type name defaults to `@type` and the key used to store the value
-/// defaults to `value`. These can be customized by using the implementation type (`CustomRef`)
-/// directly, passing a `TypeKeyProvider` and a `ValueKeyProvider` for each of the required keys:
-///
-///     typealias MyRef = CustomRef<MyTypeKey, MyValueKey>
-///     myValue = container.decode(My.self).value
-///
-/// # Customizing Type Lookup:
-/// Types are saved by transforming them into a type id (aka name). During decoding by type ids are
-/// transformed back into the requested types. To enable extensability, and ensure security during
-/// decoding, type ids are looked up using a type index. A type index simply generates type ids
-/// for types and provides the ability to lookup a type for a matching id.
-///
-/// The default type index, used by `Ref`, is `DefaultTypeIndex`. The index has a simple global map
-/// of allowed types to their type ids. `DefaultTypeIndex` uses the simple module local type name
-/// for each type (see `DefaultTypeIndex` for specifics).
-///
-/// - Note: `DefaultTypeIndex`'s map of allowed types is initially empty and will not provide any
-///  types during decoding. You must explicitly updated the map of allowed types using
-/// `DefaultTypeIndex.setAllowedTypes(:)`.
-///
-/// A new type index implementation can be provided by using `CustomRef` explicity and providing a
-/// cusom type index:
-///
-///     typealias MyRef = CustomRef<DefaultTypeKey, DefaultValueKey, MyTypeIndex>
-///
-///
-///
-/// - See Also: `Ref.Value`
-/// - See Also: `EmbeddedRef`
-/// - See Also: `CustomRef<>`
 ///
 public typealias Ref = CustomRef<DefaultTypeKey, DefaultValueKey, DefaultTypeIndex>
 
 
-/// The implementation type for `Ref` types.
+/// The implementation type for ``Ref`` types.
 ///
 /// This type is meant to be used only when the key(s) need to be customized. They are customized
-/// by providing custom `KeyProvider` implementations for each required generic parameter.
+/// by providing custom ``TypeKeyProvider``, ``ValueKeyProvider`` or ``TypeIndex`` implementations.
 ///
 /// - Parameters:
 ///   - TI: Type parameter that provides type id generation & lookup.
 ///   - TKP: Type parameter that provides the type key to use.
 ///   - VKP: Type parameter that provides the value key to use.
-///
-/// - See Also: `Ref`
-/// - See Also: `KeyProvider`
 ///
 public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeIndex>: Decodable {
 
@@ -294,10 +254,10 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
   }
 
   /// Method attempts a conversion to the provided type `V` and throws a
-  /// related `Ref.Error` if it fails.
+  /// related ``Refs/Error`` if it fails.
   ///
   /// The method is for convenience when decoding to easily retrieve the value
-  /// as the required type and throw encoded related errors.
+  /// as the required type and throw codable related errors.
   ///
   /// - Parameters:
   ///   - type: The required type to retrieve the decoded value as
@@ -312,11 +272,11 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
   }
 
 
-  /// An encodable value that wraps a value with the type name for decoding using `Ref`.
+  /// An encodable value that wraps a value with the type name for decoding using ``Ref``.
   ///
-  /// During encoding `EncodedValue` is wrapped in a keyed container that includes the required
-  /// Swift type-name value required for decoding by `Ref`. Usage is simple, just wrap your to-be-
-  /// encoded value in this type and pass to any encoding container's encode method.
+  /// During encoding the value is wrapped in a keyed container that includes the required
+  /// type id of the Swift type of the value required for decoding by ``Ref``. Usage is simple,
+  ///  just wrap your to-be-encoded value in this type and pass to any encoding container's encode method.
   ///
   /// # Example:
   ///
@@ -326,9 +286,6 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
   /// ```javascript
   /// {"@type" : "MyApp.VyValue", "value": {"name" : "Foo"}}
   /// ```
-  ///
-  /// - See Also: `Ref`
-  /// - See Also: `CustomRef`
   ///
   public struct Value<EncodedValue: Encodable>: Encodable {
 
@@ -351,7 +308,7 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
 
 /// A decodable type for decoding polymorphic types that include an embedded type name value.
 ///
-/// `EmbeddedRef` relies upon the encoded value including a type name embedded in the keyed
+/// ``EmbeddedRef`` relies upon the encoded value including a type name embedded in the keyed
 /// container it is decoding. By default the key `@type` is used but this can be customized.
 ///
 /// # Expected Encoded Structure (JSON):
@@ -359,7 +316,7 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
 /// {"@type" : "MyValue", "name" : "Foo"}
 /// ```
 ///
-/// Decoding an `EmbeddedRef` instance will decode the value to its `value` property,
+/// Decoding an ``EmbeddedRef`` instance will decode the value to its `value` property,
 /// which can then be accesed in a number of ways.
 ///
 /// # Example:
@@ -369,54 +326,20 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
 ///     myValue = container.decode(EmbeddedRef.self).value as! MyValue
 ///
 /// In the example, `MyValue` can be a concrete type or protocol, either works fine. Alternatively, the
-/// `Ref.as(: Any.Type)` method can be used to require the value be of a specific
-/// type and throw a decoding error if it is not, as in:
+/// ``CustomEmbeddedRef/as(_:)`` method can be used to require the value be of a specific type and throw
+///  a decoding related error if it is not, as in:
 ///
 ///     myValue = container.decode(EmbeddedRef.self).as(MyValue.self)
-///
-///
-/// # Customizing Type Key:
-/// The key used to store the type name defaults to `@type`. This can be customized by using the
-/// implementation type (`CustomEmbeddedRef`) directly, passing a `KeyProvider`:
-///
-///     typealias MyRef = CustomEmbeddedRef<MyTypeKey>
-///     myValue = container.decode(My.self).value
-///
-///
-/// # Customizing Type Lookup:
-/// Types are saved by transforming them into a type id (aka name). During decoding by type ids are
-/// transformed back into the requested types. To enable extensability, and ensure security during
-/// decoding, type ids are looked up using a type index. A type index simply generates type ids
-/// for types and provides the ability to lookup a type for a matching id.
-///
-/// The default type index, used by `Ref`, is `DefaultTypeIndex`. The index has a simple global map
-/// of allowed types to their type ids. `DefaultTypeIndex` uses the simple module local type name
-/// for each type (see `DefaultTypeIndex` for specifics).
-///
-/// - Note: `DefaultTypeIndex`'s map of allowed types is initially empty and will not provide any
-///  types during decoding. You must explicitly updated the map of allowed types using
-/// `DefaultTypeIndex.setAllowedTypes(:)`.
-///
-/// A new type index implementation can be provided by using `CustomRef` explicity and providing a
-/// cusom type index:
-///
-///     typealias MyRef = CustomEmbeddedRef<DefaultTypeKey, MyTypeIndex>
-///
 ///
 /// # Requires:
 ///   Keyed Container
 ///
-///   Due to the type name being embedded in the key-value pairs of, the
+///   Due to the type name being embedded in the key-value pairs of value's container, the
 ///   encoded value **must** be a keyed container, it cannot be an unkeyed or
 ///   single-value container.
 ///
-///   `Ref` is provided to support encoding/decoding of "general" values of any
+///   ``Ref`` is provided to support encoding/decoding of "general" values of any
 ///   structure.
-///
-///
-/// - See Also: `EmbeddedRef.Value`
-/// - See Also: `Ref`
-/// - See Also: `CustomEmbeddedRef<>`
 ///
 public typealias EmbeddedRef = CustomEmbeddedRef<DefaultTypeKey, DefaultTypeIndex>
 
@@ -427,9 +350,6 @@ public typealias EmbeddedRef = CustomEmbeddedRef<DefaultTypeKey, DefaultTypeInde
 ///
 /// - Parameters:
 ///   - KP: Type parameter that provides the type key to use.
-///
-/// - See Also: `EmbeddedRef`
-/// - See Also: `KeyProvider`
 ///
 public struct CustomEmbeddedRef<TKP: TypeKeyProvider, TI: TypeIndex>: Decodable {
 
@@ -442,10 +362,10 @@ public struct CustomEmbeddedRef<TKP: TypeKeyProvider, TI: TypeIndex>: Decodable 
   }
 
   /// Method attempts a conversion to the provided type `V` and throws a
-  /// related `EmbeddedRef.Error` if it fails.
+  /// related ``Refs/Error`` if it fails.
   ///
   /// The method is for convenience when decoding to easily retrieve the value
-  /// as the required type and throw encoded related errors.
+  /// as the required type or throw decoding related errors.
   ///
   /// - Parameters:
   ///   - type: The required type to retrieve the decoded value as
@@ -461,7 +381,7 @@ public struct CustomEmbeddedRef<TKP: TypeKeyProvider, TI: TypeIndex>: Decodable 
 
 
   /// An encodable value that embeds the encoded value with the type name required for decoding
-  /// using `EmbeddedRef`.
+  /// using ``EmbeddedRef``.
   ///
   /// During encoding the Swift type name of `EncodedValue` is embed into the keyed container
   /// produced by `EnncodedValue` allowing it to be decoded with `EmbeddedRef`. Usage is
@@ -476,9 +396,6 @@ public struct CustomEmbeddedRef<TKP: TypeKeyProvider, TI: TypeIndex>: Decodable 
   /// ```javascript
   /// {"@type" : "MyApp.VyValue", "name" : "Foo"}
   /// ```
-  ///
-  /// - See Also: `EmbeddedRef`
-  /// - See Also: `CustomEmbeddedRef`
   ///
   public struct Value<EncodedValue: Encodable>: Encodable {
 
@@ -499,7 +416,7 @@ public struct CustomEmbeddedRef<TKP: TypeKeyProvider, TI: TypeIndex>: Decodable 
 }
 
 
-/// Utilities support `Ref` and `EmbeddedRef`
+/// Utilities support ``Ref`` and ``EmbeddedRef``
 ///
 public enum Refs {
 

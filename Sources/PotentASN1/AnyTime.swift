@@ -42,7 +42,7 @@ public struct AnyTime: Equatable, Hashable, Codable {
   /// String value
   public var zonedDate: ZonedDate
 
-  /// Initialize with a ``ZonedDate`` and explicit ASN.1 kind.
+  /// Initialize with a ``PotentCodables/ZonedDate`` and explicit ASN.1 kind.
   public init(_ zonedDate: ZonedDate, kind: Kind? = nil) {
     self.kind = kind
     self.zonedDate = zonedDate
