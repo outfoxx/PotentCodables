@@ -14,7 +14,7 @@ import OrderedCollections
 import PotentCodables
 
 
-/// `CBORDecoder` facilitates the decoding of CBOR into semantic `Decodable` types.
+/// ``CBORDecoder`` facilitates the decoding of CBOR into semantic `Decodable` types.
 ///
 public class CBORDecoder: ValueDecoder<CBOR, CBORDecoderTransform>, DecodesFromData {
 

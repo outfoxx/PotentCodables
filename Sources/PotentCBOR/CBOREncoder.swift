@@ -13,7 +13,7 @@ import Foundation
 import PotentCodables
 
 
-/// `CBOREncoder` facilitates the encoding of `Encodable` values into CBOR values.
+/// ``CBOREncoder`` facilitates the encoding of `Encodable` values into CBOR values.
 ///
 public class CBOREncoder: ValueEncoder<CBOR, CBOREncoderTransform>, EncodesToData {
 

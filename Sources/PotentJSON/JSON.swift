@@ -17,7 +17,8 @@ import PotentCodables
 /// General JSON value.
 ///
 /// # Object Access
-/// `JSON` supoprts Swift's "dnyamic member lookup" so JSON fields of `object` values can be accessed in Swift syntax:
+/// ``JSON`` supoprts Swift's "dnyamic member lookup" so JSON fields of ``JSON/object(_:)`` values can be accessed in
+/// Swift syntax:
 ///
 ///     jsonObject.someValue
 ///
@@ -26,7 +27,7 @@ import PotentCodables
 ///     jsonObject["@value"]
 ///
 /// # Array Access
-/// The elements of JSON `array` values can use index subscripting to access individual array values.
+/// The elements of JSON ``JSON/array(_:)`` values can use index subscripting to access individual array values.
 ///
 ///     jsonArray[0]
 ///

@@ -59,7 +59,7 @@ internal struct CBORReader {
   /// - Returns: An array of the decoded items
   /// - Throws:
   ///     - `CBORSerialization.Error`: If corrupted data is encountered,
-  ///     including `.invalidBreak` if a break indicator is encountered in
+  ///     including ``CBORSerialization/Error/invalidBreak`` if a break indicator is encountered in
   ///     an item slot
   ///     - `Swift.Error`: If any I/O error occurs
   private func decodeItems(count: Int) throws -> CBOR.Array {
@@ -91,7 +91,7 @@ internal struct CBORReader {
   /// - Returns: A map of the decoded key-value pairs
   /// - Throws:
   ///     - `CBORSerialization.Error`: If corrupted data is encountered,
-  ///     including `.invalidBreak` if a break indicator is encountered in
+  ///     including ``CBORSerialization/Error/invalidBreak`` if a break indicator is encountered in
   ///     the either the key or value slot
   ///     - `Swift.Error`: If any I/O error occurs
   private func decodeItemPairs(count: Int) throws -> CBOR.Map {
@@ -110,7 +110,7 @@ internal struct CBORReader {
   /// - Returns: A map of the decoded key-value pairs
   /// - Throws:
   ///     - `CBORSerialization.Error`: If corrupted data is encountered,
-  ///     including `.invalidBreak` if a break indicator is encountered in
+  ///     including ``CBORSerialization/Error/invalidBreak`` if a break indicator is encountered in
   ///     the value slot
   ///     - `Swift.Error`: If any I/O error occurs
   private func decodeItemPairsUntilBreak() throws -> CBOR.Map {
@@ -127,7 +127,7 @@ internal struct CBORReader {
   /// - Returns: A non-break CBOR item
   /// - Throws:
   ///     - `CBORSerialization.Error`: If corrupted data is encountered,
-  ///     including `.invalidBreak` if an indefinite-element indicator is
+  ///     including ``CBORSerialization/Error/invalidBreak`` if an indefinite-element indicator is
   ///     encountered
   ///     - `Swift.Error`: If any I/O error occurs
   func decodeRequiredItem() throws -> CBOR {

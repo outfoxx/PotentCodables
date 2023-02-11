@@ -13,7 +13,7 @@ import Foundation
 import PotentCodables
 
 
-/// `YAMLEncoder` facilitates the encoding of `Encodable` values into YAML values.
+/// ``YAMLEncoder`` facilitates the encoding of `Encodable` values into YAML values.
 ///
 public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToString {
 

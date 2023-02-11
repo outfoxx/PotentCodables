@@ -13,7 +13,7 @@ import Foundation
 import PotentCodables
 
 
-/// `JSONEncoder` facilitates the encoding of `Encodable` values into JSON values.
+/// ``JSONEncoder`` facilitates the encoding of `Encodable` values into JSON values.
 ///
 public class JSONEncoder: ValueEncoder<JSON, JSONEncoderTransform>, EncodesToString {
 

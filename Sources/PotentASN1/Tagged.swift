@@ -15,7 +15,7 @@ import Foundation
 /// type's ASN.1 encoded value.
 ///
 /// When encoding a value supporting adopting this protocol
-/// the `ASN1Encoder` will call ``encode(schema:)`` to
+/// the ``ASN1Encoder`` will call ``encode(schema:)`` to
 /// retrieve the ``ASN1`` value it should ultimately encode.
 ///
 /// During decoding ``ASN1Decoder`` calls ``init(tag:value:)``

@@ -13,9 +13,6 @@ import Foundation
 
 /// Convenience API for serializing and deserialization CBOR items.
 ///
-/// The API is simple and should fit most user's needs, if
-/// required users can drop down and use `CBORWriter`/
-/// `CBORReader` directly.
 public enum CBORSerialization {
 
   /// Errors throws during serialization and deserialization
@@ -47,7 +44,7 @@ public enum CBORSerialization {
   /// Serialize `CBOR` value into a byte data.
   ///
   /// - Parameters:
-  ///     - with: The `CBOR` item to serialize
+  ///     - with: The ``CBOR`` item to serialize
   /// - Throws:
   ///     - `Swift.Error`: If any stream I/O error is encountered
   public static func data(from value: CBOR) throws -> Data {

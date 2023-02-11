@@ -16,7 +16,8 @@ import PotentCodables
 /// General CBOR value.
 ///
 /// # Map Access
-/// `CBOR` supoprts Swift's "dnyamic member lookup" so CBOR fields of `map` values can be accessed in Swift syntax
+/// ``CBOR`` supoprts Swift's "dnyamic member lookup" so CBOR fields of ``CBOR/map(_:)`` values can be accessed in
+/// Swift syntax
 ///
 ///     cborObject.someValue
 ///
@@ -24,10 +25,11 @@ import PotentCodables
 ///
 ///     cborObject["@value"]
 ///
-/// - Note: CBOR supports complex key values and thus any `CBOR` value can be used to subscript a `map` value.
+/// - Note: CBOR supports complex key values and thus any ``CBOR`` value can be used to subscript a ``CBOR/map(_:)``
+/// value.
 ///
 /// # Array Access
-/// The elements of CBOR `array` values can use index subscripting to access individual array values:
+/// The elements of CBOR ``CBOR/array(_:)`` values can use index subscripting to access individual array values:
 ///
 ///     cborArray[0]
 ///
@@ -207,10 +209,10 @@ public indirect enum CBOR {
     }
   }
 
-  /// Returns the CBOR value stripped of all `tagged` values.
+  /// Returns the CBOR value stripped of all ``CBOR/tagged(_:_:)`` values.
   ///
   /// # Map/Array
-  /// If the value is a compex value, like `map` or `array` all values
+  /// If the value is a compex value, like ``CBOR/map(_:)`` or ``CBOR/array(_:)`` all values
   /// contained in them are untagged recursively.
   ///
   public var untagged: CBOR {

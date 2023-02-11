@@ -16,7 +16,8 @@ import PotentCodables
 /// General YAML value.
 ///
 /// # Object Access
-/// `YAML` supoprts Swift's "dnyamic member lookup" so YAML fields of `mapping` values can be accessed in Swift syntax:
+/// ``YAML`` supoprts Swift's "dnyamic member lookup" so YAML fields of ``YAML/mapping(_:style:tag:anchor:)`` values
+/// can be accessed in Swift syntax:
 ///
 ///     yamlObject.someValue
 ///
@@ -25,7 +26,8 @@ import PotentCodables
 ///     yamlObject["@value"]
 ///
 /// # Array Access
-/// The elements of YAML `sequence` values can use index subscripting to access individual array values.
+/// The elements of YAML ``YAML/sequence(_:style:tag:anchor:)`` values can use index subscripting to access individual
+/// array values.
 ///
 ///     yamlArray[0]
 ///
