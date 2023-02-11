@@ -15,24 +15,7 @@ import PotentCodables
 
 /// Read ASN.1/DER encoded data.
 ///
-public enum ASN1DERReader {
-
-  public enum Error: Swift.Error {
-    /// Unexpectedly encounted end of data.
-    case unexpectedEOF
-    /// Invalid or unsupported string.
-    case invalidStringEncoding
-    /// Invalid characters for string.
-    case invalidStringCharacters
-    /// Unsupported non-constructed collection
-    case nonConstructedCollection
-    /// Incorrectly formatted UTC time.
-    case invalidUTCTime
-    /// Incorrectly formatted generalized time.
-    case invalidGeneralizedTime
-    /// Unsupported REAL type.
-    case unsupportedReal
-  }
+internal enum ASN1DERReader {
 
   /// Parse data into a collection of ``ASN1`` values.
   ///
@@ -194,7 +177,7 @@ public enum ASN1DERReader {
       return .bmpString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .sequence, .set:
-      throw Error.nonConstructedCollection
+      throw ASN1Serialization.Error.nonConstructedCollection
 
     case .objectDescriptor, .external, .enumerated, .embedded, .relativeOID:
       // Default to saving tagged version
@@ -209,11 +192,11 @@ public enum ASN1DERReader {
   ) throws -> ZonedDate {
 
     guard let string = String(data: Data(try buffer.popAll()), encoding: .ascii) else {
-      throw Error.invalidStringEncoding
+      throw ASN1Serialization.Error.invalidStringEncoding
     }
 
     guard let zonedDate = formatter.date(from: string) else {
-      throw Error.invalidUTCTime
+      throw ASN1Serialization.Error.invalidUTCTime
     }
 
     return zonedDate
@@ -237,7 +220,7 @@ public enum ASN1DERReader {
       return Decimal(string: String(bytes: bytes, encoding: .ascii) ?? "") ?? .zero
     }
     else {
-      throw Error.unsupportedReal
+      throw ASN1Serialization.Error.unsupportedReal
     }
   }
 
@@ -248,11 +231,11 @@ public enum ASN1DERReader {
   ) throws -> String {
 
     guard let string = String(data: Data(try buffer.popAll()), encoding: encoding) else {
-      throw Error.invalidStringEncoding
+      throw ASN1Serialization.Error.invalidStringEncoding
     }
 
     if let characterSet = characterSet, !string.unicodeScalars.allSatisfy({ characterSet.contains($0) }) {
-      throw Error.invalidStringCharacters
+      throw ASN1Serialization.Error.invalidStringCharacters
     }
 
     return string
@@ -333,7 +316,7 @@ private extension UnsafeBufferPointer {
 
   mutating func popAll() throws -> UnsafeRawBufferPointer {
     guard let baseAddress = baseAddress else {
-      throw ASN1DERReader.Error.unexpectedEOF
+      throw ASN1Serialization.Error.unexpectedEOF
     }
     let buffer = UnsafeRawBufferPointer(start: baseAddress, count: count)
     self = UnsafeBufferPointer(start: baseAddress.advanced(by: count), count: 0)
@@ -342,7 +325,7 @@ private extension UnsafeBufferPointer {
 
   mutating func pop(count: Int = 0) throws -> UnsafeBufferPointer {
     guard let baseAddress = baseAddress, self.count >= count else {
-      throw ASN1DERReader.Error.unexpectedEOF
+      throw ASN1Serialization.Error.unexpectedEOF
     }
     let buffer = UnsafeBufferPointer(start: baseAddress, count: count)
     self = UnsafeBufferPointer(start: baseAddress.advanced(by: count), count: self.count - count)
@@ -351,7 +334,7 @@ private extension UnsafeBufferPointer {
 
   mutating func pop() throws -> Element {
     guard let baseAddress = baseAddress, self.count >= 1 else {
-      throw ASN1DERReader.Error.unexpectedEOF
+      throw ASN1Serialization.Error.unexpectedEOF
     }
     defer {
       self = UnsafeBufferPointer(start: baseAddress.advanced(by: 1), count: self.count - 1)

@@ -50,7 +50,7 @@ public enum CBORSerialization {
   ///     - with: The `CBOR` item to serialize
   /// - Throws:
   ///     - `Swift.Error`: If any stream I/O error is encountered
-  public static func data(with value: CBOR) throws -> Data {
+  public static func data(from value: CBOR) throws -> Data {
     let stream = CBORDataStream()
     let encoder = CBORWriter(stream: stream)
     try encoder.encode(value)

@@ -72,7 +72,7 @@ class CBORTests: XCTestCase {
 
   func testMapKeySerializationOrder() throws {
 
-    let cbor = try CBORSerialization.data(with: [
+    let cbor = try CBORSerialization.data(from: [
       "c": 1,
       "a": 2,
       "b": 3,

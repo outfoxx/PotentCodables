@@ -23,31 +23,16 @@ import Foundation
 
 internal struct JSONReader {
 
-  public enum Error: Swift.Error {
+  typealias Error = JSONSerialization.Error
 
-    public enum InvalidData {
-      case invalidString
-      case invalidEscapeSequence
-      case invalidNumber
-      case invalidArray
-      case expectedObjectKey
-      case expectedObjectSeparator
-      case expectedObjectValue
-      case expectedArraySeparator
-    }
-
-    case unexpectedEndOfStream
-    case invalidData(InvalidData, position: Int)
-  }
-
-  static let whitespaceASCII: [UInt8] = [
+  private static let whitespaceASCII: [UInt8] = [
     0x09, // Horizontal tab
     0x0A, // Line feed or New line
     0x0D, // Carriage return
     0x20, // Space
   ]
 
-  enum Structure {
+  private enum Structure {
     static let beginArray: UInt8 = 0x5B // [
     static let endArray: UInt8 = 0x5D // ]
     static let beginObject: UInt8 = 0x7B // {

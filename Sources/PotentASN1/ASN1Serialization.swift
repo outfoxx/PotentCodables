@@ -15,6 +15,28 @@ import Foundation
 ///
 public enum ASN1Serialization {
 
+  /// ASN.1 Data Errors
+  public enum Error: Swift.Error {
+    /// Unexpectedly encounted end of data.
+    case unexpectedEOF
+    /// Invalid or unsupported string.
+    case invalidStringEncoding
+    /// Invalid characters for string.
+    case invalidStringCharacters
+    /// Unsupported non-constructed collection
+    case nonConstructedCollection
+    /// Incorrectly formatted UTC time.
+    case invalidUTCTime
+    /// Incorrectly formatted generalized time.
+    case invalidGeneralizedTime
+    /// Unsupported REAL type.
+    case unsupportedReal
+    /// Encoded value length could not be stored.
+    case lengthOverflow
+    /// Number of fields in OID is invalid
+    case invalidObjectIdentifierLength
+  }
+
   /// Read ASN.1/DER encoded data as a collection of ``ASN1`` values.
   public static func asn1(fromDER data: Data) throws -> [ASN1] {
     return try ASN1DERReader.parse(data: data)

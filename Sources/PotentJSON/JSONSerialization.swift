@@ -14,6 +14,20 @@ import Foundation
 public enum JSONSerialization {
 
   public enum Error: Swift.Error {
+
+    public enum InvalidData {
+      case invalidString
+      case invalidEscapeSequence
+      case invalidNumber
+      case invalidArray
+      case expectedObjectKey
+      case expectedObjectSeparator
+      case expectedObjectValue
+      case expectedArraySeparator
+    }
+
+    case invalidData(InvalidData, position: Int)
+    case unexpectedEndOfStream
     case fragmentDisallowed
     case noValue
   }

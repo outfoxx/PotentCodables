@@ -11,13 +11,13 @@
 import Foundation
 
 
-private typealias CBORError = CBORSerialization.Error
+internal struct CBORReader {
 
-public struct CBORReader {
+  typealias Error = CBORSerialization.Error
 
   private let stream: CBORInputStream
 
-  public init(stream: CBORInputStream) {
+  init(stream: CBORInputStream) {
     self.stream = stream
   }
 
@@ -48,7 +48,7 @@ public struct CBORReader {
     let length = try readVarUInt(initByte, base: base)
 
     guard length <= Int.max else {
-      throw CBORError.sequenceTooLong
+      throw Error.sequenceTooLong
     }
 
     return Int(length)
@@ -62,7 +62,7 @@ public struct CBORReader {
   ///     including `.invalidBreak` if a break indicator is encountered in
   ///     an item slot
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItems(count: Int) throws -> CBOR.Array {
+  private func decodeItems(count: Int) throws -> CBOR.Array {
     var result: CBOR.Array = []
     for _ in 0 ..< count {
       let item = try decodeRequiredItem()
@@ -78,7 +78,7 @@ public struct CBORReader {
   /// - Throws:
   ///     - `CBORSerialization.Error`: If corrupted data is encountered
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItemsUntilBreak() throws -> CBOR.Array {
+  private func decodeItemsUntilBreak() throws -> CBOR.Array {
     var result: CBOR.Array = []
     while let item = try decodeItem() {
       result.append(item)
@@ -94,7 +94,7 @@ public struct CBORReader {
   ///     including `.invalidBreak` if a break indicator is encountered in
   ///     the either the key or value slot
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItemPairs(count: Int) throws -> CBOR.Map {
+  private func decodeItemPairs(count: Int) throws -> CBOR.Map {
     var result: CBOR.Map = [:]
     for _ in 0 ..< count {
       let key = try decodeRequiredItem()
@@ -113,7 +113,7 @@ public struct CBORReader {
   ///     including `.invalidBreak` if a break indicator is encountered in
   ///     the value slot
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItemPairsUntilBreak() throws -> CBOR.Map {
+  private func decodeItemPairsUntilBreak() throws -> CBOR.Map {
     var result: CBOR.Map = [:]
     while let key = try decodeItem() {
       let val = try decodeRequiredItem()
@@ -130,8 +130,8 @@ public struct CBORReader {
   ///     including `.invalidBreak` if an indefinite-element indicator is
   ///     encountered
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeRequiredItem() throws -> CBOR {
-    guard let item = try decodeItem() else { throw CBORError.invalidBreak }
+  func decodeRequiredItem() throws -> CBOR {
+    guard let item = try decodeItem() else { throw Error.invalidBreak }
     return item
   }
 
@@ -141,7 +141,7 @@ public struct CBORReader {
   /// - Throws:
   ///     - `CBORSerialization.Error`: If corrupted data is encountered
   ///     - `Swift.Error`: If any I/O error occurs
-  public func decodeItem() throws -> CBOR? {
+  private func decodeItem() throws -> CBOR? {
     let initByte = try stream.readByte()
 
     switch initByte {
@@ -215,28 +215,28 @@ public struct CBORReader {
       return nil
 
     default:
-      throw CBORError.invalidItemType
+      throw Error.invalidItemType
     }
   }
 
   private func readFiniteString(initByte: UInt8) throws -> String {
     let numBytes = try readLength(initByte, base: 0x60)
     guard let string = String(data: try stream.readBytes(count: numBytes), encoding: .utf8) else {
-      throw CBORError.invalidUTF8String
+      throw Error.invalidUTF8String
     }
     return string
   }
 
   private func readIndefiniteString() throws -> String {
     return try decodeItemsUntilBreak().map { item -> String in
-      guard case .utf8String(let string) = item else { throw CBORError.invalidIndefiniteElement }
+      guard case .utf8String(let string) = item else { throw Error.invalidIndefiniteElement }
       return string
     }.joined(separator: "")
   }
 
   private func readIndefiniteByteString() throws -> Data {
     let datas = try decodeItemsUntilBreak().map { cbor -> Data in
-      guard case .byteString(let bytes) = cbor else { throw CBORError.invalidIndefiniteElement }
+      guard case .byteString(let bytes) = cbor else { throw Error.invalidIndefiniteElement }
       return bytes
     }.joined()
     return Data(datas)
@@ -258,7 +258,7 @@ private enum VarUIntSize: UInt8 {
     case 3: return .uint64
     default:
       // mask only allows values from 0-3
-      throw CBORError.invalidIntegerSize
+      throw CBORSerialization.Error.invalidIntegerSize
     }
   }
 }

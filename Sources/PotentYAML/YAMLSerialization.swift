@@ -20,7 +20,16 @@ public enum YAMLSerialization {
   /// + Note: These are informational only, all errors are
   /// fatal and represent corrupted data; no recovery is
   /// possible
-  public enum Error: Swift.Error {}
+  public enum Error: Swift.Error {
+    case unableToCreateEmitter
+    case emitError
+    case unableToCreateParser
+    case parserError(message: String, line: Int, column: Int)
+    case unexpectedEOF
+    case unexpectedEvent
+    case invalidToken
+    case invalidTaggedBool
+  }
 
   /// Deserialize YAML encoded `Data`.
   ///
