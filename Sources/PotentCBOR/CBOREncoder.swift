@@ -197,11 +197,11 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
 
     switch value {
     case .nil:
-      return .null
+      return try boxNil(encoder: encoder)
     case .bool(let value):
-      return .boolean(value)
+      return try box(value, encoder: encoder)
     case .string(let value):
-      return .utf8String(value)
+      return try box(value, encoder: encoder)
     case .int8(let value):
       return try box(value, encoder: encoder)
     case .int16(let value):

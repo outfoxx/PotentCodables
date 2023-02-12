@@ -363,47 +363,47 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
 
     switch value {
     case .nil:
-      return .null
+      return try boxNil(encoder: encoder)
     case .bool(let value):
-      return .bool(value)
+      return try box(value, encoder: encoder)
     case .int8(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .int16(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .int32(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .int64(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .integer(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .uint8(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .uint16(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .uint32(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .uint64(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .unsignedInteger(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .float16(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .float(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .double(let value):
-      return .number(JSON.Number(value))
+      return try box(value, encoder: encoder)
     case .decimal(let value):
-      return .number(JSON.Number(value.description, isInteger: false, isNegative: value < 0))
+      return try box(value, encoder: encoder)
     case .string(let value):
-      return .string(value)
+      return try box(value, encoder: encoder)
     case .data(let value):
-      return .string(value.base64EncodedString())
+      return try box(value, encoder: encoder)
     case .url(let value):
-      return .string(value.absoluteString)
+      return try box(value, encoder: encoder)
     case .date(let value):
-      return .string(ZonedDate(date: value, timeZone: .utc).iso8601EncodedString())
+      return try box(value, encoder: encoder)
     case .uuid(let value):
-      return .string(value.uuidString)
+      return try box(value, encoder: encoder)
     case .array(let value):
       return .array(try value.map { try box($0, encoder: encoder) })
     case .dictionary(let value):

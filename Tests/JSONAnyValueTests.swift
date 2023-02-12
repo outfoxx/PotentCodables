@@ -134,7 +134,7 @@ class JSONAnyValueTests: XCTestCase {
       "data" : "QmluYXJ5IERhdGE=",
       "url" : "https://example.com/some/thing",
       "uuid" : "46076D06-86E8-4B3B-80EF-B24115D4C609",
-      "date" : "2001-01-15T06:56:07.890Z",
+      "date" : 1234567.89,
       "array" : [
         null,
         false,
@@ -185,7 +185,7 @@ class JSONAnyValueTests: XCTestCase {
     XCTAssertEqual(dstValue.data, .string(srcValue.data.dataValue!.base64EncodedString()))
     XCTAssertEqual(dstValue.url, .string(srcValue.url.urlValue!.absoluteString))
     XCTAssertEqual(dstValue.uuid, .string(srcValue.uuid.uuidValue!.uuidString))
-    XCTAssertEqual(dstValue.date.stringValue, ZonedDate(date: srcValue.date.dateValue!, timeZone: .utc).iso8601EncodedString())
+    XCTAssertEqual(dstValue.date, .double(1234567.89))
     XCTAssertEqual(dstValue.array, .array([nil, false, .int64(456), "a"]))
     XCTAssertEqual(dstValue.object, .dictionary(["c": .int64(1), "a": .int64(2), "d": .int64(3), "b": .int64(4)]))
     XCTAssertEqual(dstValue.intObject, .dictionary([.string("2"): "a", .string("1"): "b", .string("4"): "c", .string("3"): "d"]))
