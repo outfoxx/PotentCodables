@@ -305,7 +305,8 @@ public struct CustomRef<TKP: TypeKeyProvider, VKP: ValueKeyProvider, TI: TypeInd
       if let value = value {
         var container = encoder.container(keyedBy: AnyCodingKey.self)
         try container.encode(TI.typeId(of: type(of: value)), forKey: TKP.typeKey)
-        try container.encode((value as? Encodable).unsafelyUnwrapped, forKey: VKP.valueKey)
+        let encodableValue = (value as? Encodable).unsafelyUnwrapped
+        try encodableValue.encode(to: KeyedNestedEncoder(key: VKP.valueKey, container: container, encoder: encoder))
       }
       else {
         var container = encoder.singleValueContainer()
