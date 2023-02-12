@@ -286,7 +286,7 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
   public static func box(_ value: AnyValue, encoder: IVE) throws -> YAML {
     switch value {
     case .nil:
-      return .null(anchor: nil)
+      return try boxNil(encoder: encoder)
     case .bool(let value):
       return try box(value, encoder: encoder)
     case .int8(let value):
