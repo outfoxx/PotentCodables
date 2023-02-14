@@ -13,9 +13,17 @@ import PackageDescription
 
 // Limit Float16 to x86_64 on macOS or Linux
  #if swift(>=5.5)
- let pcDeps: [Target.Dependency] = ["BigInt", .byName(name: "Float16", condition: .when(platforms: [.macOS, .linux]))]
+ let pcDeps: [Target.Dependency] = [
+  "BigInt",
+  .product(name: "Collections", package: "swift-collections"),
+  .byName(name: "Float16", condition: .when(platforms: [.macOS, .linux]))
+ ]
  #else
- let pcDeps: [Target.Dependency] = ["BigInt", "Float16"]
+ let pcDeps: [Target.Dependency] = [
+  "BigInt",
+  .product(name: "Collections", package: "swift-collections"),
+  "Float16",
+ ]
  #endif
 
 let package = Package(
@@ -49,6 +57,7 @@ let package = Package(
       name: "PotentJSON",
       dependencies: [
         "PotentCodables",
+        "BigInt",
         .product(name: "Collections", package: "swift-collections")
       ]
     ),
@@ -56,6 +65,7 @@ let package = Package(
       name: "PotentCBOR",
       dependencies: [
         "PotentCodables",
+        "BigInt",
         .product(name: "Collections", package: "swift-collections")
       ]
     ),
@@ -84,7 +94,12 @@ let package = Package(
     ),
     .target(
       name: "PotentYAML",
-      dependencies: ["Cfyaml", "PotentCodables"]
+      dependencies: [
+        "PotentCodables",
+        "BigInt",
+        "Cfyaml",
+        .product(name: "Collections", package: "swift-collections")
+      ]
     ),
     .testTarget(
       name: "PotentCodablesTests",
