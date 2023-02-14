@@ -57,6 +57,7 @@ let package = Package(
       name: "PotentJSON",
       dependencies: [
         "PotentCodables",
+        "BigInt",
         .product(name: "Collections", package: "swift-collections")
       ]
     ),
@@ -64,6 +65,7 @@ let package = Package(
       name: "PotentCBOR",
       dependencies: [
         "PotentCodables",
+        "BigInt",
         .product(name: "Collections", package: "swift-collections")
       ]
     ),
@@ -92,7 +94,12 @@ let package = Package(
     ),
     .target(
       name: "PotentYAML",
-      dependencies: ["Cfyaml", "PotentCodables"]
+      dependencies: [
+        "PotentCodables",
+        "BigInt",
+        "Cfyaml",
+        .product(name: "Collections", package: "swift-collections")
+      ]
     ),
     .testTarget(
       name: "PotentCodablesTests",
