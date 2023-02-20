@@ -451,7 +451,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
         throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
       }
 
-      guard let data = Data(base64Encoded: string) else {
+      guard let data = Data(base64EncodedUnpadded: string) else {
         throw DecodingError.dataCorrupted(.init(
           codingPath: decoder.codingPath,
           debugDescription: "Encountered Data is not valid Base64."
@@ -531,6 +531,20 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func value(from string: String, options: Options) throws -> JSON {
     return try JSONSerialization.json(from: string, options: [.allowFragments])
+  }
+
+}
+
+extension Data {
+
+  init?(base64EncodedUnpadded string: String) {
+    self.init(base64Encoded: Data.padBase64(string))
+  }
+
+  private static func padBase64(_ string: String) -> String {
+    let offset = string.count % 4
+    guard offset != 0 else { return string }
+    return string.padding(toLength: string.count + 4 - offset, withPad: "=", startingAt: 0)
   }
 
 }

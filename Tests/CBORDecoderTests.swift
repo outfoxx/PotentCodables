@@ -927,6 +927,12 @@ class CBORDecoderTests: XCTestCase {
                                                             0x44, 0x42, 0x41, 0x55, 0x2B])),
       Data([1, 2, 3, 4, 5, 62])
     )
+    // Unpadded
+    XCTAssertEqual(
+      try CBORDecoder.default.decode(Data.self, from: Data([0xD8, 0x22, 0x66, 0x41, 0x51, 0x49,
+                                                            0x44, 0x42, 0x41])),
+      Data([1, 2, 3, 4])
+    )
     XCTAssertThrowsError(
       try CBORDecoder.default.decode(Data.self, from: Data([0xD8, 0x22, 0x68, 0x41, 0x51, 0x49,
                                                             0x44, 0x42, 0x41, 0x55, 0x60]))
@@ -940,6 +946,12 @@ class CBORDecoderTests: XCTestCase {
       try CBORDecoder.default.decode(Data.self, from: Data([0xD8, 0x21, 0x68, 0x41, 0x51, 0x49,
                                                             0x44, 0x42, 0x41, 0x55, 0x2D])),
       Data([1, 2, 3, 4, 5, 62])
+    )
+    // Unpadded
+    XCTAssertEqual(
+      try CBORDecoder.default.decode(Data.self, from: Data([0xD8, 0x21, 0x66, 0x41, 0x51, 0x49,
+                                                            0x44, 0x42, 0x41])),
+      Data([1, 2, 3, 4])
     )
     XCTAssertThrowsError(
       try CBORDecoder.default.decode(Data.self, from: Data([0xD8, 0x21, 0x68, 0x41, 0x51, 0x49,
