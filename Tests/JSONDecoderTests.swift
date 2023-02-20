@@ -268,6 +268,23 @@ class JSONDecoderTests: XCTestCase {
     XCTAssertEqual(testValue.data, data)
   }
 
+  func testDecodeBase64DataUnpadded() throws {
+
+    let data = "1234".data(using: .utf8)!
+
+    struct TestValue: Codable {
+      var data: Data
+    }
+
+    let json = #"{"data":"\#(data.base64EncodedString().replacingOccurrences(of: "=", with: ""))"}"#
+
+    let decoder = JSON.Decoder()
+    decoder.dataDecodingStrategy = .base64
+
+    let testValue = try decoder.decode(TestValue.self, from: json)
+    XCTAssertEqual(testValue.data, data)
+  }
+
   func testDecodeDeferredToData() throws {
 
     let data = "Hello World!".data(using: .utf8)!

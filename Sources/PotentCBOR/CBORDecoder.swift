@@ -425,7 +425,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     switch value {
     case .byteString(let data), .tagged(_, .byteString(let data)): return data
     case .tagged(.base64, .utf8String(let string)):
-      guard let data = Data(base64Encoded: string) else {
+      guard let data = Data(base64EncodedUnpadded: string) else {
         throw DecodingError.dataCorruptedError(in: decoder, debugDescription: "Expected Base64 encoded string")
       }
       return data
@@ -575,8 +575,19 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
 extension Data {
 
+  init?(base64EncodedUnpadded string: String) {
+    self.init(base64Encoded: Data.padBase64(string))
+  }
+
   init?(base64UrlEncoded string: String) {
-    self.init(base64Encoded: string.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/"))
+    let base64String = string.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+    self.init(base64EncodedUnpadded: base64String)
+  }
+
+  private static func padBase64(_ string: String) -> String {
+    let offset = string.count % 4
+    guard offset != 0 else { return string }
+    return string.padding(toLength: string.count + 4 - offset, withPad: "=", startingAt: 0)
   }
 
 }
