@@ -220,7 +220,7 @@ internal enum ASN1DERReader {
   private static func parseReal(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> Decimal {
     let lead = try buffer.pop()
     if lead & 0x40 == 0x40 {
-      return lead & 0x1 == 0 ? Decimal(Double.infinity) : Decimal(-Double.infinity)
+      throw ASN1Serialization.Error.unsupportedReal
     }
     else if lead & 0xC0 == 0 {
       let bytes = try buffer.popAll()
