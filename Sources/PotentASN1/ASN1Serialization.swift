@@ -35,6 +35,8 @@ public enum ASN1Serialization {
     case lengthOverflow
     /// Number of fields in OID is invalid
     case invalidObjectIdentifierLength
+    /// Tagged item was encoded incorrectly
+    case invalidTaggedItem
   }
 
   /// Read ASN.1/DER encoded data as a collection of ``ASN1`` values.
