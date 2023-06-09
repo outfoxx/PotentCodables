@@ -267,11 +267,9 @@ class ASN1Tests: XCTestCase {
 
     for _ in 0 ..< 10000 {
 
-      var random = Data(count: encoded.count)
-      random.withUnsafeMutableBytes { ptr in
-        if SecRandomCopyBytes(nil, ptr.count, ptr.baseAddress!) != errSecSuccess {
-          fatalError("SecRandomCopyBytes failed")
-        }
+      var random = Data(capacity: encoded.count)
+      for _ in 0 ..< encoded.count {
+        random.append(UInt8.random(in: 0 ..< .max))
       }
 
       XCTAssertThrowsError(try ASN1.Decoder.decode(TestStruct.self, from: random))

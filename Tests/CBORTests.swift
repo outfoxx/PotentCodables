@@ -92,4 +92,24 @@ class CBORTests: XCTestCase {
     XCTAssertEqual(map, try CBORSerialization.cbor(from: Data([0xA3, 0x61, 0x63, 0x01, 0x61, 0x61, 0x02, 0x61, 0x62, 0x03])))
   }
 
+  func testRandomData() throws {
+
+    struct TestStruct: Codable {
+      var id: [Int]
+      var data: Data
+    }
+
+    let encoded = try CBOR.Encoder.default.encode(TestStruct(id: [1, 2, 3, 4, 5], data: Data(count: 16)))
+
+    for _ in 0 ..< 10000 {
+
+      var random = Data(capacity: encoded.count)
+      for _ in 0 ..< encoded.count {
+        random.append(UInt8.random(in: 0 ..< .max))
+      }
+
+      XCTAssertThrowsError(try CBOR.Decoder.default.decode(TestStruct.self, from: random))
+    }
+  }
+
 }
