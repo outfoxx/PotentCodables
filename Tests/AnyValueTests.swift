@@ -270,7 +270,7 @@ class AnyValueTests: XCTestCase {
     XCTAssertEqual(try AnyValue.wrapped(uuid), .uuid(uuid))
     let date = Date()
     XCTAssertEqual(try AnyValue.wrapped(date), .date(date))
-    XCTAssertEqual(try AnyValue.wrapped([1, "test", true]), .array([1, "test", true]))
+    XCTAssertEqual(try AnyValue.wrapped([1, "test", true] as [Any]), .array([1, "test", true]))
 
     // Unorderd dictionaries
     XCTAssertEqual(
@@ -283,9 +283,9 @@ class AnyValueTests: XCTestCase {
         .dictionaryValue.map { val in Dictionary(uniqueKeysWithValues: val.map { ($0, $1) }) },
       [.int(1): .string("a"), .int(2): .string("b"), .int(3): .string("c")]
     )
-    XCTAssertEqual(try AnyValue.wrapped(["a": 1, "b": "test", "c": true] as OrderedDictionary),
+    XCTAssertEqual(try AnyValue.wrapped(["a": 1, "b": "test", "c": true] as OrderedDictionary<AnyValue, AnyValue>),
                    .dictionary(["a": 1, "b": "test", "c": true]))
-    XCTAssertEqual(try AnyValue.wrapped([1: 1, 2: "test", 3: true] as OrderedDictionary),
+    XCTAssertEqual(try AnyValue.wrapped([1: 1, 2: "test", 3: true] as OrderedDictionary<AnyValue, AnyValue>),
                    .dictionary([1: 1, 2: "test", 3: true]))
 
     // Passthrough

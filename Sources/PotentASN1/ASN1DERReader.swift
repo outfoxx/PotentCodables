@@ -82,20 +82,20 @@ internal enum ASN1DERReader {
 
   private static func parseItem(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> ASN1 {
     var (tagValue, itemBuffer) = try parseTagged(&buffer)
-    defer {
-      assert(itemBuffer.isEmpty)
+
+    let item = try parseItem(&itemBuffer, as: tagValue)
+
+    if !itemBuffer.isEmpty {
+      throw ASN1Serialization.Error.invalidTaggedItem
     }
 
-    return try parseItem(&itemBuffer, as: tagValue)
+    return item
   }
 
   private static func parseItem(
     _ itemBuffer: inout UnsafeBufferPointer<UInt8>,
     as tagValue: ASN1.AnyTag
   ) throws -> ASN1 {
-    defer {
-      assert(itemBuffer.isEmpty)
-    }
 
     guard let tag = ASN1.Tag(rawValue: tagValue) else {
       // Check required constructed types
@@ -110,80 +110,87 @@ internal enum ASN1DERReader {
       }
     }
 
+    let item: ASN1
+
     switch tag {
     case .boolean:
-      return .boolean(try itemBuffer.pop() != 0)
+      item = .boolean(try itemBuffer.pop() != 0)
 
     case .integer:
-      return .integer(try parseInt(&itemBuffer))
+      item = .integer(try parseInt(&itemBuffer))
 
     case .bitString:
       let unusedBits = try itemBuffer.pop()
       let data = Data(try itemBuffer.popAll())
-      return .bitString((data.count * 8) - Int(unusedBits), data)
+      item = .bitString((data.count * 8) - Int(unusedBits), data)
 
     case .octetString:
-      return .octetString(Data(try itemBuffer.popAll()))
+      item = .octetString(Data(try itemBuffer.popAll()))
 
     case .null:
-      return .null
+      item = .null
 
     case .objectIdentifier:
-      return .objectIdentifier(try parseOID(&itemBuffer))
+      item = .objectIdentifier(try parseOID(&itemBuffer))
 
     case .real:
-      return .real(try parseReal(&itemBuffer))
+      item = .real(try parseReal(&itemBuffer))
 
     case .utf8String:
-      return .utf8String(try parseString(&itemBuffer, encoding: .utf8))
+      item = .utf8String(try parseString(&itemBuffer, encoding: .utf8))
 
     case .numericString:
-      return .numericString(try parseString(&itemBuffer, encoding: .ascii))
+      item = .numericString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .printableString:
-      return .printableString(try parseString(&itemBuffer, encoding: .ascii))
+      item = .printableString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .teletexString:
-      return .teletexString(try parseString(&itemBuffer, encoding: .ascii))
+      item = .teletexString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .videotexString:
-      return .videotexString(try parseString(&itemBuffer, encoding: .ascii))
+      item = .videotexString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .ia5String:
-      return .ia5String(try parseString(&itemBuffer, encoding: .ascii))
+      item = .ia5String(try parseString(&itemBuffer, encoding: .ascii))
 
     case .utcTime:
-      return .utcTime(try parseTime(&itemBuffer, formatter: utcFormatter))
+      item = .utcTime(try parseTime(&itemBuffer, formatter: utcFormatter))
 
     case .generalizedTime:
-      return .generalizedTime(try parseTime(&itemBuffer, formatter: generalizedFormatter))
+      item = .generalizedTime(try parseTime(&itemBuffer, formatter: generalizedFormatter))
 
     case .graphicString:
-      return .graphicString(try parseString(&itemBuffer, encoding: .ascii))
+      item = .graphicString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .visibleString:
-      return .visibleString(try parseString(&itemBuffer, encoding: .ascii))
+      item = .visibleString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .generalString:
-      return .generalString(try parseString(&itemBuffer, encoding: .ascii))
+      item = .generalString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .universalString:
-      return .universalString(try parseString(&itemBuffer, encoding: .ascii))
+      item = .universalString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .characterString:
-      return .characterString(try parseString(&itemBuffer, encoding: .ascii))
+      item = .characterString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .bmpString:
-      return .bmpString(try parseString(&itemBuffer, encoding: .ascii))
+      item = .bmpString(try parseString(&itemBuffer, encoding: .ascii))
 
     case .sequence, .set:
       throw ASN1Serialization.Error.nonConstructedCollection
 
     case .objectDescriptor, .external, .enumerated, .embedded, .relativeOID:
       // Default to saving tagged version
-      return .tagged(tag.rawValue, Data(try itemBuffer.popAll()))
+      item = .tagged(tag.rawValue, Data(try itemBuffer.popAll()))
     }
 
+    if !itemBuffer.isEmpty {
+      throw ASN1Serialization.Error.invalidTaggedItem
+    }
+
+    return item
   }
 
   private static func parseTime(
@@ -213,7 +220,7 @@ internal enum ASN1DERReader {
   private static func parseReal(_ buffer: inout UnsafeBufferPointer<UInt8>) throws -> Decimal {
     let lead = try buffer.pop()
     if lead & 0x40 == 0x40 {
-      return lead & 0x1 == 0 ? Decimal(Double.infinity) : Decimal(-Double.infinity)
+      throw ASN1Serialization.Error.unsupportedReal
     }
     else if lead & 0xC0 == 0 {
       let bytes = try buffer.popAll()
@@ -303,7 +310,20 @@ internal enum ASN1DERReader {
     }
 
     for _ in 0 ..< numBytes {
-      length = (length * 0x100) + Int(try buffer.pop())
+
+      let newLength = (length &* 0x100) &+ Int(try buffer.pop())
+
+      // Check for overflow
+      if newLength < length {
+        throw ASN1Serialization.Error.lengthOverflow
+      }
+
+      // Check avaiable data
+      if newLength > buffer.count {
+        throw ASN1Serialization.Error.unexpectedEOF
+      }
+
+      length = newLength
     }
 
     return length

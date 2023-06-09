@@ -249,4 +249,31 @@ class ASN1Tests: XCTestCase {
     XCTAssertEqual(offset(5), -40920)
   }
 
+  func testRandomData() throws {
+
+    struct TestStruct: Codable, SchemaSpecified {
+      var id: OID
+      var data: Data
+
+      static var asn1Schema: Schema {
+        .sequence([
+          "id": .objectIdentifier(),
+          "data": .octetString(size: .is(16))
+        ])
+      }
+    }
+
+    let encoded = try ASN1.Encoder.encode(TestStruct(id: [1, 2, 3, 4, 5], data: Data(count: 16)))
+
+    for _ in 0 ..< 10000 {
+
+      var random = Data(capacity: encoded.count)
+      for _ in 0 ..< encoded.count {
+        random.append(UInt8.random(in: 0 ..< .max))
+      }
+
+      XCTAssertThrowsError(try ASN1.Decoder.decode(TestStruct.self, from: random))
+    }
+  }
+
 }

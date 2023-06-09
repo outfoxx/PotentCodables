@@ -31,10 +31,12 @@ public enum ASN1Serialization {
     case invalidGeneralizedTime
     /// Unsupported REAL type.
     case unsupportedReal
-    /// Encoded value length could not be stored.
+    /// Encoded value length could not be stored or exceeds available data.
     case lengthOverflow
     /// Number of fields in OID is invalid
     case invalidObjectIdentifierLength
+    /// Tagged item was encoded incorrectly
+    case invalidTaggedItem
   }
 
   /// Read ASN.1/DER encoded data as a collection of ``ASN1`` values.
