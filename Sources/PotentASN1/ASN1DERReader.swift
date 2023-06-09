@@ -303,7 +303,20 @@ internal enum ASN1DERReader {
     }
 
     for _ in 0 ..< numBytes {
-      length = (length * 0x100) + Int(try buffer.pop())
+
+      let newLength = (length &* 0x100) &+ Int(try buffer.pop())
+
+      // Check for overflow
+      if newLength < length {
+        throw ASN1Serialization.Error.lengthOverflow
+      }
+
+      // Check avaiable data
+      if newLength > buffer.count {
+        throw ASN1Serialization.Error.unexpectedEOF
+      }
+
+      length = newLength
     }
 
     return length
