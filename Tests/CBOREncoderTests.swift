@@ -173,6 +173,26 @@ class CBOREncoderTests: XCTestCase {
     )
   }
 
+  func testEncodeDeterministicMaps() throws {
+
+    struct Test: Codable {
+      struct Sub: Codable {
+        var value: Int
+      }
+
+      var test: String
+      var sub: Sub
+    }
+
+    print(try CBOR.Encoder.deterministic.encode(Test(test: "a", sub: .init(value: 5))).hexEncodedString())
+
+    XCTAssertEqual(
+      try CBOR.Encoder.deterministic.encode(Test(test: "a", sub: .init(value: 5))),
+      Data([0xA2, 0x63, 0x73, 0x75, 0x62, 0xA1, 0x65, 0x76, 0x61, 0x6C,
+            0x75, 0x65, 0x05, 0x64, 0x74, 0x65, 0x73, 0x74, 0x61, 0x61])
+    )
+  }
+
   func testEncodingDoesntTranslateMapKeys() throws {
     let encoder = CBOREncoder()
     encoder.keyEncodingStrategy = .convertToSnakeCase

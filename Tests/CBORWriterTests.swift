@@ -33,7 +33,14 @@ class CBORWriterTests: XCTestCase {
 
   func encode(block: (CBORWriter) throws -> Void) rethrows -> [UInt8] {
     let stream = CBORDataStream()
-    let encoder = CBORWriter(stream: stream)
+    let encoder = CBORWriter(stream: stream, deterministic: false)
+    try block(encoder)
+    return Array(stream.data)
+  }
+
+  func encodeDeterministic(block: (CBORWriter) throws -> Void) rethrows -> [UInt8] {
+    let stream = CBORDataStream()
+    let encoder = CBORWriter(stream: stream, deterministic: true)
     try block(encoder)
     return Array(stream.data)
   }
@@ -279,6 +286,102 @@ class CBORWriterTests: XCTestCase {
       0x81,
       0x01,
     ])
+  }
+
+  func testEncodeDeterministicMaps() throws {
+    XCTAssertEqual(try encodeDeterministic { try $0.encode([:] as CBOR) }, [0xA0])
+
+    let map: CBOR = [100: 2, 10: 1, "z": 4, [100]: 6, -1: 3, "aa": 5, false: 8, [-1]: 7]
+
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(map) },
+      [0xA8, 0x0A, 0x01, 0x18, 0x64, 0x02, 0x20, 0x03, 0x61, 0x7A, 0x04, 0x62,
+       0x61, 0x61, 0x05, 0x81, 0x18, 0x64, 0x06, 0x81, 0x20, 0x07, 0xF4, 0x08]
+    )
+  }
+
+  func testEncodeDeterministicDoubles() throws {
+    // Can only be represented as Double
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.double(1.23)) },
+      [0xFB, 0x3F, 0xF3, 0xAE, 0x14, 0x7A, 0xE1, 0x47, 0xAE]
+    )
+    // Can be exactly represented by Double and Float
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.double(131008.0)) },
+      [0xFA, 0x47, 0xFF, 0xE0, 0x00]
+    )
+    // Can be exactly represented by Double, Float and Half
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.double(0.5)) },
+      [0xF9, 0x38, 0x00]
+    )
+    // Encode infinity
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.double(.infinity)) },
+      [0xF9, 0x7C, 0x00]
+    )
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.double(-.infinity)) },
+      [0xF9, 0xFC, 0x00]
+    )
+    // Encode NaN
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.double(.nan)) },
+      [0xF9, 0x7E, 0x00]
+    )
+  }
+
+  func testEncodeDeterministicFloat() throws {
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.float(1.23)) },
+      [0xFA, 0x3F, 0x9D, 0x70, 0xA4]
+    )
+    // Can be represented as Float
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.float(131008.0)) },
+      [0xFa, 0x47, 0xFF, 0xE0, 0x00]
+    )
+    // Can be exactly represented by Float and Half
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.float(0.5)) },
+      [0xF9, 0x38, 0x00]
+    )
+    // Encode infinity
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.float(.infinity)) },
+      [0xF9, 0x7C, 0x00]
+    )
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.float(-.infinity)) },
+      [0xF9, 0xFC, 0x00]
+    )
+    // Encode NaN
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.float(.nan)) },
+      [0xF9, 0x7E, 0x00]
+    )
+  }
+
+  func testEncodeDeterministicHalf() throws {
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.half(1.23)) },
+      [0xF9, 0x3C, 0xEC]
+    )
+    // Encode infinity
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.float(.infinity)) },
+      [0xF9, 0x7C, 0x00]
+    )
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.float(-.infinity)) },
+      [0xF9, 0xFC, 0x00]
+    )
+    // Encode NaN
+    XCTAssertEqual(
+      try encodeDeterministic { try $0.encode(.float(.nan)) },
+      [0xF9, 0x7E, 0x00]
+    )
   }
 
   func testEncodeTagged() {

@@ -44,7 +44,7 @@ format:
 	swiftformat --config .swiftformat Sources/ Tests/
 
 lint: make-test-results-dir
-	swiftlint lint --reporter html > TestResults/lint.html
+	- swiftlint lint --reporter html > TestResults/lint.html
 
 view_lint: lint
 	open TestResults/lint.html
