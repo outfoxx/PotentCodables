@@ -23,9 +23,11 @@ internal struct CBORWriter {
   }
 
   private(set) var stream: CBOROutputStream
+  private let deterministic: Bool
 
-  init(stream: CBOROutputStream) {
+  init(stream: CBOROutputStream, deterministic: Bool) {
     self.stream = stream
+    self.deterministic = deterministic
   }
 
   /// Encodes a single CBOR item.
@@ -45,8 +47,8 @@ internal struct CBORWriter {
     case .tagged(let tag, let value): try encodeTagged(tag: tag, value: value)
     case .simple(let value): try encodeSimpleValue(value)
     case .boolean(let bool): try encodeBool(bool)
-    case .half(let half): try encodeHalf(half)
-    case .float(let float): try encodeFloat(float)
+    case .half(let half): deterministic ? try encodeDouble(CBOR.Double(half)) : try encodeHalf(half)
+    case .float(let float): deterministic ? try encodeDouble(CBOR.Double(float)) : try encodeFloat(float)
     case .double(let double): try encodeDouble(double)
     }
   }
@@ -172,7 +174,18 @@ internal struct CBORWriter {
   ///     - `Swift.Error`: If any I/O error occurs
   private func encodeMap(_ map: CBOR.Map) throws {
     try encodeLength(map.count, majorType: 0b101)
-    try encodeMapChunk(map)
+    if deterministic {
+      try map.map { (try deterministicBytes(of: $0), ($0, $1)) }
+        .sorted { (itemA, itemB) in itemA.0.lexicographicallyPrecedes(itemB.0) }
+        .map { $1 }
+        .forEach { key, value in
+          try encode(key)
+          try encode(value)
+        }
+    }
+    else {
+      try encodeMapChunk(map)
+    }
   }
 
   /// Encodes a map chunk of CBOR item pairs.
@@ -243,6 +256,15 @@ internal struct CBORWriter {
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
   private func encodeFloat(_ val: CBOR.Float) throws {
+    if deterministic {
+      if val.isNaN {
+        return try encodeHalf(.nan)
+      }
+      let half = CBOR.Half(val)
+      if CBOR.Float(half) == val {
+        return try encodeHalf(half)
+      }
+    }
     try stream.writeByte(0xFA)
     try stream.writeInt(val.bitPattern)
   }
@@ -252,6 +274,15 @@ internal struct CBORWriter {
   /// - Throws:
   ///     - `Swift.Error`: If any I/O error occurs
   private func encodeDouble(_ val: CBOR.Double) throws {
+    if deterministic {
+      if val.isNaN {
+        return try encodeFloat(.nan)
+      }
+      let float = CBOR.Float(val)
+      if CBOR.Double(float) == val {
+        return try encodeFloat(float)
+      }
+    }
     try stream.writeByte(0xFB)
     try stream.writeInt(val.bitPattern)
   }
@@ -298,4 +329,9 @@ internal struct CBORWriter {
     try block(self)
   }
 
+  func deterministicBytes(of value: CBOR) throws -> Data {
+    let out = CBORDataStream()
+    try CBORWriter(stream: out, deterministic: true).encode(value)
+    return out.data
+  }
 }

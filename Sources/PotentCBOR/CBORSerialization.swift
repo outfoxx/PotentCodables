@@ -41,15 +41,24 @@ public enum CBORSerialization {
     case invalidIntegerSize
   }
 
+  /// Options for encoding CBOR
+  public enum EncodingOption {
+    /// Enable deterministic encoding
+    case deterministic
+  }
+
+  /// Set of CBOR encoding options
+  public typealias EncodingOptions = Set<EncodingOption>
+
   /// Serialize `CBOR` value into a byte data.
   ///
   /// - Parameters:
   ///     - with: The ``CBOR`` item to serialize
   /// - Throws:
   ///     - `Swift.Error`: If any stream I/O error is encountered
-  public static func data(from value: CBOR) throws -> Data {
+  public static func data(from value: CBOR, options: EncodingOptions = []) throws -> Data {
     let stream = CBORDataStream()
-    let encoder = CBORWriter(stream: stream)
+    let encoder = CBORWriter(stream: stream, deterministic: options.contains(.deterministic))
     try encoder.encode(value)
     return stream.data
   }

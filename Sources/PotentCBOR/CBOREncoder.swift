@@ -17,7 +17,15 @@ import PotentCodables
 ///
 public class CBOREncoder: ValueEncoder<CBOR, CBOREncoderTransform>, EncodesToData {
 
+  /// Encoder with the default options
   public static let `default` = CBOREncoder()
+
+  /// Encoder with deterministic encoding enabled
+  public static let deterministic = {
+    let encoder = CBOREncoder()
+    encoder.deterministic = true
+    return encoder
+  }()
 
   // MARK: Options
 
@@ -39,11 +47,15 @@ public class CBOREncoder: ValueEncoder<CBOR, CBOREncoderTransform>, EncodesToDat
   /// The strategy to use in encoding dates. Defaults to `.iso8601`.
   open var dateEncodingStrategy: DateEncodingStrategy = .iso8601
 
+  /// Enables or disables CBOR deterministic encoding.
+  open var deterministic: Bool = false
+
   /// The options set on the top-level encoder.
   override public var options: CBOREncoderTransform.Options {
     return CBOREncoderTransform.Options(
       dateEncodingStrategy: dateEncodingStrategy,
       keyEncodingStrategy: keyEncodingStrategy,
+      deterministic: deterministic,
       userInfo: userInfo
     )
   }
@@ -67,6 +79,7 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
   public struct Options: InternalEncoderOptions {
     public let dateEncodingStrategy: CBOREncoder.DateEncodingStrategy
     public let keyEncodingStrategy: KeyEncodingStrategy
+    public let deterministic: Bool
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
@@ -254,7 +267,12 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
   }
 
   public static func data(from value: CBOR, options: Options) throws -> Data {
-    return try CBORSerialization.data(from: value)
+    var encodingOptions = CBORSerialization.EncodingOptions()
+    if options.deterministic {
+      encodingOptions.insert(.deterministic)
+    }
+
+    return try CBORSerialization.data(from: value, options: encodingOptions)
   }
 
 }
