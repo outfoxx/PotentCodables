@@ -79,6 +79,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     BigInt.self,
     BigUInt.self,
     AnyValue.self,
+    AnyValue.AnyDictionary.self,
   ]
 
   public static func intercepts(_ type: Decodable.Type) -> Bool {
@@ -112,6 +113,9 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     }
     else if interceptedType == AnyValue.self {
       return try unbox(value, as: AnyValue.self, decoder: decoder)
+    }
+    else if interceptedType == AnyValue.AnyDictionary.self {
+      return try unbox(value, as: AnyValue.AnyDictionary.self, decoder: decoder)
     }
     fatalError("type not valid for intercept")
   }
@@ -533,6 +537,21 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .tagged(_, let untagged):
       return try unbox(untagged, as: AnyValue.self, decoder: decoder)
     }
+  }
+
+  public static func unbox(
+    _ value: CBOR,
+    as type: AnyValue.AnyDictionary.Type,
+    decoder: IVD
+  ) throws -> AnyValue.AnyDictionary {
+    guard case .map(let map) = value else {
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    }
+    return AnyValue.AnyDictionary(uniqueKeysWithValues: try map.map { key, value in
+      let key = try unbox(key, as: AnyValue.self, decoder: decoder)
+      let value = try unbox(value, as: AnyValue.self, decoder: decoder)
+      return (key, value)
+    })
   }
 
   public static func valueToUnkeyedValues(_ value: CBOR, decoder: IVD) throws -> UnkeyedValues? {

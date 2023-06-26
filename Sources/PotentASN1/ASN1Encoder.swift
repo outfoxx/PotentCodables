@@ -124,6 +124,7 @@ public struct ASN1EncoderTransform: InternalEncoderTransform, InternalValueSeria
     BigInt.self,
     BigUInt.self,
     AnyValue.self,
+    AnyValue.AnyDictionary.self,
   ]
 
   public static func intercepts(_ type: Encodable.Type) -> Bool {
@@ -134,6 +135,9 @@ public struct ASN1EncoderTransform: InternalEncoderTransform, InternalValueSeria
     var value: Any? = value
     if let anyValue = value as? AnyValue {
       return try box(anyValue, encoder: encoder)
+    }
+    if let value = value as? AnyValue.AnyDictionary {
+      return try box(.dictionary(value), encoder: encoder)
     }
     if let uuid = value as? UUID {
       value = uuid.uuidString

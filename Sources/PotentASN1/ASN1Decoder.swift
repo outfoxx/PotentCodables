@@ -130,6 +130,7 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     BigInt.self,
     BigUInt.self,
     AnyValue.self,
+    AnyValue.AnyDictionary.self,
   ]
 
   public static func intercepts(_ type: Decodable.Type) -> Bool {
@@ -178,6 +179,9 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     }
     else if interceptedType == AnyValue.self {
       return try unbox(value, as: AnyValue.self, decoder: decoder)
+    }
+    else if interceptedType == AnyValue.AnyDictionary.self {
+      return try unbox(value, as: AnyValue.AnyDictionary.self, decoder: decoder)
     }
     else {
       fatalError("type not valid for intercept")
@@ -608,6 +612,15 @@ public struct ASN1DecoderTransform: InternalDecoderTransform, InternalValueDeser
     default:
       fatalError("unexpected value")
     }
+  }
+
+  public static func unbox(_ value: ASN1, as type: AnyValue.AnyDictionary.Type, decoder: IVD) throws -> AnyValue.AnyDictionary? {
+    guard let keyedValues = try valueToKeyedValues(value, decoder: decoder) else {
+      return nil
+    }
+    return AnyValue.AnyDictionary(
+      uniqueKeysWithValues: try keyedValues.map { (.string($0), try unbox($1, as: AnyValue.self, decoder: decoder)) }
+    )
   }
 
   public static func valueToUnkeyedValues(_ value: ASN1, decoder: IVD) throws -> UnkeyedValues? {

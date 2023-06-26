@@ -153,6 +153,7 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
     BigInt.self,
     BigUInt.self,
     AnyValue.self,
+    AnyValue.AnyDictionary.self,
   ]
 
   public static func intercepts(_ type: Encodable.Type) -> Bool {
@@ -186,6 +187,9 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
     }
     else if let value = value as? AnyValue {
       return try box(value, encoder: encoder)
+    }
+    else if let value = value as? AnyValue.AnyDictionary {
+      return try box(.dictionary(value), encoder: encoder)
     }
     fatalError("type not valid for intercept")
   }

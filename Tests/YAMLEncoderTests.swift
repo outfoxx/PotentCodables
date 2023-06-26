@@ -1262,6 +1262,25 @@ class YAMLEncoderTests: XCTestCase {
     XCTAssertEqual(testYAML, yaml)
   }
 
+  func testEncodeAnyDictionary() throws {
+
+    let dict: AnyValue.AnyDictionary = ["b": 1, "z": 2, "n": 3, "f": 4]
+
+    let yaml =
+    """
+    ---
+    b: 1
+    z: 2
+    n: 3
+    f: 4
+    ...
+
+    """
+
+    let testYAML = try YAML.Encoder.default.encodeString(dict)
+    XCTAssertEqual(testYAML, yaml)
+  }
+
   func testEncodeNonStringKeyedDictionary() throws {
 
     struct TestValue: Codable {

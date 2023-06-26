@@ -294,6 +294,14 @@ class CBOREncoderTests: XCTestCase {
     XCTAssertEqual(try encode(BigUInt(1234567)),
                    [0xC2, 0x43, 0x12, 0xD6, 0x87])
   }
+
+  func testEncodeAnyDictionary() throws {
+
+    let dict: AnyValue.AnyDictionary = ["b": 1, "z": 2, "n": 3, "f": 4]
+
+    XCTAssertEqual(try encode(dict),
+                   [0xA4, 0x61, 0x62, 0x01, 0x61, 0x7A, 0x02, 0x61, 0x6E, 0x03, 0x61, 0x66, 0x04])
+  }
 }
 
 extension Array {
