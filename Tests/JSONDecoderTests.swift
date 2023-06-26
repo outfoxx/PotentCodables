@@ -2298,4 +2298,12 @@ class JSONDecoderTests: XCTestCase {
     }
   }
 
+  func testDecodeAnyDictionaryFromObject() throws {
+
+    let json = #"{"b":1,"z":2,"n":3,"f":4}"#
+
+    let testValue = try JSON.Decoder.default.decode(AnyValue.AnyDictionary.self, from: json)
+    XCTAssertEqual(testValue, ["b": 1, "z": 2, "n": 3, "f": 4])
+  }
+
 }

@@ -369,4 +369,15 @@ class ASN1EncoderTests: XCTestCase {
     )
   }
 
+  func testEncodeAnyDictionary() throws {
+
+    let dict: AnyValue.AnyDictionary = ["b": 1, "z": 2, "n": 3, "f": 4]
+
+    let testASN1 = try ASN1.Encoder(schema: .sequence(["b": .integer(),
+                                                       "z": .integer(),
+                                                       "n": .integer(),
+                                                       "f": .integer()])).encode(dict)
+    XCTAssertEqual(testASN1.hexEncodedString(), "300c020101020102020103020104")
+  }
+
 }

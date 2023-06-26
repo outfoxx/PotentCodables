@@ -117,6 +117,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     BigInt.self,
     BigUInt.self,
     AnyValue.self,
+    AnyValue.AnyDictionary.self,
   ]
 
   public static func intercepts(_ type: Decodable.Type) -> Bool {
@@ -150,6 +151,9 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     }
     else if interceptedType == AnyValue.self {
       return try unbox(value, as: AnyValue.self, decoder: decoder)
+    }
+    else if interceptedType == AnyValue.AnyDictionary.self {
+      return try unbox(value, as: AnyValue.AnyDictionary.self, decoder: decoder)
     }
     fatalError("type not valid for intercept")
   }
@@ -513,6 +517,19 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
         (.string(key), try unbox(value, as: AnyValue.self, decoder: decoder))
       }))
     }
+  }
+
+  public static func unbox(
+    _ value: JSON,
+    as type: AnyValue.AnyDictionary.Type,
+    decoder: IVD
+  ) throws -> AnyValue.AnyDictionary {
+    guard case .object(let object) = value else {
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    }
+    return AnyValue.AnyDictionary(uniqueKeysWithValues: try object.map { key, value in
+      (.string(key), try unbox(value, as: AnyValue.self, decoder: decoder))
+    })
   }
 
   public static func valueToUnkeyedValues(_ value: JSON, decoder: IVD) throws -> UnkeyedValues? {

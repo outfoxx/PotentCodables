@@ -112,6 +112,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     BigInt.self,
     BigUInt.self,
     AnyValue.self,
+    AnyValue.AnyDictionary.self,
   ]
 
   public static func intercepts(_ type: Decodable.Type) -> Bool {
@@ -145,6 +146,9 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     }
     else if interceptedType == AnyValue.self {
       return try unbox(value, as: AnyValue.self, decoder: decoder)
+    }
+    else if interceptedType == AnyValue.AnyDictionary.self {
+      return try unbox(value, as: AnyValue.AnyDictionary.self, decoder: decoder)
     }
     fatalError("type not valid for intercept")
   }
@@ -536,6 +540,20 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
       break
     }
     throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+  }
+
+  public static func unbox(
+    _ value: YAML,
+    as type: AnyValue.AnyDictionary.Type,
+    decoder: IVD
+  ) throws -> AnyValue.AnyDictionary {
+    guard case .mapping(let mapping, _, _, _) = value else {
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    }
+    return AnyValue.AnyDictionary(uniqueKeysWithValues: try mapping.map { entry in
+      (try unbox(entry.key, as: AnyValue.self, decoder: decoder),
+       try unbox(entry.value, as: AnyValue.self, decoder: decoder))
+    })
   }
 
   public static func valueToUnkeyedValues(_ value: YAML, decoder: IVD) throws -> UnkeyedValues? {

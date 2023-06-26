@@ -3020,4 +3020,23 @@ class YAMLDecoderTests: XCTestCase {
     }
   }
 
+  func testDecodeAnyDictionary() throws {
+
+    let yaml =
+    """
+    ---
+    b: 1
+    z: 2
+    n: 3
+    f: 4
+    ...
+
+    """
+
+    XCTAssertEqual(
+      try YAML.Decoder.default.decode(AnyValue.AnyDictionary.self, from: yaml),
+      ["b": 1, "z": 2, "n": 3, "f": 4]
+    )
+  }
+
 }

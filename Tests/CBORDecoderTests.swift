@@ -1435,4 +1435,12 @@ class CBORDecoderTests: XCTestCase {
     }
   }
 
+  func testDecodeAnyDictionary() throws {
+
+    XCTAssertEqual(try CBOR.Decoder.default.decode(AnyValue.AnyDictionary.self,
+                                                   from: Data([0xA4, 0x61, 0x62, 0x01, 0x61, 0x7A, 0x02,
+                                                               0x61, 0x6E, 0x03, 0x61, 0x66, 0x04])),
+                   ["b": 1, "z": 2, "n": 3, "f": 4])
+  }
+
 }

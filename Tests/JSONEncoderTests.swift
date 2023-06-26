@@ -1120,6 +1120,14 @@ class JSONEncoderTests: XCTestCase {
     XCTAssertEqual(testJSON, json)
   }
 
+  func testEncodeAnyDictionary() throws {
+
+    let dict: AnyValue.AnyDictionary = ["b": 1, "z": 2, "n": 3, "f": 4]
+
+    let testJSON = try JSON.Encoder.default.encodeString(dict)
+    XCTAssertEqual(testJSON, #"{"b":1,"z":2,"n":3,"f":4}"#)
+  }
+
   func testEncodeNonStringKeyedDictionary() throws {
 
     struct TestValue: Codable {
