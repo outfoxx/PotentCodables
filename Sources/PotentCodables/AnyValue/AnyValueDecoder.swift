@@ -267,19 +267,13 @@ public struct AnyValueDecoderTransform: InternalDecoderTransform {
 }
 
 
-#if canImport(Combine)
+extension AnyValueDecoder: TopLevelDecoder {
+  public typealias Input = AnyValue
 
-  import Combine
-
-  extension AnyValueDecoder: TopLevelDecoder {
-    public typealias Input = AnyValue
-
-    public func decode<T>(_ type: T.Type, from tree: AnyValue) throws -> T where T: Decodable {
-      return try decodeTree(type, from: tree)
-    }
+  public func decode<T>(_ type: T.Type, from tree: AnyValue) throws -> T where T: Decodable {
+    return try decodeTree(type, from: tree)
   }
-
-#endif
+}
 
 
 

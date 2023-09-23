@@ -282,12 +282,6 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
 }
 
 
-#if canImport(Combine)
-
-  import Combine
-
-  extension CBOREncoder: TopLevelEncoder {
-    public typealias Output = Data
-  }
-
-#endif
+extension CBOREncoder: TopLevelEncoder {
+  public typealias Output = Data
+}

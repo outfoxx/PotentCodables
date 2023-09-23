@@ -612,12 +612,6 @@ extension Data {
 }
 
 
-#if canImport(Combine)
-
-  import Combine
-
-  extension CBORDecoder: TopLevelDecoder {
-    public typealias Input = Data
-  }
-
-#endif
+extension CBORDecoder: TopLevelDecoder {
+  public typealias Input = Data
+}

@@ -567,15 +567,9 @@ extension Data {
 }
 
 
-#if canImport(Combine)
-
-  import Combine
-
-  extension JSONDecoder: TopLevelDecoder {
-    public typealias Input = Data
-  }
-
-#endif
+extension JSONDecoder: TopLevelDecoder {
+  public typealias Input = Data
+}
 
 
 extension JSONDecoderTransform.Options {
