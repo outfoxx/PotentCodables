@@ -235,19 +235,13 @@ public struct AnyValueEncoderTransform: InternalEncoderTransform {
 }
 
 
-#if canImport(Combine)
+extension AnyValueEncoder: TopLevelEncoder {
+  public typealias Output = AnyValue
 
-  import Combine
-
-  extension AnyValueEncoder: TopLevelEncoder {
-    public typealias Output = AnyValue
-
-    public func encode<T>(_ value: T) throws -> AnyValue where T: Encodable {
-      return try encodeTree(value)
-    }
+  public func encode<T>(_ value: T) throws -> AnyValue where T: Encodable {
+    return try encodeTree(value)
   }
-
-#endif
+}
 
 
 

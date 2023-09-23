@@ -454,12 +454,6 @@ public struct JSONEncoderTransform: InternalEncoderTransform, InternalValueSeria
 }
 
 
-#if canImport(Combine)
-
-  import Combine
-
-  extension JSONEncoder: TopLevelEncoder {
-    public typealias Output = Data
-  }
-
-#endif
+extension JSONEncoder: TopLevelEncoder {
+  public typealias Output = Data
+}

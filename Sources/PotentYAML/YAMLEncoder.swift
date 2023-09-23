@@ -372,12 +372,6 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
 }
 
 
-#if canImport(Combine)
-
-  import Combine
-
-  extension YAMLEncoder: TopLevelEncoder {
-    public typealias Output = Data
-  }
-
-#endif
+extension YAMLEncoder: TopLevelEncoder {
+  public typealias Output = Data
+}

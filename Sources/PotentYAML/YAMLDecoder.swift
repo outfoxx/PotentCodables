@@ -612,12 +612,6 @@ extension Data {
 
 
 
-#if canImport(Combine)
-
-  import Combine
-
-  extension YAMLDecoder: TopLevelDecoder {
-    public typealias Input = Data
-  }
-
-#endif
+extension YAMLDecoder: TopLevelDecoder {
+  public typealias Input = Data
+}
