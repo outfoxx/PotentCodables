@@ -1135,3 +1135,24 @@ public extension SingleValueEncodingContainer {
   }
 
 }
+
+
+// MARK: Top Level Support
+
+public extension TopLevelDecoder {
+
+  func decode<Transformer: ValueDecodingTransformer>(from input: Input, using transformer: Transformer) throws
+    -> Transformer.Target {
+    return try transformer.decode(decode(Transformer.Source.self, from: input))
+  }
+
+}
+
+public extension TopLevelEncoder {
+
+  func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target, using transformer: Transformer) throws
+    -> Output {
+    return try encode(transformer.encode(value))
+  }
+
+}

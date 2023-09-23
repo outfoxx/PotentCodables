@@ -15,6 +15,29 @@ import XCTest
 
 class ValueTransformerTests: XCTestCase {
 
+  func testTopLevel() throws {
+
+    struct Uncodable: Equatable {
+      var int: Int
+    }
+
+    enum UncodableTransformer: ValueCodingTransformer {
+      case instance
+
+      func decode(_ value: Data) throws -> Uncodable {
+        Uncodable(int: try JSONDecoder.default.decode(Int.self, from: value))
+      }
+      func encode(_ value: Uncodable) throws -> Data {
+        return try JSONEncoder.default.encode(value.int)
+      }
+    }
+
+    let encoded = Uncodable(int: 123)
+    let data = try JSONEncoder.default.encode(encoded, using: UncodableTransformer.instance)
+    let decoded = try JSONDecoder.default.decode(from: data, using: UncodableTransformer.instance)
+    XCTAssertEqual(encoded, decoded)
+  }
+
   func testKeyed() throws {
 
     let tree: JSON = [
