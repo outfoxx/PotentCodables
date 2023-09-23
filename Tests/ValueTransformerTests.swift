@@ -132,10 +132,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: IntToBool()))
-        }
+        value = try container.decodeContents(using: IntToBool())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -159,10 +156,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<Int>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<Int>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -186,10 +180,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<Int8>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<Int8>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -213,10 +204,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<Int16>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<Int16>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -240,10 +228,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<Int32>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<Int32>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -267,10 +252,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<Int64>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<Int64>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -294,10 +276,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<UInt>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<UInt>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -321,10 +300,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<UInt8>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<UInt8>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -348,10 +324,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<UInt16>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<UInt16>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -375,10 +348,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<UInt32>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<UInt32>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -402,10 +372,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<UInt64>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<UInt64>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -429,10 +396,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToFloat<Float>()))
-        }
+        value = try container.decodeContents(using: BoolToFloat<Float>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -456,10 +420,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToFloat<Double>()))
-        }
+        value = try container.decodeContents(using: BoolToFloat<Double>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -483,10 +444,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToString()))
-        }
+        value = try container.decodeContents(using: BoolToString())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -510,10 +468,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToBoolValue()))
-        }
+        value = try container.decodeContents(using: BoolToBoolValue())
       }
 
       func encode(to encoder: Encoder) throws {

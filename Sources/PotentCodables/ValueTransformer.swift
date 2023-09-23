@@ -343,6 +343,450 @@ public extension UnkeyedDecodingContainer {
     try decodeIfPresent(Transformer.Source.self).flatMap { try transformer.decode($0) }
   }
 
+  mutating func decodeContents(_ type: Bool.Type) throws -> [Bool] {
+    var elements: [Bool] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: String.Type) throws -> [String] {
+    var elements: [String] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Int8.Type) throws -> [Int8] {
+    var elements: [Int8] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Int16.Type) throws -> [Int16] {
+    var elements: [Int16] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Int32.Type) throws -> [Int32] {
+    var elements: [Int32] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Int64.Type) throws -> [Int64] {
+    var elements: [Int64] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+
+  mutating func decodeContents(_ type: UInt8.Type) throws -> [UInt8] {
+    var elements: [UInt8] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: UInt16.Type) throws -> [UInt16] {
+    var elements: [UInt16] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: UInt32.Type) throws -> [UInt32] {
+    var elements: [UInt32] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: UInt64.Type) throws -> [UInt64] {
+    var elements: [UInt64] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Float.Type) throws -> [Float] {
+    var elements: [Float] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Double.Type) throws -> [Double] {
+    var elements: [Double] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Value: Decodable>(_ type: Value.Type) throws -> [Value] {
+    var elements: [Value] = []
+    while !self.isAtEnd {
+      elements.append(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Bool.Type) throws -> Set<Bool> {
+    var elements: Set<Bool> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: String.Type) throws -> Set<String> {
+    var elements: Set<String> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Int8.Type) throws -> Set<Int8> {
+    var elements: Set<Int8> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Int16.Type) throws -> Set<Int16> {
+    var elements: Set<Int16> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Int32.Type) throws -> Set<Int32> {
+    var elements: Set<Int32> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Int64.Type) throws -> Set<Int64> {
+    var elements: Set<Int64> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+
+  mutating func decodeContents(_ type: UInt8.Type) throws -> Set<UInt8> {
+    var elements: Set<UInt8> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: UInt16.Type) throws -> Set<UInt16> {
+    var elements: Set<UInt16> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: UInt32.Type) throws -> Set<UInt32> {
+    var elements: Set<UInt32> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: UInt64.Type) throws -> Set<UInt64> {
+    var elements: Set<UInt64> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Float.Type) throws -> Set<Float> {
+    var elements: Set<Float> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents(_ type: Double.Type) throws -> Set<Double> {
+    var elements: Set<Double> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Value: Decodable & Hashable>(_ type: Value.Type) throws -> Set<Value> {
+    var elements: Set<Value> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(type))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == Bool {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == String {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == Int8 {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == Int16 {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == Int32 {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == Int64 {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == UInt8 {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == UInt16 {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == UInt32 {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == UInt64 {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == Float {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source == Double {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> [Transformer.Target] where Transformer.Source: Decodable {
+    var elements: [Transformer.Target] = []
+    while !self.isAtEnd {
+      elements.append(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == Bool {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == String {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == Int8 {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == Int16 {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == Int32 {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == Int64 {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == UInt8 {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == UInt16 {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == UInt32 {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == UInt64 {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == Float {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source == Double {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
+  mutating func decodeContents<Transformer: ValueDecodingTransformer>(using transformer: Transformer) throws
+  -> Set<Transformer.Target> where Transformer.Source: Decodable {
+    var elements: Set<Transformer.Target> = []
+    while !self.isAtEnd {
+      elements.insert(try decode(using: transformer))
+    }
+    return elements
+  }
+
 }
 
 public extension SingleValueDecodingContainer {
@@ -1142,7 +1586,7 @@ public extension SingleValueEncodingContainer {
 public extension TopLevelDecoder {
 
   func decode<Transformer: ValueDecodingTransformer>(from input: Input, using transformer: Transformer) throws
-    -> Transformer.Target {
+    -> Transformer.Target where Transformer.Source: Decodable {
     return try transformer.decode(decode(Transformer.Source.self, from: input))
   }
 
@@ -1151,7 +1595,7 @@ public extension TopLevelDecoder {
 public extension TopLevelEncoder {
 
   func encode<Transformer: ValueEncodingTransformer>(_ value: Transformer.Target, using transformer: Transformer) throws
-    -> Output {
+    -> Output where Transformer.Source: Encodable {
     return try encode(transformer.encode(value))
   }
 
