@@ -1522,7 +1522,7 @@ struct IntToBool: ValueCodingTransformer {
   }
 }
 
-struct BoolToInt<Value: FixedWidthInteger>: ValueCodingTransformer {
+struct BoolToInt<Value: FixedWidthInteger & Codable>: ValueCodingTransformer {
 
   func encode(_ value: Bool) throws -> Value {
     return value ? 1 : 0
@@ -1533,7 +1533,7 @@ struct BoolToInt<Value: FixedWidthInteger>: ValueCodingTransformer {
   }
 }
 
-struct BoolToFloat<Value: BinaryFloatingPoint>: ValueCodingTransformer {
+struct BoolToFloat<Value: BinaryFloatingPoint & Codable>: ValueCodingTransformer {
 
   func encode(_ value: Bool) throws -> Value {
     return value ? 1.0 : 0.0

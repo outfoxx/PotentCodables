@@ -18,7 +18,7 @@ public typealias ValueCodingTransformer = ValueEncodingTransformer & ValueDecodi
 
 public protocol ValueDecodingTransformer {
 
-  associatedtype Source
+  associatedtype Source: Decodable
   associatedtype Target
 
   func decode(_ value: Source) throws -> Target
@@ -420,7 +420,7 @@ public extension SingleValueDecodingContainer {
 
 public protocol ValueEncodingTransformer {
 
-  associatedtype Source
+  associatedtype Source: Codable
   associatedtype Target
 
   func encode(_ value: Target) throws -> Source
