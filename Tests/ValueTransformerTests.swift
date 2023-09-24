@@ -121,7 +121,7 @@ class ValueTransformerTests: XCTestCase {
     )
   }
 
-  func testUnkeyedCollectionBoolStoredInt() throws {
+  func testArrayBoolStoredInt() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Int]
@@ -132,10 +132,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: IntToBool()))
-        }
+        value = try container.decodeContents(using: IntToBool())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -148,7 +145,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([true, false])), TestValue(value: [1, 0]))
   }
 
-  func testUnkeyedCollectionIntStoredBool() throws {
+  func testArrayIntStoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -159,10 +156,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<Int>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<Int>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -175,7 +169,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1, 0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionInt8StoredBool() throws {
+  func testArrayInt8StoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -186,10 +180,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<Int8>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<Int8>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -202,7 +193,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1, 0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionInt16StoredBool() throws {
+  func testArrayInt16StoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -213,10 +204,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<Int16>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<Int16>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -229,7 +217,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1, 0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionInt32StoredBool() throws {
+  func testArrayInt32StoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -240,10 +228,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<Int32>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<Int32>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -256,7 +241,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1, 0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionInt64StoredBool() throws {
+  func testArrayInt64StoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -267,10 +252,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<Int64>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<Int64>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -283,7 +265,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1, 0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionUIntStoredBool() throws {
+  func testArrayUIntStoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -294,10 +276,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<UInt>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<UInt>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -310,7 +289,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1, 0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionUInt8StoredBool() throws {
+  func testArrayUInt8StoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -321,10 +300,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<UInt8>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<UInt8>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -337,7 +313,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1, 0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionUInt16StoredBool() throws {
+  func testArrayUInt16StoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -348,10 +324,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<UInt16>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<UInt16>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -364,7 +337,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1, 0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionUInt32StoredBool() throws {
+  func testArrayUInt32StoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -375,10 +348,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<UInt32>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<UInt32>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -391,7 +361,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1, 0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionUInt64StoredBool() throws {
+  func testArrayUInt64StoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -402,10 +372,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToInt<UInt64>()))
-        }
+        value = try container.decodeContents(using: BoolToInt<UInt64>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -418,7 +385,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1, 0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionFloatStoredBool() throws {
+  func testArrayFloatStoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -429,10 +396,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToFloat<Float>()))
-        }
+        value = try container.decodeContents(using: BoolToFloat<Float>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -445,7 +409,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1.0, 0.0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionDoubleStoredBool() throws {
+  func testArrayDoubleStoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -456,10 +420,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToFloat<Double>()))
-        }
+        value = try container.decodeContents(using: BoolToFloat<Double>())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -472,7 +433,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([1.0, 0.0])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionStringStoredBool() throws {
+  func testArrayStringStoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -483,10 +444,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToString()))
-        }
+        value = try container.decodeContents(using: BoolToString())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -499,7 +457,7 @@ class ValueTransformerTests: XCTestCase {
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array(["true", "false"])), TestValue(value: [true, false]))
   }
 
-  func testUnkeyedCollectionBoolValueStoredBool() throws {
+  func testArrayBoolValueStoredBool() throws {
 
     struct TestValue: Codable, Equatable {
       var value: [Bool]
@@ -510,10 +468,7 @@ class ValueTransformerTests: XCTestCase {
 
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        value = []
-        while !container.isAtEnd {
-          value.append(try container.decode(using: BoolToBoolValue()))
-        }
+        value = try container.decodeContents(using: BoolToBoolValue())
       }
 
       func encode(to encoder: Encoder) throws {
@@ -524,6 +479,396 @@ class ValueTransformerTests: XCTestCase {
 
     XCTAssertEqual(try JSON.Encoder.default.encodeTree(TestValue(value: [true, false])), JSON.array([true, false]))
     XCTAssertEqual(try JSON.Decoder.default.decodeTree(TestValue.self, from: JSON.array([true, false])), TestValue(value: [true, false]))
+  }
+
+  func testSetBoolStoredInt() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Int>
+
+      init(value: Set<Int>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: IntToBool())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: IntToBool())
+      }
+    }
+
+    let encoded = TestValue(value: [1, 0])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetIntStoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToInt<Int>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToInt<Int>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetInt8StoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToInt<Int8>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToInt<Int8>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetInt16StoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToInt<Int16>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToInt<Int16>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetInt32StoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToInt<Int32>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToInt<Int32>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetInt64StoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToInt<Int64>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToInt<Int64>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetUIntStoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToInt<UInt>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToInt<UInt>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetUInt8StoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToInt<UInt8>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToInt<UInt8>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetUInt16StoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToInt<UInt16>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToInt<UInt16>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetUInt32StoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToInt<UInt32>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToInt<UInt32>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetUInt64StoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToInt<UInt64>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToInt<UInt64>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetFloatStoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToFloat<Float>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToFloat<Float>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetDoubleStoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToFloat<Double>())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToFloat<Double>())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetStringStoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToString())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToString())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
+  }
+
+  func testSetBoolValueStoredBool() throws {
+
+    struct TestValue: Codable, Equatable {
+      var value: Set<Bool>
+
+      init(value: Set<Bool>) {
+        self.value = value
+      }
+
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        value = try container.decodeContents(using: BoolToBoolValue())
+      }
+
+      func encode(to encoder: Encoder) throws {
+        var contaier = encoder.unkeyedContainer()
+        try contaier.encode(contentsOf: value, using: BoolToBoolValue())
+      }
+    }
+
+    let encoded = TestValue(value: [true, false])
+    let data = try JSON.Encoder.default.encode(encoded)
+    let decoded = try JSON.Decoder.default.decode(TestValue.self, from: data)
+    XCTAssertEqual(encoded, decoded)
   }
 
   func testSingleBoolStoredInt() throws {
