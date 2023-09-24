@@ -1364,108 +1364,108 @@ public extension UnkeyedEncodingContainer {
     }
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == Bool {
+  ) throws where Transformer.Source == Bool, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == String {
+  ) throws where Transformer.Source == String, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == Int {
+  ) throws where Transformer.Source == Int, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == Int8 {
+  ) throws where Transformer.Source == Int8, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == Int16 {
+  ) throws where Transformer.Source == Int16, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == Int32 {
+  ) throws where Transformer.Source == Int32, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == Int64 {
+  ) throws where Transformer.Source == Int64, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == UInt {
+  ) throws where Transformer.Source == UInt, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == UInt8 {
+  ) throws where Transformer.Source == UInt8, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == UInt16 {
+  ) throws where Transformer.Source == UInt16, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == UInt32 {
+  ) throws where Transformer.Source == UInt32, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == UInt64 {
+  ) throws where Transformer.Source == UInt64, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == Float {
+  ) throws where Transformer.Source == Float, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source == Double {
+  ) throws where Transformer.Source == Double, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
-  mutating func encode<Transformer: ValueEncodingTransformer>(
-    contentsOf values: [Transformer.Target],
+  mutating func encode<S: Sequence, Transformer: ValueEncodingTransformer>(
+    contentsOf values: S,
     using transformer: Transformer
-  ) throws where Transformer.Source: Encodable {
+  ) throws where Transformer.Source: Encodable, S.Element == Transformer.Target {
     try encode(contentsOf: values.map { try transformer.encode($0) })
   }
 
