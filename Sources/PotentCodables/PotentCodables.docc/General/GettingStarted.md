@@ -5,7 +5,7 @@ Get started using the powerful potent data formats **JSON**, **YAML**, **CBOR** 
 ## Overview
 
 PotentCodables provide standard `Encoder`s and `Decoder`s for the Swift `Codable` framework. Additionally all
-of the `Encoder`s and `Decoder`s provide ehanched capabilities to make working with data formats easier and more
+of the `Encoder`s and `Decoder`s provide enhanced capabilities to make working with data formats easier and more
 powerful.
 
 ### Standard Encoders/Decoders
@@ -47,13 +47,13 @@ let someEngine = YAML.Encoder.default.decode(yamlData)
 ```
 
 > Note: All provided Encoders and Decoders from a `default` for easy access to an encoder or decoder initialized
-with default options. These are used througout the documentation.
+with default options. These are used throughout the documentation.
 
 > Tip: You may have noticed you can use either ``PotentYAML/YAML/Encoder`` or ``PotentYAML/YAMLEncoder`` to reference
 the YAML encoder's type. This is true for all PotentCodables formats and allows easy disambiguation when mixing with
 other codable frameworks encoders & decoders like Foundation's `JSONEncoder`/`JSONDecoder`.
 
-### Ecoding/Decoding from Strings
+### Encoding/Decoding from Strings
 
 All PotentCodables text based data formats like <doc:PotentJSON> and <doc:PotentYAML> can encode directly to and from
 Strings in addition to the standard `Data` encoding; this can save you the hassle of converting `Data` to `String` in
@@ -79,7 +79,7 @@ All of PotentCodables text based formats provided `String` support via the follo
 - ``EncodesToString``
 - ``DecodesFromString``
 
-### Ecoding/Decoding from Tree values.
+### Encoding/Decoding from Tree values.
 
 PotentCodables data formats are required to provide an in-memory representation known as a "tree value". Tree values
 are Swift values that represent the natively encoded data. See <doc:TreeValues> to learn more about tree values.
