@@ -180,7 +180,6 @@ internal struct YAMLWriter {
   private static func emit(emitter: OpaquePointer, type: fy_event_type, args: CVarArg...) {
     withVaList(args) { valist in
       let event = fy_emit_event_vcreate(emitter, type, valist)
-      event?.pointee.type = type
       fy_emit_event(emitter, event)
     }
   }

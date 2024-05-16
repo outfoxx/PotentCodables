@@ -87,22 +87,34 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-build_triplet = aarch64-apple-darwin22.2.0
-host_triplet = aarch64-apple-darwin22.2.0
+build_triplet = aarch64-apple-darwin23.4.0
+host_triplet = aarch64-apple-darwin23.4.0
+target_triplet = aarch64-apple-darwin23.4.0
 #check_PROGRAMS = libfyaml-test$(EXEEXT)
-#am__append_1 = libfyaml.test
+
+# the private tests require static compilation
+# if we're compiling shared only, disable the private parts
+#am__append_1 = \
+#	libfyaml-test-private.c \
+#	libfyaml-test-private-id.c
+
+#am__append_2 = -static
+#am__append_3 = libfyaml.test
 
 # normal YAML testsuite
-am__append_2 = testsuite.test
+am__append_4 = testsuite.test
 
 # YAML testsuite JSON generation
-am__append_3 = testsuite-json.test
+am__append_5 = testsuite-json.test
 
 # normal JSON testsuite
 
 # normal YAML testsuite using document event stream
-am__append_4 = jsontestsuite.test \
-	testsuite-evstream.test
+
+# resolution equivalence
+am__append_6 = jsontestsuite.test \
+	testsuite-evstream.test \
+	testsuite-resolution.test
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_enable_debug.m4 \
@@ -119,14 +131,16 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__libfyaml_test_SOURCES_DIST = libfyaml-test.c \
-	libfyaml-test-private.c libfyaml-test-core.c \
-	libfyaml-test-meta.c libfyaml-test-emit.c
+am__libfyaml_test_SOURCES_DIST = libfyaml-test.c libfyaml-test-core.c \
+	libfyaml-test-meta.c libfyaml-test-emit.c \
+	libfyaml-test-private.c libfyaml-test-private-id.c
+#am__objects_1 = libfyaml_test-libfyaml-test-private.$(OBJEXT) \
+#	libfyaml_test-libfyaml-test-private-id.$(OBJEXT)
 #am_libfyaml_test_OBJECTS = libfyaml_test-libfyaml-test.$(OBJEXT) \
-#	libfyaml_test-libfyaml-test-private.$(OBJEXT) \
 #	libfyaml_test-libfyaml-test-core.$(OBJEXT) \
 #	libfyaml_test-libfyaml-test-meta.$(OBJEXT) \
-#	libfyaml_test-libfyaml-test-emit.$(OBJEXT)
+#	libfyaml_test-libfyaml-test-emit.$(OBJEXT) \
+#	$(am__objects_1)
 libfyaml_test_OBJECTS = $(am_libfyaml_test_OBJECTS)
 am__DEPENDENCIES_1 =
 #libfyaml_test_DEPENDENCIES =  \
@@ -157,6 +171,7 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/libfyaml_test-libfyaml-test-core.Po \
 	./$(DEPDIR)/libfyaml_test-libfyaml-test-emit.Po \
 	./$(DEPDIR)/libfyaml_test-libfyaml-test-meta.Po \
+	./$(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po \
 	./$(DEPDIR)/libfyaml_test-libfyaml-test-private.Po \
 	./$(DEPDIR)/libfyaml_test-libfyaml-test.Po
 am__mv = mv -f
@@ -415,30 +430,33 @@ AM_DEFAULT_VERBOSITY = 1
 AM_MAKEFLAGS = `test -z $V && echo -s`
 AR = ar
 AS = as
+ASAN_CFLAGS = 
+ASAN_LIBS = 
 AUTOCONF = ${SHELL} '/Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/missing' autoconf
 AUTOHEADER = ${SHELL} '/Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/missing' autoheader
 AUTOMAKE = ${SHELL} '/Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/missing' automake-1.16
 AWK = awk
 CC = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave cc gcc
-CCAS = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave ccas 
+CCAS = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave ccas gcc
+CCASDEPMODE = depmode=gcc3
+CCASFLAGS = 
 CCDEPMODE = depmode=gcc3
-CFLAGS =  -Wall -Wsign-compare -O2
+CFLAGS = -D_THREAD_SAFE -pthread -Wall -Wsign-compare -fvisibility=hidden -O2
 CHECK_CFLAGS = 
 CHECK_LDFLAGS = 
 CHECK_LIBS = 
-CPP = gcc -E
 CPPFLAGS = 
 CSCOPE = cscope
 CTAGS = ctags
-CXX = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave cxx g++
-CXXCPP = g++ -E
+CXX = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave cxx g++ -std=gnu++11
+CXXCPP = g++ -std=gnu++11 -E
 CXXDEPMODE = depmode=gcc3
 CXXFLAGS = 
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
-DLLTOOL = dlltool
-DOCKER = /usr/local/bin/docker
+DLLTOOL = false
+DOCKER = /Users/kdubb/.rd/bin/docker
 DSYMUTIL = dsymutil
 DUMPBIN = 
 ECHO_C = \c
@@ -452,16 +470,19 @@ F77 = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-
 FC = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave fc 
 FGREP = /usr/bin/grep -F
 FILECMD = file
-GIT = /opt/homebrew/bin/git
+GIT = /usr/bin/git
 GREP = /usr/bin/grep
+HAVE_ASAN = 0
 HAVE_CHECK = 0
 HAVE_COMPATIBLE_CHECK = 0
 HAVE_DEVMODE = 1
+HAVE_LIBCLANG = 0
 HAVE_LIBYAML = 1
 HAVE_NETWORK = 1
+HAVE_PORTABLE_TARGET = 0
 HAVE_QSORT_R = 1
-INCLTDL = -I$(top_srcdir)/libltdl
-INSTALL = /usr/bin/install -c
+HAVE_STATIC = 1
+INSTALL = /opt/homebrew/bin/ginstall -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
@@ -472,17 +493,21 @@ JSONTESTSUITEURL = https://github.com/nst/JSONTestSuite
 LD = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld
 LDFLAGS = 
 LEX = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave lex 
-LIBLTDL = $(top_build_prefix)libltdl/libltdl.la
+LIBCLANG_CFLAGS = 
+LIBCLANG_CPPFLAGS = 
+LIBCLANG_LDFLAGS = 
+LIBCLANG_LIBS = 
+LIBLTDL = 
 LIBOBJS = 
-LIBS = 
+LIBS =  -lpthread
 LIBTOOL = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave-libtool '$(SHELL) $(top_builddir)/libtool'
-LIBTOOL_VERSION = 1:2:0
+LIBTOOL_VERSION = 1:4:2
 LIBYAML_CFLAGS = -I/opt/homebrew/Cellar/libyaml/0.2.5/include
 LIBYAML_LIBS = -L/opt/homebrew/Cellar/libyaml/0.2.5/lib -lyaml
 LIPO = lipo
+LLVM_CONFIG = 
 LN_S = ln -s
-LTDLDEPS = $(top_build_prefix)libltdl/libltdl.la
-LTDLINCL = -I$(top_srcdir)/libltdl
+LTDLINCL = 
 LTLIBOBJS = 
 LT_SYS_LIBRARY_PATH = 
 M4 = /usr/bin/m4
@@ -491,8 +516,8 @@ MAKEFLAGS = -s
 MAKEINFO = ${SHELL} '/Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/missing' makeinfo
 MANIFEST_TOOL = :
 MCS = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave mcs 
-MINOR = 7
-MKDIR_P = .././build-aux/install-sh -c -d
+MINOR = 9
+MKDIR_P = /opt/homebrew/bin/gmkdir -p
 NM = /usr/bin/nm -B
 NMEDIT = nmedit
 OBJC = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave objc 
@@ -503,11 +528,11 @@ OTOOL64 = :
 PACKAGE = libfyaml
 PACKAGE_BUGREPORT = pantelis.antoniou@konsulko.com
 PACKAGE_NAME = libfyaml
-PACKAGE_STRING = libfyaml 0.7.12
+PACKAGE_STRING = libfyaml 0.9
 PACKAGE_TARNAME = libfyaml
 PACKAGE_URL = 
-PACKAGE_VERSION = 0.7.12
-PATCH = 12
+PACKAGE_VERSION = 0.9
+PATCH = 
 PATH_SEPARATOR = :
 PIP3 = 
 PKG_CONFIG = /opt/homebrew/bin/pkg-config
@@ -515,7 +540,7 @@ PKG_CONFIG_LIBDIR =
 PKG_CONFIG_PATH = 
 PTHREAD_CC = gcc
 PTHREAD_CFLAGS = -D_THREAD_SAFE -pthread
-PTHREAD_LIBS = 
+PTHREAD_LIBS = -lpthread
 Q = $(V:1=)
 RANLIB = ranlib
 SED = /usr/bin/sed
@@ -526,7 +551,7 @@ STRIP = strip
 TESTSUITECHECKOUT = 6e6c296ae9c9d2d5c4134b4b64d01b29ac19ff6f
 TESTSUITEURL = https://github.com/yaml/yaml-test-suite
 V = @
-VERSION = 0.7.12
+VERSION = 0.9
 YACC = /bin/sh /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux/shave yacc 
 abs_builddir = /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/test
 abs_srcdir = /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/test
@@ -543,10 +568,10 @@ am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
 ax_pthread_config = 
 bindir = ${exec_prefix}/bin
-build = aarch64-apple-darwin22.2.0
+build = aarch64-apple-darwin23.4.0
 build_alias = 
 build_cpu = aarch64
-build_os = darwin22.2.0
+build_os = darwin23.4.0
 build_vendor = apple
 builddir = .
 datadir = ${datarootdir}
@@ -554,10 +579,10 @@ datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
-host = aarch64-apple-darwin22.2.0
+host = aarch64-apple-darwin23.4.0
 host_alias = 
 host_cpu = aarch64
-host_os = darwin22.2.0
+host_os = darwin23.4.0
 host_vendor = apple
 htmldir = ${docdir}
 includedir = ${prefix}/include
@@ -581,7 +606,11 @@ shavedir = /Users/kdubb/Projects/outfoxx/PotentCodables/Sources/Cfyaml/build-aux
 srcdir = .
 subdirs =  libltdl
 sysconfdir = ${prefix}/etc
+target = aarch64-apple-darwin23.4.0
 target_alias = 
+target_cpu = aarch64
+target_os = darwin23.4.0
+target_vendor = apple
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
@@ -607,22 +636,22 @@ TESTS_ENVIRONMENT = \
 # TEST_EXTENSIONS = .test
 TEST_LOG_COMPILE = $(SHELL)
 TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver.sh
-TESTS = $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4) testerrors.test testemitter.test \
+TESTS = $(am__append_3) $(am__append_4) $(am__append_5) \
+	$(am__append_6) testerrors.test testemitter.test \
 	testemitter-streaming.test
 #libfyaml_test_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/valgrind/ \
-#			 -I$(top_srcdir)/src/lib/
+#			 -I$(top_srcdir)/src/lib/ \
+#			 -I$(top_srcdir)/src/util
 
 #libfyaml_test_LDADD = $(AM_LDADD) $(CHECK_LIBS) $(top_builddir)/src/libfyaml.la
 #libfyaml_test_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS) 
-#libfyaml_test_LDFLAGS = $(AM_LDFLAGS) $(CHECK_LDFLAGS)
-#libfyaml_test_SOURCES = \
-#	libfyaml-test.c \
-#	libfyaml-test-private.c \
+#libfyaml_test_LDFLAGS = $(AM_LDFLAGS) \
+#	$(CHECK_LDFLAGS) $(am__append_2)
+#libfyaml_test_SOURCES = libfyaml-test.c \
 #	libfyaml-test-core.c \
 #	libfyaml-test-meta.c \
-#	libfyaml-test-emit.c
-
+#	libfyaml-test-emit.c \
+#	$(am__append_1)
 
 # Add the error test files
 
@@ -698,6 +727,7 @@ EXTRA_DIST = test-env $(TESTS) test-errors/0002/=== \
 	emitter-examples/nodeprop2.yaml emitter-examples/nodeprop.yaml \
 	emitter-examples/numbers-flow.yaml \
 	emitter-examples/numbers.yaml emitter-examples/plainlines.yaml \
+	emitter-examples/plain-scalars-with-commas.yaml \
 	emitter-examples/plainscalar.yaml \
 	emitter-examples/quotedbackslash.yaml \
 	emitter-examples/quoted.yaml \
@@ -818,6 +848,7 @@ distclean-compile:
 include ./$(DEPDIR)/libfyaml_test-libfyaml-test-core.Po # am--include-marker
 include ./$(DEPDIR)/libfyaml_test-libfyaml-test-emit.Po # am--include-marker
 include ./$(DEPDIR)/libfyaml_test-libfyaml-test-meta.Po # am--include-marker
+include ./$(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po # am--include-marker
 include ./$(DEPDIR)/libfyaml_test-libfyaml-test-private.Po # am--include-marker
 include ./$(DEPDIR)/libfyaml_test-libfyaml-test.Po # am--include-marker
 
@@ -865,20 +896,6 @@ libfyaml_test-libfyaml-test.obj: libfyaml-test.c
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test.obj `if test -f 'libfyaml-test.c'; then $(CYGPATH_W) 'libfyaml-test.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test.c'; fi`
 
-libfyaml_test-libfyaml-test-private.o: libfyaml-test-private.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private.o -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo -c -o libfyaml_test-libfyaml-test-private.o `test -f 'libfyaml-test-private.c' || echo '$(srcdir)/'`libfyaml-test-private.c
-	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
-#	$(AM_V_CC)source='libfyaml-test-private.c' object='libfyaml_test-libfyaml-test-private.o' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private.o `test -f 'libfyaml-test-private.c' || echo '$(srcdir)/'`libfyaml-test-private.c
-
-libfyaml_test-libfyaml-test-private.obj: libfyaml-test-private.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private.obj -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo -c -o libfyaml_test-libfyaml-test-private.obj `if test -f 'libfyaml-test-private.c'; then $(CYGPATH_W) 'libfyaml-test-private.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private.c'; fi`
-	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
-#	$(AM_V_CC)source='libfyaml-test-private.c' object='libfyaml_test-libfyaml-test-private.obj' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private.obj `if test -f 'libfyaml-test-private.c'; then $(CYGPATH_W) 'libfyaml-test-private.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private.c'; fi`
-
 libfyaml_test-libfyaml-test-core.o: libfyaml-test-core.c
 	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-core.o -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-core.Tpo -c -o libfyaml_test-libfyaml-test-core.o `test -f 'libfyaml-test-core.c' || echo '$(srcdir)/'`libfyaml-test-core.c
 	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-core.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-core.Po
@@ -920,6 +937,34 @@ libfyaml_test-libfyaml-test-emit.obj: libfyaml-test-emit.c
 #	$(AM_V_CC)source='libfyaml-test-emit.c' object='libfyaml_test-libfyaml-test-emit.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-emit.obj `if test -f 'libfyaml-test-emit.c'; then $(CYGPATH_W) 'libfyaml-test-emit.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-emit.c'; fi`
+
+libfyaml_test-libfyaml-test-private.o: libfyaml-test-private.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private.o -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo -c -o libfyaml_test-libfyaml-test-private.o `test -f 'libfyaml-test-private.c' || echo '$(srcdir)/'`libfyaml-test-private.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
+#	$(AM_V_CC)source='libfyaml-test-private.c' object='libfyaml_test-libfyaml-test-private.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private.o `test -f 'libfyaml-test-private.c' || echo '$(srcdir)/'`libfyaml-test-private.c
+
+libfyaml_test-libfyaml-test-private.obj: libfyaml-test-private.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private.obj -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo -c -o libfyaml_test-libfyaml-test-private.obj `if test -f 'libfyaml-test-private.c'; then $(CYGPATH_W) 'libfyaml-test-private.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
+#	$(AM_V_CC)source='libfyaml-test-private.c' object='libfyaml_test-libfyaml-test-private.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private.obj `if test -f 'libfyaml-test-private.c'; then $(CYGPATH_W) 'libfyaml-test-private.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private.c'; fi`
+
+libfyaml_test-libfyaml-test-private-id.o: libfyaml-test-private-id.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private-id.o -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Tpo -c -o libfyaml_test-libfyaml-test-private-id.o `test -f 'libfyaml-test-private-id.c' || echo '$(srcdir)/'`libfyaml-test-private-id.c
+	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po
+#	$(AM_V_CC)source='libfyaml-test-private-id.c' object='libfyaml_test-libfyaml-test-private-id.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private-id.o `test -f 'libfyaml-test-private-id.c' || echo '$(srcdir)/'`libfyaml-test-private-id.c
+
+libfyaml_test-libfyaml-test-private-id.obj: libfyaml-test-private-id.c
+	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private-id.obj -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Tpo -c -o libfyaml_test-libfyaml-test-private-id.obj `if test -f 'libfyaml-test-private-id.c'; then $(CYGPATH_W) 'libfyaml-test-private-id.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private-id.c'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po
+#	$(AM_V_CC)source='libfyaml-test-private-id.c' object='libfyaml_test-libfyaml-test-private-id.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private-id.obj `if test -f 'libfyaml-test-private-id.c'; then $(CYGPATH_W) 'libfyaml-test-private-id.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private-id.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1173,11 +1218,9 @@ distdir-am: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
-#check-local:
-#check-local:
 check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
-	$(MAKE) $(AM_MAKEFLAGS) check-TESTS check-local
+	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
 all-am: Makefile
 installdirs:
@@ -1225,6 +1268,7 @@ distclean: distclean-am
 		-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-core.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-emit.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-meta.Po
+	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test.Po
 	-rm -f Makefile
@@ -1299,6 +1343,7 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-core.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-emit.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-meta.Po
+	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test.Po
 	-rm -f Makefile
@@ -1322,44 +1367,46 @@ uninstall-am:
 .MAKE: check-am install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-TESTS \
-	check-am check-local clean clean-checkPROGRAMS clean-generic \
-	clean-libtool cscopelist-am ctags ctags-am distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-local distclean-tags distdir doc-clean-am \
-	doc-clean-local doc-help-am doc-help-local doc-html-am \
-	doc-html-local doc-latexpdf-am doc-latexpdf-local doc-man-am \
-	doc-man-local doc-markdown-am doc-markdown-local dvi dvi-am \
-	html html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	recheck tags tags-am uninstall uninstall-am
+	check-am clean clean-checkPROGRAMS clean-generic clean-libtool \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-local \
+	distclean-tags distdir doc-clean-am doc-clean-local \
+	doc-help-am doc-help-local doc-html-am doc-html-local \
+	doc-latexpdf-am doc-latexpdf-local doc-man-am doc-man-local \
+	doc-markdown-am doc-markdown-local dvi dvi-am html html-am \
+	info info-am install install-am install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am recheck tags tags-am \
+	uninstall uninstall-am
 
 .PRECIOUS: Makefile
 
 
-testsuite.test: test-suite-data json-test-suite-data
+testsuite.test: test-suite-data.checkout.timestamp
+testsuite-json.test: test-suite-data.checkout.timestamp
+testsuite-evstream.test: test-suite-data.checkout.timestamp
+testsuite-resolution.test: test-suite-data.checkout.timestamp
 
-test-suite-data:
-	/opt/homebrew/bin/git clone "https://github.com/yaml/yaml-test-suite" -- $@ && \
-	cd $@ && \
-	/opt/homebrew/bin/git checkout --detach 6e6c296ae9c9d2d5c4134b4b64d01b29ac19ff6f
+test-suite-data.checkout.timestamp:
+	/usr/bin/git clone -q "https://github.com/yaml/yaml-test-suite" -- test-suite-data && \
+	/usr/bin/git -C test-suite-data checkout -q --detach 6e6c296ae9c9d2d5c4134b4b64d01b29ac19ff6f && \
+	touch test-suite-data.checkout.timestamp
 
-jsontestsuite.test: json-test-suite-data
+jsontestsuite.test: json-test-suite-data.checkout.timestamp
 
-json-test-suite-data:
-	/opt/homebrew/bin/git clone "https://github.com/nst/JSONTestSuite" -- $@ && \
-	cd $@ && \
-	/opt/homebrew/bin/git checkout --detach d64aefb55228d9584d3e5b2433f720ea8fd00c82
-
-check-local: test-suite-data json-test-suite-data
+json-test-suite-data.checkout.timestamp:
+	/usr/bin/git clone -q "https://github.com/nst/JSONTestSuite" -- json-test-suite-data && \
+	/usr/bin/git -C json-test-suite-data checkout -q --detach d64aefb55228d9584d3e5b2433f720ea8fd00c82 && \
+	touch json-test-suite-data.checkout.timestamp
 
 distclean-local:
-	@rm -rf test-suite-data json-test-suite-data
+	@rm -rf test-suite-data test-suite-data.checkout.timestamp
+	@rm -rf json-test-suite-data json-test-suite-data.checkout.timestamp
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

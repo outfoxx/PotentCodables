@@ -4,13 +4,19 @@
 /* Define if building universal (internal helper macro) */
 /* #undef AC_APPLE_UNIVERSAL_BUILD */
 
+/* Define to 1 if ASAN is enabled */
+#define HAVE_ASAN 0
+
+/* Define to 1 if you have the <byteswap.h> header file. */
+/* #undef HAVE_BYTESWAP_H */
+
 /* Define to 1 if you have check available */
 #define HAVE_CHECK 0
 
 /* Define to 1 if you have a compatible version of check available */
 #define HAVE_COMPATIBLE_CHECK 0
 
-/* Define to 1 if you have the declaration of `environ', and to 0 if you
+/* Define to 1 if you have the declaration of 'environ', and to 0 if you
    don't. */
 #define HAVE_DECL_ENVIRON 0
 
@@ -29,11 +35,17 @@
 /* Define to 1 if you have jq available */
 #define HAVE_JQ 1
 
+/* Define to 1 if libclang is available */
+#define HAVE_LIBCLANG 0
+
 /* Define to 1 if you have libyaml available */
 #define HAVE_LIBYAML 0
 
 /* Define to 1 if you have the <minix/config.h> header file. */
 /* #undef HAVE_MINIX_CONFIG_H */
+
+/* Define to 1 if PORTABLE_TARGET is enabled */
+#define HAVE_PORTABLE_TARGET 0
 
 /* Define if you have POSIX threads libraries and header files. */
 #define HAVE_PTHREAD 1
@@ -47,8 +59,11 @@
 /* Define to 1 if you have sphinx (and all required packages) available */
 #define HAVE_SPHINX 0
 
-/* Define to 1 if the system has the type `ssize_t'. */
+/* Define to 1 if the system has the type 'ssize_t'. */
 #define HAVE_SSIZE_T 1
+
+/* Define to 1 if static linking is available */
+#define HAVE_STATIC 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1
@@ -77,6 +92,18 @@
 /* Define to 1 if you have the <wchar.h> header file. */
 #define HAVE_WCHAR_H 1
 
+/* Define to 1 if -Wstringop-overread is supported */
+#define HAVE_WSTRINGOP_OVERREAD 0
+
+/* Define to 1 if you have the '__builtin_bswap16' function. */
+/* #undef HAVE___BUILTIN_BSWAP16 */
+
+/* Define to 1 if you have the '__builtin_bswap32' function. */
+/* #undef HAVE___BUILTIN_BSWAP32 */
+
+/* Define to 1 if you have the '__builtin_bswap64' function. */
+/* #undef HAVE___BUILTIN_BSWAP64 */
+
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #define LT_OBJDIR ".libs/"
 
@@ -93,7 +120,7 @@
 #define PACKAGE_NAME "libfyaml"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "libfyaml 0.7.12"
+#define PACKAGE_STRING "libfyaml 0.9"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "libfyaml"
@@ -102,21 +129,33 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.7.12"
+#define PACKAGE_VERSION "0.9"
 
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
 /* #undef PTHREAD_CREATE_JOINABLE */
 
-/* Define as the return type of signal handlers (`int' or `void'). */
-#define RETSIGTYPE void
-
-/* Define to 1 if all of the C90 standard headers exist (not just the ones
+/* Define to 1 if all of the C89 standard headers exist (not just the ones
    required in a freestanding environment). This macro is provided for
    backward compatibility; new code need not use it. */
 #define STDC_HEADERS 1
 
-/* Enable extensions on AIX 3, Interix.  */
+/* AVX2 target support */
+/* #undef TARGET_HAS_AVX2 */
+
+/* AVX512 target support */
+/* #undef TARGET_HAS_AVX512 */
+
+/* NEON target support */
+#define TARGET_HAS_NEON 1
+
+/* SSE2 target support */
+/* #undef TARGET_HAS_SSE2 */
+
+/* SSE41 target support */
+/* #undef TARGET_HAS_SSE41 */
+
+/* Enable extensions on AIX, Interix, z/OS.  */
 #ifndef _ALL_SOURCE
 # define _ALL_SOURCE 1
 #endif
@@ -177,11 +216,15 @@
 #ifndef __STDC_WANT_IEC_60559_DFP_EXT__
 # define __STDC_WANT_IEC_60559_DFP_EXT__ 1
 #endif
+/* Enable extensions specified by C23 Annex F.  */
+#ifndef __STDC_WANT_IEC_60559_EXT__
+# define __STDC_WANT_IEC_60559_EXT__ 1
+#endif
 /* Enable extensions specified by ISO/IEC TS 18661-4:2015.  */
 #ifndef __STDC_WANT_IEC_60559_FUNCS_EXT__
 # define __STDC_WANT_IEC_60559_FUNCS_EXT__ 1
 #endif
-/* Enable extensions specified by ISO/IEC TS 18661-3:2015.  */
+/* Enable extensions specified by C23 Annex H and ISO/IEC TS 18661-3:2015.  */
 #ifndef __STDC_WANT_IEC_60559_TYPES_EXT__
 # define __STDC_WANT_IEC_60559_TYPES_EXT__ 1
 #endif
@@ -205,7 +248,7 @@
 
 
 /* Version number of package */
-#define VERSION "0.7.12"
+#define VERSION "0.9"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
@@ -219,25 +262,25 @@
 # endif
 #endif
 
-/* Define to empty if `const' does not conform to ANSI C. */
+/* Define to empty if 'const' does not conform to ANSI C. */
 /* #undef const */
 
-/* Define to `int' if <sys/types.h> doesn't define. */
+/* Define as 'int' if <sys/types.h> doesn't define. */
 /* #undef gid_t */
 
-/* Define to `long int' if <sys/types.h> does not define. */
+/* Define to 'long int' if <sys/types.h> does not define. */
 /* #undef off_t */
 
 /* Define as a signed integer type capable of holding a process identifier. */
 /* #undef pid_t */
 
-/* Define to `unsigned int' if <sys/types.h> does not define. */
+/* Define as 'unsigned int' if <stddef.h> doesn't define. */
 /* #undef size_t */
 
 /* Define ssize_t if it is not done by the standard libs. */
 /* #undef ssize_t */
 
-/* Define to `int' if <sys/types.h> doesn't define. */
+/* Define as 'int' if <sys/types.h> doesn't define. */
 /* #undef uid_t */
 
 #pragma clang diagnostic ignored "-Wconversion"

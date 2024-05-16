@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdarg.h>
-#include <alloca.h>
 #include <ctype.h>
 
 #include <libfyaml.h>
@@ -1346,10 +1345,13 @@ int fy_atom_iter_getc(struct fy_atom_iter *iter)
 		return -1;
 
 	/* first try the pushed ungetc */
-	if (iter->unget_c != -1) {
+	if (iter->unget_c >= 0) {
 		c = iter->unget_c;
+		/* unmatched getc/ungetc */
+		if (fy_utf8_width(c) != 1)
+			return -1;
 		iter->unget_c = -1;
-		return c & 0xff;
+		return c;
 	}
 
 	/* read first octet */
@@ -1362,17 +1364,17 @@ int fy_atom_iter_getc(struct fy_atom_iter *iter)
 
 int fy_atom_iter_ungetc(struct fy_atom_iter *iter, int c)
 {
-	if (!iter)
+	if (!iter || c >= 0x80)
 		return -1;
 
-	if (iter->unget_c != -1)
+	if (iter->unget_c >= 0)
 		return -1;
-	if (c == -1) {
+	if (c < 0) {
 		iter->unget_c = -1;
 		return 0;
 	}
-	iter->unget_c = c & 0xff;
-	return c & 0xff;
+	iter->unget_c = c;
+	return c;
 }
 
 int fy_atom_iter_peekc(struct fy_atom_iter *iter)
@@ -1396,10 +1398,10 @@ int fy_atom_iter_utf8_get(struct fy_atom_iter *iter)
 		return -1;
 
 	/* first try the pushed ungetc */
-	if (iter->unget_c != -1) {
+	if (iter->unget_c >= 0) {
 		c = iter->unget_c;
 		iter->unget_c = -1;
-		return c & 0xff;
+		return c;
 	}
 
 	/* read first octet */
@@ -1432,11 +1434,11 @@ int fy_atom_iter_utf8_quoted_get(struct fy_atom_iter *iter, size_t *lenp, uint8_
 		return -1;
 
 	/* first try the pushed ungetc */
-	if (iter->unget_c != -1) {
+	if (iter->unget_c >= 0) {
 		c = iter->unget_c;
 		iter->unget_c = -1;
 		*lenp = 0;
-		return c & 0xff;
+		return c;
 	}
 
 	/* read first octet */
@@ -1473,12 +1475,17 @@ int fy_atom_iter_utf8_quoted_get(struct fy_atom_iter *iter, size_t *lenp, uint8_
 
 int fy_atom_iter_utf8_unget(struct fy_atom_iter *iter, int c)
 {
-	if (iter->unget_c != -1)
+	if (!iter)
 		return -1;
-	if (c == -1) {
+
+	if (iter->unget_c >= 0)
+		return -1;
+	if (c < 0) {
 		iter->unget_c = -1;
 		return 0;
 	}
+	if (!fy_utf8_is_valid(c))
+		return -1;
 	iter->unget_c = c;
 	return c;
 }
@@ -1568,79 +1575,84 @@ bool fy_atom_is_number(struct fy_atom *atom)
 	fy_atom_iter_start(atom, &iter);
 
 	/* skip minus sign if it's there */
-	c = fy_atom_iter_peekc(&iter);
+	c = fy_atom_iter_utf8_peek(&iter);
 	if (c == '-') {
-		(void)fy_atom_iter_getc(&iter);
+		(void)fy_atom_iter_utf8_get(&iter);
 		len++;
 	}
 
 	/* skip digits */
 	first_zero = false;
 	dec = 0;
-	while ((c = fy_atom_iter_peekc(&iter)) >= 0 && isdigit(c)) {
+	while ((c = fy_atom_iter_utf8_peek(&iter)) >= 0 && fy_is_digit(c)) {
 		if (dec == 0 && c == '0')
 			first_zero = true;
 		else if (dec == 1 && first_zero)
-			return false;	/* 0[0-9] is bad */
-		(void)fy_atom_iter_getc(&iter);
+			goto err_out;	/* 0[0-9] is bad */
+		(void)fy_atom_iter_utf8_get(&iter);
 		dec++;
 		len++;
 	}
 
 	/* no digits is bad */
 	if (!dec)
-		return false;
+		goto err_out;
 
 	fract = 0;
 	/* dot? */
-	c = fy_atom_iter_peekc(&iter);
+	c = fy_atom_iter_utf8_peek(&iter);
 	if (c == '.') {
 
-		(void)fy_atom_iter_getc(&iter);
+		(void)fy_atom_iter_utf8_get(&iter);
 		len++;
 		/* skip decimal part */
-		while ((c = fy_atom_iter_peekc(&iter)) >= 0 && isdigit(c)) {
-			(void)fy_atom_iter_getc(&iter);
+		while ((c = fy_atom_iter_utf8_peek(&iter)) >= 0 && fy_is_digit(c)) {
+			(void)fy_atom_iter_utf8_get(&iter);
 			len++;
 			fract++;
 		}
 
 		/* . without fractional */
 		if (!fract)
-			return false;
+			goto err_out;
 	}
 
 	enot = 0;
 	/* scientific notation */
-	c = fy_atom_iter_peekc(&iter);
+	c = fy_atom_iter_utf8_peek(&iter);
 	if (c == 'e' || c == 'E') {
-		(void)fy_atom_iter_getc(&iter);
+		(void)fy_atom_iter_utf8_get(&iter);
 		len++;
 
 		/* skip sign if it's there */
-		c = fy_atom_iter_peekc(&iter);
+		c = fy_atom_iter_utf8_peek(&iter);
 		if (c == '+' || c == '-') {
-			(void)fy_atom_iter_getc(&iter);
+			(void)fy_atom_iter_utf8_get(&iter);
 			len++;
 		}
 
 		/* skip exponent part */
-		while ((c = fy_atom_iter_peekc(&iter)) >= 0 && isdigit(c)) {
-			(void)fy_atom_iter_getc(&iter);
+		while ((c = fy_atom_iter_utf8_peek(&iter)) >= 0 && fy_is_digit(c)) {
+			(void)fy_atom_iter_utf8_get(&iter);
 			len++;
 			enot++;
 		}
 
 		if (!enot)
-			return false;
+			goto err_out;
 	}
 
-	c = fy_atom_iter_peekc(&iter);
+	c = fy_atom_iter_utf8_peek(&iter);
 
 	fy_atom_iter_finish(&iter);
 
 	/* everything must be consumed (and something must) */
 	return c < 0 && len > 0;
+
+err_out:
+	fy_atom_iter_finish(&iter);
+
+	return false;
 }
 
 int fy_atom_cmp(struct fy_atom *atom1, struct fy_atom *atom2)
@@ -1730,7 +1742,7 @@ fy_atom_raw_line_iter_next(struct fy_atom_raw_line_iter *iter)
 		return NULL;
 
 	while (s > iter->is) {
-		c = fy_utf8_get_right(iter->is, (int)(s - iter->is), &w);
+		c = fy_utf8_get_right(iter->is, (size_t)(s - iter->is), &w);
 		if (c <= 0 || fy_is_lb_m(c, iter->atom->lb_mode))
 			break;
 		s -= w;
@@ -1744,7 +1756,7 @@ fy_atom_raw_line_iter_next(struct fy_atom_raw_line_iter *iter)
 
 	/* track until the start of the content */
 	while (s < iter->as) {
-		c = fy_utf8_get(s, (int)(iter->ae - s), &w);
+		c = fy_utf8_get(s, (size_t)(iter->ae - s), &w);
 		/* we should never hit that */
 		if (c <= 0)
 			return NULL;
@@ -1771,7 +1783,7 @@ fy_atom_raw_line_iter_next(struct fy_atom_raw_line_iter *iter)
 
 	/* track until the end of the content (or lb) */
 	while (s < iter->ae) {
-		c = fy_utf8_get(s, (int)(iter->ae - s), &w);
+		c = fy_utf8_get(s, (size_t)(iter->ae - s), &w);
 		/* we should never hit that */
 		if (c <= 0)
 			return NULL;
@@ -1799,7 +1811,7 @@ fy_atom_raw_line_iter_next(struct fy_atom_raw_line_iter *iter)
 	/* if the stop was due to end of the atom */
 	if (s >= iter->ae) {
 		while (s < iter->ie) {
-			c = fy_utf8_get(s, (int)(iter->ie - s), &w);
+			c = fy_utf8_get(s, (size_t)(iter->ie - s), &w);
 			/* just end of input */
 			if (c <= 0)
 				break;

@@ -13,18 +13,30 @@
 #endif
 
 #include <stdint.h>
-#include <alloca.h>
+#include <stdlib.h>
 #include <assert.h>
+#include <alloca.h>
 
-#include <libfyaml.h>
+#include "fy-utils.h"
+
+#define FY_UTF8_MIN_WIDTH 1
+#define FY_UTF8_MAX_WIDTH 4
+
+extern const int8_t fy_utf8_width_table[32];
 
 static inline int
-fy_utf8_width_by_first_octet(uint8_t c)
+fy_utf8_width_by_first_octet_no_table(uint8_t c)
 {
 	return (c & 0x80) == 0x00 ? 1 :
 	       (c & 0xe0) == 0xc0 ? 2 :
 	       (c & 0xf0) == 0xe0 ? 3 :
 	       (c & 0xf8) == 0xf0 ? 4 : 0;
+}
+
+static inline FY_ALWAYS_INLINE int
+fy_utf8_width_by_first_octet(uint8_t c)
+{
+	return fy_utf8_width_table[c >> 3];
 }
 
 /* assumes valid utf8 character */
@@ -49,14 +61,14 @@ fy_utf8_is_printable_ascii(int c)
 }
 
 /* generic utf8 decoder (not inlined) */
-int fy_utf8_get_generic(const void *ptr, int left, int *widthp);
+int fy_utf8_get_generic(const void *ptr, size_t left, int *widthp);
 
 /* -1 for end of input, -2 for invalid character, -3 for partial */
 #define FYUG_EOF	-1
 #define FYUG_INV	-2
 #define FYUG_PARTIAL	-3
 
-static inline int fy_utf8_get(const void *ptr, int left, int *widthp)
+static inline int fy_utf8_get(const void *ptr, size_t left, int *widthp)
 {
 	const uint8_t *p = ptr;
 
@@ -73,9 +85,9 @@ static inline int fy_utf8_get(const void *ptr, int left, int *widthp)
 	return fy_utf8_get_generic(ptr, left, widthp);
 }
 
-int fy_utf8_get_right_generic(const void *ptr, int left, int *widthp);
+int fy_utf8_get_right_generic(const void *ptr, size_t left, int *widthp);
 
-static inline int fy_utf8_get_right(const void *ptr, int left, int *widthp)
+static inline int fy_utf8_get_right(const void *ptr, size_t left, int *widthp)
 {
 	const uint8_t *p = ptr + left;
 
@@ -144,8 +156,8 @@ char *fy_utf8_format(int c, char *buf, enum fy_utf8_escape esc);
 	 	fy_utf8_format((_c), _buf, _esc); \
 	})
 
-int fy_utf8_format_text_length(const char *buf, size_t len,
-			       enum fy_utf8_escape esc);
+size_t fy_utf8_format_text_length(const char *buf, size_t len,
+			          enum fy_utf8_escape esc);
 char *fy_utf8_format_text(const char *buf, size_t len,
 			  char *out, size_t maxsz,
 			  enum fy_utf8_escape esc);
@@ -215,5 +227,63 @@ int fy_utf8_parse_escape(const char **strp, size_t len, enum fy_utf8_escape esc)
 #define F_DIGIT			FY_BIT(7)	/* is a digit 0..9 */
 
 extern uint8_t fy_utf8_low_ascii_flags[0x80];
+
+void *fy_utf8_split_posix(const char *str, int *argcp, const char * const *argvp[]);
+
+int fy_utf8_get_generic_s(const void *ptr, const void *ptr_end, int *widthp);
+int fy_utf8_get_generic_s_nocheck(const void *ptr, int *widthp);
+
+static inline int fy_utf8_get_s(const void *ptr, const void *ptr_end, int *widthp)
+{
+	const uint8_t *p = ptr;
+
+	/* single byte (hot path) */
+	if (ptr >= ptr_end) {
+		*widthp = 0;
+		return FYUG_EOF;
+	}
+
+	if (!(p[0] & 0x80)) {
+		*widthp = 1;
+		return p[0];
+	}
+	return fy_utf8_get_generic_s(ptr, ptr_end, widthp);
+}
+
+static inline int fy_utf8_get_s_nocheck(const void *ptr, int *widthp)
+{
+	const uint8_t *p = ptr;
+
+	if (!(p[0] & 0x80)) {
+		*widthp = 1;
+		return p[0];
+	}
+	return fy_utf8_get_generic_s_nocheck(ptr, widthp);
+}
+
+/* for most 64 bit arches this will fit in a single register */
+struct fy_utf8_result {
+	int c;
+	int w;
+};
+
+/* probably the most performant version */
+static inline struct fy_utf8_result fy_utf8_get_s_res(const void *ptr, const void *ptr_end)
+{
+	const uint8_t *p = ptr;
+	int c, width;
+
+	/* single byte (hot path) */
+	if (ptr >= ptr_end)
+		return (struct fy_utf8_result){ FYUG_EOF, 0 };
+
+	if (!(p[0] & 0x80))
+		return (struct fy_utf8_result){ p[0], 1 };
+
+	c = fy_utf8_get_generic_s(ptr, ptr_end, &width);
+	if (c < 0)
+		return (struct fy_utf8_result){ c, 0 };
+	return (struct fy_utf8_result){ c, width };
+}
 
 #endif

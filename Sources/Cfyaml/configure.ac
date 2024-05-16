@@ -1,14 +1,24 @@
-AC_PREREQ(2.61)
+AC_PREREQ(2.69)
 
 AC_INIT([libfyaml],
         m4_esyscmd([build-aux/git-version-gen .tarball-version]),
 	[pantelis.antoniou@konsulko.com])
 
-AC_CONFIG_SRCDIR([src/lib/fy-parse.c])
-AC_CONFIG_HEADER([config.h])
-AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([foreign 1.8.5 -Wall subdir-objects ])
+
+AC_PATH_PROG([M4], [m4 gm4], [no])
+if test "x$M4" = xno ; then
+   AC_MSG_ERROR([m4 missing])
+fi
+
+AC_SUBST(ACLOCAL_AMFLAGS, "-I m4")
+
+AC_CANONICAL_TARGET
+
+AC_CONFIG_SRCDIR([src/lib/fy-parse.c])
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([m4])
+AM_INIT_AUTOMAKE([foreign 1.8.5 subdir-objects -Wno-portability])
 
 m4_pattern_allow([^(AM_EXTRA_RECURSIVE_TARGETS|AM_PROG_AR)$])dnl
 
@@ -72,8 +82,8 @@ m4_version_prereq(2.64, [AX_CHECK_ENABLE_DEBUG()], [true])
 
 AC_PROG_MKDIR_P
 AC_PROG_CC
-AC_PROG_CC_C99
 AM_PROG_CC_C_O
+AM_PROG_AS
 
 AC_PROG_GCC_TRADITIONAL
 AC_USE_SYSTEM_EXTENSIONS
@@ -84,28 +94,25 @@ AC_PROG_CXX
 AC_PROG_AWK
 AC_PROG_LN_S
 
-AX_PTHREAD
+AX_PTHREAD([], [AC_MSG_ERROR("Missing required pthread support")])
 
-AC_PATH_PROG([M4], [m4 gm4], [no])
-if test "x$M4" = xno ; then
-   AC_MSG_ERROR([m4 missing])
+# in some cases PTHREAD_LIBS is empty - force -lpthread */
+if test "x$PTHREAD_LIBS" = "x"; then
+	PTHREAD_LIBS="-lpthread"
 fi
 
-AC_SUBST(ACLOCAL_AMFLAGS, "-I m4")
+CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+LIBS="$LIBS $PTHREAD_LIBS"
 
 # pkg-config
 PKG_PROG_PKG_CONFIG
 
 AC_LTDL_ENABLE_INSTALL
-AC_LIBLTDL_INSTALLABLE
-AC_LIBTOOL_DLOPEN
-AC_LIBTOOL_WIN32_DLL
-AC_PROG_LIBTOOL
+LT_INIT([dlopen win32-dll])
 AC_SUBST(LTDLINCL)
 AC_SUBST(LIBLTDL)
 AC_CONFIG_SUBDIRS(libltdl)
 
-AC_HEADER_STDC
 AC_C_CONST
 AC_C_BIGENDIAN
 AC_TYPE_PID_T
@@ -113,13 +120,15 @@ AC_TYPE_SIZE_T
 AC_CHECK_TYPES(ssize_t, , [AC_DEFINE([ssize_t], [signed long],
     [Define ssize_t if it is not done by the standard libs.])])
 AC_TYPE_OFF_T
-AC_TYPE_SIGNAL
 AC_TYPE_UID_T
 AC_CHECK_DECLS(environ)
 
+AC_CHECK_HEADERS([byteswap.h])
+AC_CHECK_FUNCS([__builtin_bswap16 __builtin_bswap32 __builtin_bswap64])
+
 dnl for old autoconf version AX_APPEND_COMPILE_FLAGS does not work
 m4_version_prereq(2.64,
-	 [AX_APPEND_COMPILE_FLAGS([-Wall -Wsign-compare -Wno-stringop-overflow],
+	 [AX_APPEND_COMPILE_FLAGS([-Wall -Wsign-compare -Wno-stringop-overflow -fvisibility=hidden],
 				  [CFLAGS], [-pedantic -Werror])],
          [CFLAGS="$CFLAGS -Wall -Wsign-compare"])
 
@@ -128,8 +137,99 @@ if test "x$ax_enable_debug" != "xyes" ; then
 	CFLAGS="$CFLAGS -O2"
 fi
 
-# include -lm in the link
-AC_SEARCH_LIBS([llrintf], [m], [], [AC_MSG_ERROR([unable to find the llrintf() function])])
+# need that as conditional because some internal tools compile as static
+# to have access to internal libfyaml APIs
+if test "x$enable_static" = "xyes" ; then
+HAVE_STATIC=1
+else
+HAVE_STATIC=0
+fi
+AC_SUBST(HAVE_STATIC)
+AC_DEFINE_UNQUOTED([HAVE_STATIC], [$HAVE_STATIC], [Define to 1 if static linking is available])
+AM_CONDITIONAL([HAVE_STATIC], [ test x$HAVE_STATIC = x1 ])
+
+dnl check whether warning flags are supported
+AX_CHECK_COMPILE_FLAG([-Wstringop-overread], , , [-Werror])
+AS_IF([test "x$ax_cv_check_cflags__Werror__wstringop_overread" = x"yes"],
+      [HAVE_WSTRINGOP_OVERREAD=1], [HAVE_WSTRINGOP_OVERREAD=0])
+AC_DEFINE_UNQUOTED([HAVE_WSTRINGOP_OVERREAD], [$HAVE_WSTRINGOP_OVERREAD], [Define to 1 if -Wstringop-overread is supported])
+
+dnl Per target optimizations
+AC_ARG_ENABLE([portable-target],
+	      AS_HELP_STRING([--enable-portable-target],
+			     [Enable portable mode (disable per-target optimizations)]))
+HAVE_PORTABLE_TARGET=0
+if test "x$enable_portable_target" == "xyes"; then
+	HAVE_PORTABLE_TARGET=1
+fi
+AC_SUBST(HAVE_PORTABLE_TARGET)
+AC_DEFINE_UNQUOTED([HAVE_PORTABLE_TARGET], [$HAVE_PORTABLE_TARGET], [Define to 1 if PORTABLE_TARGET is enabled])
+AM_CONDITIONAL([HAVE_PORTABLE_TARGET], [ test x$HAVE_PORTABLE_TARGET == x1 ])
+
+AM_CONDITIONAL([TARGET_CPU_X86], [ test x$target_cpu = xx86 ])
+AM_CONDITIONAL([TARGET_CPU_X86_64], [ test x$target_cpu = xx86_64 ])
+AM_CONDITIONAL([TARGET_CPU_ANY_X86], [ test x$target_cpu = xx86 -o x$target_cpu = xx86_64 ])
+AM_CONDITIONAL([TARGET_CPU_ARM], [ test x$target_cpu = xarm ])
+AM_CONDITIONAL([TARGET_CPU_ARM64], [ test x$target_cpu = xaarch64 ])
+AM_CONDITIONAL([TARGET_CPU_ANY_ARM], [ test x$target_cpu = xarm -o x$target_cpu = xaarch64 ])
+
+AM_COND_IF([TARGET_CPU_ANY_X86], [m4_version_prereq(2.64, [
+		AX_CHECK_COMPILE_FLAG([-msse2], , , [-Werror])
+		AX_CHECK_COMPILE_FLAG([-msse4.1], , , [-Werror])
+		AX_CHECK_COMPILE_FLAG([-mavx2], , , [-Werror])
+		AX_CHECK_COMPILE_FLAG([-mavx512f -mavx512vl], , , [-Werror])
+	], [true])
+])
+
+AM_COND_IF([TARGET_CPU_ARM], [m4_version_prereq(2.64, [
+		AX_CHECK_COMPILE_FLAG([-mfpu=neon], , , [-Werror])
+	], [true])
+])
+
+AM_CONDITIONAL([TARGET_HAS_SSE2],   [ test "x$ax_cv_check_cflags__Werror__msse2" = x"yes" -a "x$enable_portable_target" != "xyes" ])
+AM_CONDITIONAL([TARGET_HAS_SSE41],  [ test "x$ax_cv_check_cflags__Werror__msse4_1" = x"yes" -a "x$enable_portable_target" != "xyes" ])
+AM_CONDITIONAL([TARGET_HAS_AVX2],   [ test "x$ax_cv_check_cflags__Werror__mavx2" = x"yes" -a "x$enable_portable_target" != "xyes" ])
+AM_CONDITIONAL([TARGET_HAS_AVX512], [ test "x$ax_cv_check_cflags__Werror__mavx512f__mavx512vl" = x"yes" -a "x$enable_portable_target" != "xyes" ])
+
+AM_CONDITIONAL([TARGET_HAS_NEON],   [ test \( x$target_cpu = xaarch64 -o "x$ax_cv_check_cflags__Werror__mcpu_neon" = x"yes" \) -a "x$enable_portable_target" != "xyes" ])
+
+AM_COND_IF([TARGET_HAS_SSE2],   AC_DEFINE([TARGET_HAS_SSE2],   [1], [SSE2 target support]))
+AM_COND_IF([TARGET_HAS_SSE41],  AC_DEFINE([TARGET_HAS_SSE41],  [1], [SSE41 target support]))
+AM_COND_IF([TARGET_HAS_AVX2],   AC_DEFINE([TARGET_HAS_AVX2],   [1], [AVX2 target support]))
+AM_COND_IF([TARGET_HAS_AVX512], AC_DEFINE([TARGET_HAS_AVX512], [1], [AVX512 target support]))
+
+AM_COND_IF([TARGET_HAS_NEON],   AC_DEFINE([TARGET_HAS_NEON],   [1], [NEON target support]))
+
+dnl ASAN enable switch
+AC_ARG_ENABLE([asan],
+	      AS_HELP_STRING([--enable-asan],
+			     [Enable ASAN support]))
+
+HAVE_ASAN=0
+ASAN_CFLAGS=""
+ASAN_LIBS=""
+if test "x$enable_asan" == "xyes" ; then
+	AC_MSG_CHECKING([location of ASAN library])
+	ASANLIB1=`${CC} -print-file-name=libasan.so`
+	ASANLIB=`readlink -f "${ASANLIB1}"`
+	if test -f "$ASANLIB" ; then
+		HAVE_ASAN=1
+		ASAN_CFLAGS="-fsanitize=address -fno-omit-frame-pointer"
+		ASAN_LIBS="-fsanitize=address"
+		AC_MSG_RESULT([$ASANLIB])
+		m4_version_prereq(2.64,
+			AX_APPEND_COMPILE_FLAGS([-fsanitize=address -fno-omit-frame-pointer], [CFLAGS]),
+			[CFLAGS="$CFLAGS -fsanitize=address -fno-omit-frame-pointer"])
+	else
+		AC_MSG_RESULT([Not found; disabling ASAN])
+	fi
+fi
+AC_SUBST(HAVE_ASAN)
+AC_SUBST(ASAN_CFLAGS)
+AC_SUBST(ASAN_LIBS)
+AM_CONDITIONAL([HAVE_ASAN],
+	       [ test x$HAVE_ASAN = x1 ])
+AC_DEFINE_UNQUOTED([HAVE_ASAN], [$HAVE_ASAN], [Define to 1 if ASAN is enabled])
 
 # check if there's a qsort_r available (musl does not have it)
 AC_CHECK_FUNC([qsort_r],
@@ -162,7 +262,7 @@ AC_DEFINE_UNQUOTED([HAVE_CHECK], [$HAVE_CHECK], [Define to 1 if you have check a
 AM_CONDITIONAL([HAVE_CHECK], [ test x$HAVE_CHECK = x1 ])
 
 HAVE_COMPATIBLE_CHECK=0
-if test "x$HAVE_CHECK" == "x1" ; then
+if test "x$HAVE_CHECK" = "x1" ; then
 	save_LIBS="$LIBS"
 	save_CFLAGS="$CFLAGS"
 	LIBS="$LIBS $CHECK_LIBS"
@@ -257,7 +357,7 @@ if test "x$SPHINX" != "x" ; then
 	fi
 
 	AC_MSG_CHECKING([whether sphinx installation works])
-	if test "x$HAVE_SPHINX" == "x1" ; then
+	if test "x$HAVE_SPHINX" = "x1" ; then
 		AC_MSG_RESULT([yes])
 	else
 		AC_MSG_RESULT([no])
@@ -279,25 +379,25 @@ AM_CONDITIONAL([HAVE_GIT], [ test x$HAVE_GIT = x1 ])
 
 AC_ARG_VAR(TESTSUITEURL, [Testsuite git repo URL (default: https://github.com/yaml/yaml-test-suite)])
 
-if test "x$TESTSUITEURL" == "x" ; then
+if test "x$TESTSUITEURL" = "x" ; then
 	TESTSUITEURL="https://github.com/yaml/yaml-test-suite"
 fi
 
 AC_ARG_VAR(TESTSUITECHECKOUT, [Testsuite checkout (default: 6e6c296ae9c9d2d5c4134b4b64d01b29ac19ff6f)])
 
-if test "x$TESTSUITECHECKOUT" == "x" ; then
+if test "x$TESTSUITECHECKOUT" = "x" ; then
 	TESTSUITECHECKOUT="6e6c296ae9c9d2d5c4134b4b64d01b29ac19ff6f"
 fi
 
 AC_ARG_VAR(JSONTESTSUITEURL, [JSON Testsuite git repo URL (default: https://github.com/nst/JSONTestSuite)])
 
-if test "x$JSONTESTSUITEURL" == "x" ; then
+if test "x$JSONTESTSUITEURL" = "x" ; then
 	JSONTESTSUITEURL="https://github.com/nst/JSONTestSuite"
 fi
 
 AC_ARG_VAR(JSONTESTSUITECHECKOUT, [JSON Testsuite checkout (default: d64aefb55228d9584d3e5b2433f720ea8fd00c82)])
 
-if test "x$JSONTESTSUITECHECKOUT" == "x" ; then
+if test "x$JSONTESTSUITECHECKOUT" = "x" ; then
 	JSONTESTSUITECHECKOUT="d64aefb55228d9584d3e5b2433f720ea8fd00c82"
 fi
 
@@ -320,6 +420,105 @@ fi
 AC_DEFINE_UNQUOTED([HAVE_JQ], [$HAVE_JQ], [Define to 1 if you have jq available])
 AM_CONDITIONAL([HAVE_JQ], [ test x$HAVE_JQ = x1 ])
 AC_SUBST(JQ, "$JQ")
+
+# check for libclang
+AC_ARG_WITH([libclang],
+         dnl enable internet available when checking
+AC_ARG_ENABLE([network],
+	      AS_HELP_STRING([--disable-network],
+			     [Disable tests requiring network access]))
+
+   [AS_HELP_STRING([--with-libclang=[<version>]],
+              [Enable support for libclang @<:@default=auto@:>@])],
+            [with_libclang="$withval"],
+            [with_libclang=auto])
+
+HAVE_LIBCLANG=0
+LIBCLANG_CFLAGS=""
+LIBCLANG_CPPFLAGS=""
+LIBCLANG_LDFLAGS=""
+LIBCLANG_LIBS=""
+dnl TODO think about cross compilation
+if test "x$with_libclang" != "xno"; then
+	if test "x$with_libclang" == "xauto"; then
+		# try to auto detect (llvm 15 down to 8)
+		check="llvm-config llvm-config-15 llvm-config-14 llvm-config-13 llvm-config-12 llvm-config-11 llvm-config-10"
+	else
+		if test "x$with_libclang" == "xlatest"; then
+			check="llvm-config"
+		else
+			check="llvm-config-$with_libclang"
+		fi
+	fi
+	orig_CFLAGS="$CFLAGS"
+	orig_CPPFLAGS="$CPPFLAGS"
+	orig_LDFLAGS="$LDFLAGS"
+	orig_LIBS="$LIBS"
+	for cfg in $check ; do
+		# no caching
+		AC_PATH_PROG([LLVM_CONFIG], [$cfg])
+		if test "x$LLVM_CONFIG" != "x" ; then
+			LIBCLANG_CFLAGS=`$LLVM_CONFIG --cflags`
+			LIBCLANG_CPPFLAGS=`$LLVM_CONFIG --cppflags`
+			LIBCLANG_LDFLAGS=`$LLVM_CONFIG --ldflags`
+			LIBCLANG_LIBS="-lclang"
+			CPPFLAGS="$CPPFLAGS $LIBCLANG_CPPFLAGS"
+			CFLAGS="$CFLAGS $LIBCLANG_CFLAGS"
+			LDFLAGS="$LDFLAGS $LIBCLANG_LDFLAGS"
+			LIBS="$LIBS $LIBCLANG_LIBS"
+			AC_CHECK_LIB([clang], [clang_createIndex],
+				     [HAVE_LIBCLANG_LIB=1], [HAVE_LIBCLANG_LIB=0])
+			AC_CHECK_HEADER([clang-c/Index.h],
+				     [HAVE_LIBCLANG_HDR=1], [HAVE_LIBCLANG_HDR=0])
+			# if we found it, break out
+			if test "x$HAVE_LIBCLANG_LIB" = "x1" -a "x$HAVE_LIBCLANG_HDR" = "x1" ; then
+				HAVE_LIBCLANG=1
+				break
+			fi
+			$as_unset ac_cv_lib_clang_clang_createIndex $as_unset ac_cv_header_clang_c_Index_h \
+				LIBCLANG_CFLAGS LIBCLANG_CPPFLAGS LIBCLANG_LIBS HAVE_LIBCLANG_LIB HAVE_LIBCLANG_HDR
+		fi
+		CFLAGS=$orig_CFLAGS
+		LDFLAGS=$orig_LDFLAGS
+		LIBS=$orig_LIBS
+		if test "x$HAVE_LIBCLANG" = "x1"; then
+			break
+		fi
+		$as_unset ac_cv_path_LLVM_CONFIG LLVM_CONFIG
+	done
+	CFLAGS=$orig_CFLAGS
+	CPPFLAGS=$orig_CPPFLAGS
+	LDFLAGS=$orig_LDFLAGS
+	LIBS=$orig_LIBS
+fi
+
+dnl it is safe to update CFLAGS, CPPFLAGS and LDFLAGS from clang
+dnl we will only link against libclang when we have to
+
+AC_SUBST(HAVE_LIBCLANG)
+AC_SUBST(LIBCLANG_CFLAGS)
+AC_SUBST(LIBCLANG_CPPFLAGS)
+AC_SUBST(LIBCLANG_LDFLAGS)
+AC_SUBST(LIBCLANG_LIBS)
+AC_DEFINE_UNQUOTED([HAVE_LIBCLANG], [$HAVE_LIBCLANG], [Define to 1 if libclang is available])
+AM_CONDITIONAL([HAVE_LIBCLANG], [ test x$HAVE_LIBCLANG = x1 ])
+
+dnl AS_IF([test "x$with_libclang" != xno],
+dnl   [AC_CHECK_LIB([libclang], [main],
+dnl     [AC_SUBST([LIBREADLINE], ["-lreadline -lncurses"])
+dnl      AC_DEFINE([HAVE_LIBREADLINE], [1],
+dnl       	 [Define if you have libreadline])
+dnl     ],
+dnl     [if test "x$with_readline" != xcheck; then
+dnl        AC_MSG_FAILURE(
+dnl          [--with-readline was given, but test for readline failed])
+dnl      fi
+dnl     ], -lncurses)])
+
+dnl trim cflags, cppflags, ldflags
+CFLAGS=`echo $CFLAGS | sed -e 's/^[ ]*//'`
+CPPFLAGS=`echo $CPPFLAGS | sed -e 's/^[ ]*//'`
+LDFLAGS=`echo $LDFLAGS | sed -e 's/^[ ]*//'`
 
 # Shave by default on supported autoconf versions
 dnl m4_version_prereq(2.64, SHAVE_INIT([build-aux], [enable]), [true])
@@ -349,17 +548,20 @@ echo "
     LIBTOOL_VERSION:       ${LIBTOOL_VERSION}
     prefix:                ${prefix}
     C compiler:            ${CC}
-    CFLAGS:                ${CFLAGS}
     Linker:                ${LD}
+    CFLAGS:                ${CFLAGS}
     LDFLAGS:               ${LDFLAGS}
     LIBS:                  ${LIBS}
+    HAVE_ASAN:             ${HAVE_ASAN}
     HAVE_CHECK:            ${HAVE_CHECK}
     HAVE_COMPATIBLE_CHECK: ${HAVE_COMPATIBLE_CHECK}
     HAVE_NETWORK:          ${HAVE_NETWORK}
     HAVE_DEVMODE:          ${HAVE_DEVMODE}
     HAVE_SPHINX:           ${HAVE_SPHINX}
-    GIT:                   $GIT
-    DOCKER:                $DOCKER
+    GIT:                   ${GIT}
+    DOCKER:                ${DOCKER}
+    HAVE_LIBCLANG:         ${HAVE_LIBCLANG}
+    LIBCLANG_LIBS:         ${LIBCLANG_LIBS}
     TESTSUITEURL:          $TESTSUITEURL
     TESTSUITECHECKOUT:     $TESTSUITECHECKOUT
     JSONTESTSUITEURL:      $JSONTESTSUITEURL

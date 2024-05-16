@@ -15,13 +15,13 @@ jobs:
 
   build:
     
-    runs-on: macos-12
+    runs-on: macos-13
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
 
     - run: |
         mkdir -p docs
@@ -49,7 +49,7 @@ jobs:
       run: tar -czf docs.tar.gz docs
 
     - name: Upload Docs Archive
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: docs-${{ github.ref_name }}
         path: docs.tar.gz
@@ -60,10 +60,10 @@ jobs:
     needs: [ build ]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Download Docs Archive
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: docs-${{ github.ref_name }}
         path: '.'
@@ -79,10 +79,10 @@ jobs:
 
     - name: Check Version Format in Tag
       id: version
-      uses: nowsprinting/check-version-format-action@v3
+      uses: nowsprinting/check-version-format-action@v4
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -90,4 +90,5 @@ jobs:
         tag_name: ${{ github.ref_name }}
         generate_release_notes: true
         prerelease: ${{ steps.version.outputs.is_stable != 'true' }}
+        make_latest: ${{ steps.version.outputs.is_stable == 'true' }}
         draft: false

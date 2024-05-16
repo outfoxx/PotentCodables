@@ -135,6 +135,37 @@ err_out:
 	return -1;
 }
 
+ssize_t fy_parse_estimate_queued_input_size(struct fy_parser *fyp)
+{
+	struct fy_input *fyi;
+	ssize_t size, total;
+
+	if (!fyp)
+		return 0;
+
+	total = 0;
+	for (fyi = fy_input_list_head(&fyp->queued_inputs); fyi; fyi = fy_input_next(&fyp->queued_inputs, fyi)) {
+		if (fyi->state != FYIS_QUEUED)
+			continue;
+
+		size = fy_input_estimate_queued_size(fyi);
+		if (size < 0)
+			return -1;
+
+		/* something that's indetermined */
+		if (size == SSIZE_MAX)
+			return SSIZE_MAX;
+
+		total += size;
+
+		/* roll-over check */
+		if (total < 0)
+			return SSIZE_MAX;
+	}
+
+	return total;
+}
+
 static inline void
 fy_token_queue_epilogue(struct fy_parser *fyp, struct fy_token *fyt)
 {
@@ -452,6 +483,9 @@ int fy_reset_document_state(struct fy_parser *fyp)
 	fyp->flow = FYFT_NONE;
 	fy_parse_flow_list_recycle_all(fyp, &fyp->flow_stack);
 
+	/* and reset all aliases (TODO look for cross document aliases) */
+	fy_parse_streaming_aliases_reset(fyp);
+
 	return 0;
 
 err_out:
@@ -758,6 +792,7 @@ int fy_parse_setup(struct fy_parser *fyp, const struct fy_parse_cfg *cfg)
 	fy_indent_list_init(&fyp->recycled_indent);
 	fyp->indent = -2;
 	fyp->indent_line = -1;
+	fyp->starting_indent = -1;
 	fyp->generated_block_map = false;
 	fyp->last_was_comma = false;
 
@@ -781,6 +816,10 @@ int fy_parse_setup(struct fy_parser *fyp, const struct fy_parse_cfg *cfg)
 
 	fyp->pending_complex_key_column = -1;
 	fyp->last_block_mapping_key_line = -1;
+
+	fy_streaming_alias_list_init(&fyp->streaming_aliases);
+	fy_streaming_alias_list_init(&fyp->recycled_streaming_alias);
+	fy_eventp_list_init(&fyp->mks.args);
 
 	fyp->suppress_recycling = !!(fyp->cfg.flags & FYPCF_DISABLE_RECYCLING) ||
 		                  (getenv("FY_VALGRIND") &&
@@ -814,6 +853,11 @@ void fy_parse_cleanup(struct fy_parser *fyp)
 	struct fy_eventp *fyep;
 	struct fy_token *fyt;
 
+	fy_parse_streaming_aliases_reset(fyp);
+
+	fy_input_unref(fyp->last_event_handle.fyi);
+	fy_atom_reset(&fyp->last_event_handle);
+
 	fy_composer_destroy(fyp->fyc);
 	fy_document_builder_destroy(fyp->fydb);
 
@@ -823,6 +867,7 @@ void fy_parse_cleanup(struct fy_parser *fyp)
 
 	fy_parse_parse_state_log_list_recycle_all(fyp, &fyp->state_stack);
 	fy_parse_flow_list_recycle_all(fyp, &fyp->flow_stack);
+	fy_parse_streaming_alias_list_recycle_all(fyp, &fyp->streaming_aliases);
 
 	fy_token_unref_rl(fyp->recycled_token_list, fyp->stream_end_token);
 
@@ -842,6 +887,7 @@ void fy_parse_cleanup(struct fy_parser *fyp)
 	fy_parse_simple_key_vacuum(fyp);
 	fy_parse_parse_state_log_vacuum(fyp);
 	fy_parse_flow_vacuum(fyp);
+	fy_parse_streaming_alias_vacuum(fyp);
 
 	/* free the recycled events */
 	while ((fyep = fy_eventp_list_pop(&fyp->recycled_eventp)) != NULL) {
@@ -1287,6 +1333,8 @@ int fy_push_indent(struct fy_parser *fyp, int indent, bool generated_block_map, 
 	fyp->parent_indent = fyp->indent;
 	fyp->indent = indent;
 	fyp->indent_line = indent_line;
+	if (fyp->parse_block_only && fyp->starting_indent < 0)
+		fyp->starting_indent = indent;
 	fyp->generated_block_map = generated_block_map;
 
 	fyp_scan_debug(fyp, "push_indent %d -> %d - generated_block_map=%s\n",
@@ -1682,7 +1730,7 @@ int fy_fetch_stream_end(struct fy_parser *fyp)
 	int rc;
 
 	/* only reset the stream in regular mode */
-	if (!fyp->parse_flow_only)
+	if (!fyp->parse_flow_only && !fyp->parse_block_only)
 		fy_reader_stream_end(fyp->reader);
 
 	fy_remove_all_simple_keys(fyp);
@@ -2208,9 +2256,12 @@ int fy_fetch_flow_collection_mark_start(struct fy_parser *fyp, int c)
 	fyp_error_check(fyp, fyt, err_out,
 			"fy_token_queue_simple() failed");
 
-	rc = fy_save_simple_key_mark(fyp, &skm, type, NULL);
-	fyp_error_check(fyp, !rc, err_out_rc,
-			"fy_save_simple_key_mark() failed");
+	/* json does not have complex keys */
+	if (!fyp_json_mode(fyp)) {
+		rc = fy_save_simple_key_mark(fyp, &skm, type, NULL);
+		fyp_error_check(fyp, !rc, err_out_rc,
+				"fy_save_simple_key_mark() failed");
+	}
 
 	/* increase flow level */
 	fyp->flow_level++;
@@ -2783,8 +2834,10 @@ int fy_fetch_value(struct fy_parser *fyp, int c)
 	fyp_error_check(fyp, fyt, err_out,
 			"fy_token_queue_simple() failed");
 
-	if (fysk)
+	if (fysk) {
 		fy_parse_simple_key_recycle(fyp, fysk);
+		fysk = NULL;
+	}
 
 
 	fyp->simple_key_allowed = target_simple_key_allowed;
@@ -2882,20 +2935,20 @@ int fy_fetch_anchor_or_alias(struct fy_parser *fyp, int c)
 
 	if (!fyp_is_blankz(fyp, c) && !fy_is_flow_indicator(c)) {
 
-		FYP_PARSE_ERROR_CHECK(fyp, length, 1, FYEM_SCAN,
+		FYP_PARSE_ERROR_CHECK(fyp, 0, 1, FYEM_SCAN,
 				fy_is_unicode_control(c), err_out,
 				"illegal unicode control character in %s", typestr);
 
-		FYP_PARSE_ERROR_CHECK(fyp, length, 1, FYEM_SCAN,
+		FYP_PARSE_ERROR_CHECK(fyp, 0, 1, FYEM_SCAN,
 				fy_is_unicode_space(c), err_out,
 				"illegal unicode space character in %s", typestr);
 	}
 
-	FYP_PARSE_ERROR_CHECK(fyp, length, 1, FYEM_SCAN,
+	FYP_PARSE_ERROR_CHECK(fyp, 0, 1, FYEM_SCAN,
 			c != FYUG_INV, err_out,
 			"invalid character in %s", typestr);
 
-	FYP_PARSE_ERROR_CHECK(fyp, length, 1, FYEM_SCAN,
+	FYP_PARSE_ERROR_CHECK(fyp, 0, 1, FYEM_SCAN,
 			c != FYUG_PARTIAL, err_out,
 			"partial character in %s", typestr);
 
@@ -3353,6 +3406,9 @@ int fy_fetch_block_scalar(struct fy_parser *fyp, bool is_literal, int c)
 
 			line_length += fy_utf8_width(c);
 		}
+		/* keep the variables without warning */
+		(void)trailing_ws;
+		(void)leading_ws;
 
 		if (doc_start_end_detected)
 			break;
@@ -3559,6 +3615,7 @@ int fy_fetch_block_scalar(struct fy_parser *fyp, bool is_literal, int c)
 	handle.fws_mode = fyp_fws_mode(fyp);
 	handle.tabsize = fyp_tabsize(fyp);
 	handle.ends_with_eof = ends_with_eof;
+	handle.is_merge_key = false;
 
 #ifdef ATOM_SIZE_CHECK
 	tlength = fy_atom_format_text_length(&handle);
@@ -3995,6 +4052,7 @@ int fy_reader_fetch_flow_scalar_handle(struct fy_reader *fyr, int c, int indent,
 	handle->fws_mode = fy_reader_flow_ws_mode(fyr);
 	handle->tabsize = fy_reader_tabsize(fyr);
 	handle->ends_with_eof = false;	/* flow scalars never end with EOF and be valid */
+	handle->is_merge_key = false;
 
 	/* skip over block scalar end */
 	fy_reader_advance_by(fyr, 1);
@@ -4030,7 +4088,7 @@ int fy_reader_fetch_plain_scalar_handle(struct fy_reader *fyr, int c, int indent
 	bool has_leading_blanks;
 	bool last_ptr;
 	struct fy_mark mark, last_mark;
-	bool is_multiline, has_lb, has_ws, ends_with_eof;
+	bool is_multiline, has_lb, has_ws, ends_with_eof, is_merge_key;
 	bool has_json_esc;
 #ifdef ATOM_SIZE_CHECK
 	size_t tlength;
@@ -4059,6 +4117,9 @@ int fy_reader_fetch_plain_scalar_handle(struct fy_reader *fyr, int c, int indent
 	FYR_PARSE_ERROR_CHECK(fyr, 0, 2, FYEM_SCAN,
 			flow_level == 0 || !(c == '-' && fy_utf8_strchr(",[]{}", fy_reader_peek_at(fyr, 1))), err_out,
 			"plain scalar cannot start with '%c' followed by ,[]{} (in flow context)", c);
+
+	/* we can prime is_merge_key here */
+	is_merge_key = c == '<' && fy_reader_peek_at(fyr, 1) == '<';
 
 	fy_reader_get_mark(fyr, &mark);
 
@@ -4284,6 +4345,7 @@ int fy_reader_fetch_plain_scalar_handle(struct fy_reader *fyr, int c, int indent
 	handle->fws_mode = fy_reader_flow_ws_mode(fyr);
 	handle->tabsize = fy_reader_tabsize(fyr);
 	handle->ends_with_eof = ends_with_eof;
+	handle->is_merge_key = is_merge_key && length == 2;
 
 #ifdef ATOM_SIZE_CHECK
 	tlength = fy_atom_format_text_length(handle);
@@ -4621,7 +4683,7 @@ void fy_reader_skip_ws_lb(struct fy_reader *fyr)
 				}
 				s++;
 			} else {
-				c = fy_utf8_get(s, (int)(e - s), &w);
+				c = fy_utf8_get(s, (size_t)(e - s), &w);
 
 				if (c == FYUG_PARTIAL) {
 					/* get the width (from the first octet */
@@ -4800,6 +4862,13 @@ int fy_fetch_tokens(struct fy_parser *fyp)
 			"fy_scan_to_next_token() failed");
 
 	if (fyp_block_mode(fyp)) {
+		if (fyp->parse_block_only && fyp->starting_indent >= 0 &&
+		    fyp_column(fyp) < fyp->starting_indent) {
+			rc = fy_fetch_stream_end(fyp);
+			fyp_error_check(fyp, !rc, err_out_rc,
+					"fy_fetch_stream_end() failed");
+			return 0;
+		}
 		rc = fy_parse_unroll_indent(fyp, fyp_column(fyp));
 		fyp_error_check(fyp, !rc, err_out_rc,
 				"fy_parse_unroll_indent() failed");
@@ -5107,7 +5176,7 @@ struct fy_token *fy_scan_peek(struct fy_parser *fyp)
 		fyp_scan_debug(fyp, "setting stream_end_produced to true");
 		fyp->stream_end_produced = true;
 
-		if (!fyp->parse_flow_only) {
+		if (!fyp->parse_flow_only && !fyp->parse_block_only) {
 			rc = fy_reader_input_done(fyp->reader);
 			fyp_error_check(fyp, !rc, err_out,
 					"fy_parse_input_done() failed");
@@ -5241,6 +5310,7 @@ fy_parse_node(struct fy_parser *fyp, struct fy_token *fyt, bool is_block)
 	size_t handle_size;
 	struct fy_token *fyt_td;
 	struct fy_token *fytn;
+	struct fy_atom *ev_handle = NULL;
 
 	fyds = fyp->current_document_state;
 	assert(fyds);
@@ -5260,6 +5330,7 @@ fy_parse_node(struct fy_parser *fyp, struct fy_token *fyt, bool is_block)
 		fye->type = FYET_ALIAS;
 		fye->alias.anchor = fy_scan_remove(fyp, fyt);
 
+		ev_handle = &fye->alias.anchor->handle;
 		goto return_ok;
 	}
 
@@ -5318,6 +5389,8 @@ fy_parse_node(struct fy_parser *fyp, struct fy_token *fyt, bool is_block)
 		fye->sequence_start.sequence_start = fytn;
 
 		fy_parse_state_set(fyp, FYPS_INDENTLESS_SEQUENCE_ENTRY);
+
+		ev_handle = &fye->sequence_start.sequence_start->handle;
 		goto return_ok;
 	}
 
@@ -5333,6 +5406,8 @@ fy_parse_node(struct fy_parser *fyp, struct fy_token *fyt, bool is_block)
 		fye->scalar.anchor = anchor;
 		fye->scalar.tag = tag;
 		fye->scalar.value = fy_scan_remove(fyp, fyt);
+
+		ev_handle = &fye->scalar.value->handle;
 		goto return_ok;
 	}
 
@@ -5348,6 +5423,8 @@ fy_parse_node(struct fy_parser *fyp, struct fy_token *fyt, bool is_block)
 		fye->sequence_start.tag = tag;
 		fye->sequence_start.sequence_start = fy_scan_remove(fyp, fyt);
 		fy_parse_state_set(fyp, FYPS_FLOW_SEQUENCE_FIRST_ENTRY);
+
+		ev_handle = &fye->sequence_start.sequence_start->handle;
 		goto return_ok;
 	}
 
@@ -5363,6 +5440,8 @@ fy_parse_node(struct fy_parser *fyp, struct fy_token *fyt, bool is_block)
 		fye->mapping_start.tag = tag;
 		fye->mapping_start.mapping_start = fy_scan_remove(fyp, fyt);
 		fy_parse_state_set(fyp, FYPS_FLOW_MAPPING_FIRST_KEY);
+
+		ev_handle = &fye->mapping_start.mapping_start->handle;
 		goto return_ok;
 	}
 
@@ -5378,6 +5457,8 @@ fy_parse_node(struct fy_parser *fyp, struct fy_token *fyt, bool is_block)
 		fye->sequence_start.tag = tag;
 		fye->sequence_start.sequence_start = fy_scan_remove(fyp, fyt);
 		fy_parse_state_set(fyp, FYPS_BLOCK_SEQUENCE_FIRST_ENTRY);
+
+		ev_handle = &fye->sequence_start.sequence_start->handle;
 		goto return_ok;
 	}
 
@@ -5393,6 +5474,8 @@ fy_parse_node(struct fy_parser *fyp, struct fy_token *fyt, bool is_block)
 		fye->mapping_start.tag = tag;
 		fye->mapping_start.mapping_start = fy_scan_remove(fyp, fyt);
 		fy_parse_state_set(fyp, FYPS_BLOCK_MAPPING_FIRST_KEY);
+
+		ev_handle = &fye->mapping_start.mapping_start->handle;
 		goto return_ok;
 	}
 
@@ -5435,9 +5518,24 @@ fy_parse_node(struct fy_parser *fyp, struct fy_token *fyt, bool is_block)
 	fye->type = FYET_SCALAR;
 	fye->scalar.anchor = anchor;
 	fye->scalar.tag = tag;
-	fye->scalar.value = NULL;
+
+	/* copy atom from the token and set to zero size at start */
+	fye->scalar.value = fy_token_create_rl(
+		fyp->recycled_token_list,  FYTT_SCALAR, &fyp->last_event_handle, FYSS_PLAIN);
+	fyp_error_check(fyp, fye->scalar.value, err_out,
+			"failed to allocate SCALAR token()");
+	/* mark it as a special value */
+	fye->scalar.value->scalar.is_null = true;
 
 return_ok:
+	if (ev_handle) {
+		fy_input_unref(fyp->last_event_handle.fyi);
+		fyp->last_event_handle = *ev_handle;
+		fyp->last_event_handle.start_mark = fyp->last_event_handle.end_mark;
+		fy_atom_reset_storage_hints(&fyp->last_event_handle);
+		fy_input_ref(fyp->last_event_handle.fyi);
+	}
+
 	fyp_parse_debug(fyp, "parse_node: > %s",
 			fy_event_type_txt[fye->type]);
 
@@ -5465,8 +5563,16 @@ fy_parse_empty_scalar(struct fy_parser *fyp)
 	fye->type = FYET_SCALAR;
 	fye->scalar.anchor = NULL;
 	fye->scalar.tag = NULL;
-	fye->scalar.value = NULL;
+
+	/* for empty scalar the last event handle does not change, only  */
+	fye->scalar.value = fy_token_create_rl(
+		fyp->recycled_token_list,  FYTT_SCALAR, &fyp->last_event_handle, FYSS_PLAIN);
+	fyp_error_check(fyp, fye->scalar.value, err_out,
+			"failed to allocate SCALAR token()");
+	/* mark it as a special value */
+	fye->scalar.value->scalar.is_null = true;
 	return fyep;
+
 err_out:
 	return NULL;
 }
@@ -5475,6 +5581,7 @@ int fy_parse_stream_start(struct fy_parser *fyp)
 {
 	fyp->indent = -2;
 	fyp->indent_line = -1;
+	fyp->starting_indent = -1;
 	fyp->generated_block_map = false;
 	fyp->last_was_comma = false;
 	fyp->flow = FYFT_NONE;
@@ -5510,6 +5617,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 	struct fy_token *version_directive;
 	struct fy_token_list tag_directives;
 	const struct fy_mark *fym;
+	struct fy_atom handle, *ev_handle;
 	struct fy_token *fytn;
 	char tbuf[16] __FY_DEBUG_UNUSED__;
 	int rc;
@@ -5554,6 +5662,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 
 	fyep = NULL;
 	fye = NULL;
+	ev_handle = NULL;
 
 	orig_state = fyp->state;
 	switch (fyp->state) {
@@ -5583,7 +5692,8 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 
 		fyp->stream_has_content = false;
 
-		return fyep;
+		ev_handle = &fye->stream_start.stream_start->handle;
+		break;
 
 	case FYPS_IMPLICIT_DOCUMENT_START:
 
@@ -5687,7 +5797,8 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 			fy_parse_state_set(fyp,
 				fy_parse_have_more_inputs(fyp) ? FYPS_NONE : FYPS_END);
 
-			return fyep;
+			ev_handle = &fye->stream_end.stream_end->handle;
+			break;
 		}
 
 		fyep = fy_parse_eventp_alloc(fyp);
@@ -5725,7 +5836,16 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 			memset(&fyds->start_mark, 0, sizeof(fyds->start_mark));
 
 		if (fyt->type != FYTT_DOCUMENT_START) {
-			fye->document_start.document_start = NULL;
+
+			/* copy atom from the token and set to zero size at start */
+			handle = fyt->handle;
+			handle.end_mark = handle.start_mark;
+			fy_atom_reset_storage_hints(&handle);
+
+			fye->document_start.document_start = fy_token_create_rl(
+					fyp->recycled_token_list, FYTT_DOCUMENT_START, &handle);
+			fyp_error_check(fyp, fye->document_start.document_start, err_out,
+					"failed to allocate DOCUMENT_START token()");
 
 			fyds->start_implicit = true;
 			fyp_parse_debug(fyp, "document_start_implicit=true");
@@ -5753,7 +5873,8 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		fye->document_start.document_state = fy_document_state_ref(fyds);
 		fye->document_start.implicit = fyds->start_implicit;
 
-		return fyep;
+		ev_handle = &fye->document_start.document_start->handle;
+		break;
 
 	case FYPS_DOCUMENT_END:
 
@@ -5791,8 +5912,14 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		/* document end */
 		fye->type = FYET_DOCUMENT_END;
 		if (fyt->type == FYTT_DOCUMENT_END) {
-			/* TODO pull the document end token and deliver */
-			fye->document_end.document_end = NULL;
+
+			handle = fyt->handle;
+			fy_atom_reset_storage_hints(&handle);
+
+			fye->document_end.document_end = fy_token_create_rl(
+					fyp->recycled_token_list, FYTT_DOCUMENT_END, &handle);
+			fyp_error_check(fyp, fye->document_end.document_end, err_out,
+					"failed to allocate DOCUMENT_END token()");
 			fyds->end_implicit = false;
 
 			/* reset document has content flag */
@@ -5803,7 +5930,15 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 			fyp->had_directives = false;
 
 		} else {
-			fye->document_end.document_end = NULL;
+
+			handle = fyt->handle;
+			handle.end_mark = handle.start_mark;
+			fy_atom_reset_storage_hints(&handle);
+
+			fye->document_end.document_end = fy_token_create_rl(
+					fyp->recycled_token_list, FYTT_DOCUMENT_END, &handle);
+			fyp_error_check(fyp, fye->document_end.document_end, err_out,
+					"failed to allocate DOCUMENT_END token()");
 			fyds->end_implicit = true;
 		}
 
@@ -5825,7 +5960,8 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 			fy_parse_state_set(fyp, FYPS_SINGLE_DOCUMENT_END);
 		}
 
-		return fyep;
+		ev_handle = &fye->document_end.document_end->handle;
+		break;
 
 	case FYPS_DOCUMENT_CONTENT:
 
@@ -5847,7 +5983,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 			fyep = fy_parse_empty_scalar(fyp);
 			fyp_error_check(fyp, fyep, err_out,
 					"fy_parse_empty_scalar() failed");
-			return fyep;
+			break;
 		}
 
 		fyp->document_has_content = true;
@@ -5861,7 +5997,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 				fyp->state == FYPS_DOCUMENT_CONTENT);
 		fyp_error_check(fyp, fyep, err_out,
 				"fy_parse_node() failed");
-		return fyep;
+		break;
 
 	case FYPS_BLOCK_SEQUENCE_FIRST_ENTRY:
 		is_first = true;
@@ -5912,14 +6048,14 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 				fyep = fy_parse_node(fyp, fyt, true);
 				fyp_error_check(fyp, fyep, err_out,
 						"fy_parse_node() failed");
-				return fyep;
+				break;
 			}
 			fy_parse_state_set(fyp, FYPS_BLOCK_SEQUENCE_ENTRY);
 
 			fyep = fy_parse_empty_scalar(fyp);
 			fyp_error_check(fyp, fyep, err_out,
 					"fy_parse_empty_scalar() failed");
-			return fyep;
+			break;
 		}
 
 		/* FYTT_BLOCK_END */
@@ -5946,7 +6082,8 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		} else
 			fye->sequence_end.sequence_end = fy_scan_remove(fyp, fyt);
 
-		return fyep;
+		ev_handle = &fye->sequence_end.sequence_end->handle;
+		break;
 
 	case FYPS_BLOCK_MAPPING_FIRST_KEY:
 		is_first = true;
@@ -6005,14 +6142,14 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 				fyep = fy_parse_node(fyp, fyt, true);
 				fyp_error_check(fyp, fyep, err_out,
 						"fy_parse_node() failed");
-				return fyep;
+				break;
 			}
 			fy_parse_state_set(fyp, FYPS_BLOCK_MAPPING_VALUE);
 
 			fyep = fy_parse_empty_scalar(fyp);
 			fyp_error_check(fyp, fyep, err_out,
 					"fy_parse_empty_scalar() failed");
-			return fyep;
+			break;
 		}
 
 		fyep = fy_parse_eventp_alloc(fyp);
@@ -6024,7 +6161,9 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		fy_parse_state_set(fyp, fy_parse_state_pop(fyp));
 		fye->type = FYET_MAPPING_END;
 		fye->mapping_end.mapping_end = fy_scan_remove(fyp, fyt);
-		return fyep;
+
+		ev_handle = &fye->mapping_end.mapping_end->handle;
+		break;
 
 	case FYPS_BLOCK_MAPPING_VALUE:
 
@@ -6050,7 +6189,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 				fyep = fy_parse_node(fyp, fyt, true);
 				fyp_error_check(fyp, fyep, err_out,
 						"fy_parse_node() failed");
-				return fyep;
+				break;
 			}
 		}
 
@@ -6059,7 +6198,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		fyep = fy_parse_empty_scalar(fyp);
 		fyp_error_check(fyp, fyep, err_out,
 				"fy_parse_empty_scalar() failed");
-		return fyep;
+		break;
 
 	case FYPS_FLOW_SEQUENCE_FIRST_ENTRY:
 		is_first = true;
@@ -6103,7 +6242,9 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 				fye->mapping_start.anchor = NULL;
 				fye->mapping_start.tag = NULL;
 				fye->mapping_start.mapping_start = fy_scan_remove(fyp, fyt);
-				return fyep;
+
+				ev_handle = &fye->mapping_start.mapping_start->handle;
+				break;
 			}
 
 			if (fyt->type != FYTT_FLOW_SEQUENCE_END) {
@@ -6114,7 +6255,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 				fyep = fy_parse_node(fyp, fyt, false);
 				fyp_error_check(fyp, fyep, err_out,
 						"fy_parse_node() failed");
-				return fyep;
+				break;
 			}
 		}
 
@@ -6134,7 +6275,9 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 
 		fye->type = FYET_SEQUENCE_END;
 		fye->sequence_end.sequence_end = fy_scan_remove(fyp, fyt);
-		return fyep;
+
+		ev_handle = &fye->sequence_end.sequence_end->handle;
+		break;
 
 	case FYPS_FLOW_SEQUENCE_ENTRY_MAPPING_KEY:
 		if (fyt->type != FYTT_VALUE && fyt->type != FYTT_FLOW_ENTRY &&
@@ -6146,7 +6289,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 			fyep = fy_parse_node(fyp, fyt, false);
 			fyp_error_check(fyp, fyep, err_out,
 					"fy_parse_node() failed");
-			return fyep;
+			break;
 		}
 
 		/* empty keys are not allowed in JSON mode */
@@ -6159,7 +6302,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		fyep = fy_parse_empty_scalar(fyp);
 		fyp_error_check(fyp, fyep, err_out,
 				"fy_parse_empty_scalar() failed");
-		return fyep;
+		break;
 
 	case FYPS_FLOW_SEQUENCE_ENTRY_MAPPING_VALUE:
 		if (fyt->type == FYTT_VALUE) {
@@ -6178,7 +6321,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 				fyep = fy_parse_node(fyp, fyt, false);
 				fyp_error_check(fyp, fyep, err_out,
 						"fy_parse_node() failed");
-				return fyep;
+				break;
 			}
 		}
 
@@ -6192,7 +6335,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		fyep = fy_parse_empty_scalar(fyp);
 		fyp_error_check(fyp, fyep, err_out,
 				"fy_parse_empty_scalar() failed");
-		return fyep;
+		break;
 
 	case FYPS_FLOW_SEQUENCE_ENTRY_MAPPING_END:
 		fy_parse_state_set(fyp, FYPS_FLOW_SEQUENCE_ENTRY);
@@ -6215,7 +6358,8 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 
 		fye->mapping_end.mapping_end = fytn;
 
-		return fyep;
+		ev_handle = &fye->mapping_end.mapping_end->handle;
+		break;
 
 	case FYPS_FLOW_MAPPING_FIRST_KEY:
 		is_first = true;
@@ -6269,7 +6413,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 					fyep = fy_parse_node(fyp, fyt, false);
 					fyp_error_check(fyp, fyep, err_out,
 							"fy_parse_node() failed");
-					return fyep;
+					break;
 				}
 
 				fy_parse_state_set(fyp, FYPS_FLOW_MAPPING_VALUE);
@@ -6277,7 +6421,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 				fyep = fy_parse_empty_scalar(fyp);
 				fyp_error_check(fyp, fyep, err_out,
 						"fy_parse_empty_scalar() failed");
-				return fyep;
+				break;
 			}
 
 			if (fyt->type != FYTT_FLOW_MAPPING_END) {
@@ -6294,7 +6438,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 				fyep = fy_parse_node(fyp, fyt, false);
 				fyp_error_check(fyp, fyep, err_out,
 						"fy_parse_node() failed");
-				return fyep;
+				break;
 			}
 		}
 
@@ -6308,7 +6452,8 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		fye->type = FYET_MAPPING_END;
 		fye->mapping_end.mapping_end = fy_scan_remove(fyp, fyt);
 
-		return fyep;
+		ev_handle = &fye->mapping_end.mapping_end->handle;
+		break;
 
 	case FYPS_FLOW_MAPPING_VALUE:
 		if (fyt->type == FYTT_VALUE) {
@@ -6330,7 +6475,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 				fyep = fy_parse_node(fyp, fyt, false);
 				fyp_error_check(fyp, fyep, err_out,
 						"fy_parse_node() failed");
-				return fyep;
+				break;
 			}
 		}
 
@@ -6344,7 +6489,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		fyep = fy_parse_empty_scalar(fyp);
 		fyp_error_check(fyp, fyep, err_out,
 				"fy_parse_empty_scalar() failed");
-		return fyep;
+		break;
 
 	case FYPS_FLOW_MAPPING_EMPTY_VALUE:
 		fy_parse_state_set(fyp, FYPS_FLOW_MAPPING_KEY);
@@ -6352,7 +6497,7 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		fyep = fy_parse_empty_scalar(fyp);
 		fyp_error_check(fyp, fyep, err_out,
 				"fy_parse_empty_scalar() failed");
-		return fyep;
+		break;
 
 	case FYPS_SINGLE_DOCUMENT_END:
 
@@ -6375,13 +6520,26 @@ static struct fy_eventp *fy_parse_internal(struct fy_parser *fyp)
 		fy_parse_state_set(fyp,
 			fy_parse_have_more_inputs(fyp) ? FYPS_NONE : FYPS_END);
 
-		return fyep;
+		ev_handle = &fye->stream_end.stream_end->handle;
+		break;
 
 	case FYPS_END:
 		/* should never happen */
 		assert(0);
 		break;
 	}
+
+	assert(fyep);
+
+	if (ev_handle) {
+		fy_input_unref(fyp->last_event_handle.fyi);
+		fyp->last_event_handle = *ev_handle;
+		fyp->last_event_handle.start_mark = fyp->last_event_handle.end_mark;
+		fy_atom_reset_storage_hints(&handle);
+		fy_input_ref(fyp->last_event_handle.fyi);
+	}
+
+	return fyep;
 
 err_out:
 	fy_token_unref_rl(fyp->recycled_token_list, version_directive);
@@ -6506,6 +6664,9 @@ static void fy_parse_input_reset(struct fy_parser *fyp)
 
 	fyp->pending_complex_key_column = -1;
 	fyp->last_block_mapping_key_line = -1;
+
+	fy_input_unref(fyp->last_event_handle.fyi);
+	fy_atom_reset(&fyp->last_event_handle);
 }
 
 int fy_parser_set_input_file(struct fy_parser *fyp, const char *file)
@@ -6750,15 +6911,28 @@ err_out_rc:
 
 struct fy_event *fy_parser_parse(struct fy_parser *fyp)
 {
-	struct fy_eventp *fyep;
+	struct fy_eventp *fyep, *fyep2;
 	enum fy_composer_return ret;
 
 	if (!fyp)
 		return NULL;
 
+	if ((fyp->cfg.flags & FYPCF_RESOLVE_DOCUMENT) && fy_reader_get_mode(fyp->reader) != fyrm_json) {
+		fyep = fy_parser_parse_resolve_prolog(fyp);
+		if (fyep)
+			return &fyep->e;
+	}
+
 	fyep = fy_parse_private(fyp);
 	if (!fyep)
 		return NULL;
+
+	if ((fyp->cfg.flags & FYPCF_RESOLVE_DOCUMENT) && fy_reader_get_mode(fyp->reader) != fyrm_json) {
+		fyep2 = fy_parser_parse_resolve_epilog(fyp, fyep);
+		if (!fyep2)
+			return NULL;
+		fyep = fyep2;
+	}
 
 	if (fyp->fyc) {
 		ret = fy_composer_process_event(fyp->fyc, &fyep->e);
@@ -6843,14 +7017,18 @@ static const struct fy_composer_ops parser_composer_ops = {
 int fy_parse_set_composer(struct fy_parser *fyp, fy_parse_composer_cb cb, void *userdata)
 {
 	struct fy_composer_cfg ccfg;
+	bool can_change_composer;
 
 	if (!fyp)
 		return -1;
 
+	can_change_composer = fyp->state == FYPS_NONE ||
+			      fyp->state == FYPS_END ||
+			      fyp->state == FYPS_DOCUMENT_START;
+
 	/* must not be in the middle of something */
-	fyp_error_check(fyp, fyp->state == FYPS_NONE || fyp->state == FYPS_END,
-			err_out, "cannot change composer state at state '%s'",
-				state_txt[fyp->state]);
+	fyp_error_check(fyp, can_change_composer, err_out,
+			"cannot change composer state at state '%s'", state_txt[fyp->state]);
 
 	/* clear */
 	if (!cb) {
@@ -7010,7 +7188,8 @@ int fy_parse_compose(struct fy_parser *fyp, fy_parse_composer_cb cb, void *userd
 		rc_out = 0;
 
 	/* reset the parser; the composer clear must always succeed */
-	fy_parser_reset(fyp);
+	if (ret == FYCR_ERROR)
+		fy_parser_reset(fyp);
 
 	/* clear composer */
 	rc = fy_parse_set_composer(fyp, NULL, NULL);
@@ -7021,4 +7200,819 @@ int fy_parse_compose(struct fy_parser *fyp, fy_parse_composer_cb cb, void *userd
 
 err_out:
 	return -1;
+}
+
+struct fy_streaming_alias *
+fy_parser_streaming_alias_lookup(struct fy_parser *fyp, struct fy_token *fyt_anchor)
+{
+	struct fy_streaming_alias *fysa;
+
+	/* XXX todo hashing */
+	for (fysa = fy_streaming_alias_list_head(&fyp->streaming_aliases); fysa != NULL; fysa = fy_streaming_alias_next(&fyp->streaming_aliases, fysa)) {
+		if (fy_token_cmp(fyt_anchor, fysa->anchor) == 0)
+			return fysa;
+	}
+	return NULL;
+}
+
+struct fy_streaming_alias *
+fy_parser_streaming_alias_lookup_pivot(struct fy_parser *fyp, struct fy_streaming_alias *fysa_pivot, struct fy_token *fyt_anchor)
+{
+	struct fy_streaming_alias *fysa;
+
+	assert(fysa_pivot);
+	/* at first do forwards starting at the pivot */
+	for (fysa = fy_streaming_alias_next(&fyp->streaming_aliases, fysa_pivot); fysa != NULL; fysa = fy_streaming_alias_next(&fyp->streaming_aliases, fysa)) {
+		if (fysa->anchor && fy_token_cmp(fyt_anchor, fysa->anchor) == 0)
+			return fysa;
+	}
+	/* not found? do backwards (more recent) */
+	for (fysa = fy_streaming_alias_prev(&fyp->streaming_aliases, fysa_pivot); fysa != NULL; fysa = fy_streaming_alias_prev(&fyp->streaming_aliases, fysa)) {
+		if (fysa->anchor && fy_token_cmp(fyt_anchor, fysa->anchor) == 0)
+			return fysa;
+	}
+	return NULL;
+}
+
+struct fy_streaming_alias *
+fy_parse_streaming_alias_create(struct fy_parser *fyp, struct fy_token *fyt_anchor)
+{
+	struct fy_streaming_alias *fysa;
+
+	fysa = fy_parse_streaming_alias_alloc(fyp);
+	fyp_error_check(fyp, fysa != NULL, err_out,
+			"fy_parse_streaming_alias_alloc() failed!");
+	fysa->anchor = fyt_anchor;
+	fysa->collecting = false;
+	fysa->mapping_nest = 0;
+	fysa->sequence_nest = 0;
+	fy_eventp_list_init(&fysa->events);
+
+	return fysa;
+
+err_out:
+	return NULL;
+}
+
+void
+fy_parse_streaming_alias_clean(struct fy_parser *fyp, struct fy_streaming_alias *fysa)
+{
+	struct fy_eventp *fyep;
+
+	if (!fyp || !fysa)
+		return;
+
+	fy_token_unref(fysa->anchor);
+	fysa->anchor = NULL;
+	fysa->collecting = false;
+	fysa->mapping_nest = 0;
+	fysa->sequence_nest = 0;
+	while ((fyep = fy_eventp_list_pop(&fysa->events)) != NULL)
+		fy_parse_eventp_recycle(fyp, fyep);
+}
+
+void fy_parse_streaming_aliases_reset(struct fy_parser *fyp)
+{
+	struct fy_streaming_alias *fysa;
+	struct fy_eventp *fyep;
+
+	if (!fyp)
+		return;
+
+	while ((fysa = fy_streaming_alias_list_pop(&fyp->streaming_aliases)) != NULL) {
+		fy_parse_streaming_alias_clean(fyp, fysa);
+		fy_parse_streaming_alias_recycle(fyp, fysa);
+	}
+	if (fyp->sas.stack != NULL && fyp->sas.stack != fyp->sas.local)
+		free(fyp->sas.stack);
+	memset(&fyp->sas, 0, sizeof(fyp->sas));
+	if (fyp->cts.stack != NULL && fyp->cts.stack != fyp->cts.local)
+		free(fyp->cts.stack);
+	memset(&fyp->cts, 0, sizeof(fyp->cts));
+
+	while ((fyep = fy_eventp_list_pop(&fyp->mks.args)) != NULL)
+		fy_parse_eventp_recycle(fyp, fyep);
+	memset(&fyp->mks, 0, sizeof(fyp->mks));
+	fy_eventp_list_init(&fyp->mks.args);
+}
+
+struct fy_streaming_alias_state *
+fy_parse_streaming_alias_state_push(struct fy_parser *fyp, struct fy_streaming_alias *fysa)
+{
+	struct fy_streaming_alias_state *new_stack;
+	struct fy_streaming_alias_state *fysas;
+
+	/* if first one, just point to the local area */
+	if (fyp->sas.stack == NULL) {
+		fyp->sas.stack = fyp->sas.local;
+		fyp->sas.top = 0;
+		fyp->sas.alloc = ARRAY_SIZE(fyp->sas.local);
+	}
+	/* grow the stack if required */
+	if (fyp->sas.top >= fyp->sas.alloc) {
+		assert(fyp->sas.alloc > 0);
+		assert(fyp->sas.stack);
+		new_stack = malloc(sizeof(*new_stack) * fyp->sas.alloc * 2);
+		fyp_error_check(fyp, new_stack != NULL, err_out,
+				"realloc() failed!");
+		memcpy(new_stack, fyp->sas.stack, sizeof(*new_stack) * fyp->sas.alloc);
+		fyp->sas.alloc *= 2;
+		if (fyp->sas.stack != fyp->sas.local)
+			free(fyp->sas.stack);
+		fyp->sas.stack = new_stack;
+	}
+	/* finally push it */
+	fysas = &fyp->sas.stack[fyp->sas.top++];
+
+	fysas->fysa = fysa;
+	fysas->next = fy_eventp_list_head(&fysa->events);
+
+	return fysas;
+err_out:
+	return NULL;
+}
+
+struct fy_streaming_alias_state *
+fy_parse_streaming_alias_state_pop(struct fy_parser *fyp)
+{
+	struct fy_streaming_alias_state *fysas;
+
+	if (fyp->sas.top <= 0)
+		return NULL;
+
+	fysas = &fyp->sas.stack[--fyp->sas.top];
+	fysas->fysa = NULL;
+	fysas->next = NULL;
+	if (fyp->sas.top <= 0)
+		return NULL;
+	return &fyp->sas.stack[fyp->sas.top - 1];
+}
+
+struct fy_streaming_alias_state *
+fy_parse_streaming_alias_state_top(struct fy_parser *fyp)
+{
+	if (fyp->sas.top <= 0)
+		return NULL;
+	return &fyp->sas.stack[fyp->sas.top - 1];
+}
+
+void
+fy_parse_streaming_alias_state_next_event(struct fy_parser *fyp)
+{
+	struct fy_streaming_alias_state *fysas;
+
+	fysas = fy_parse_streaming_alias_state_top(fyp);
+	if (!fysas)
+		return;
+
+	fysas->next = fy_eventp_next(&fysas->fysa->events, fysas->next);
+	while (!fysas->next) {
+		fysas = fy_parse_streaming_alias_state_pop(fyp);
+		if (!fysas)
+			break;
+	}
+}
+
+static inline int
+fy_parse_streaming_alias_collection_state_set_top(struct fy_parser *fyp, int cts)
+{
+	int pos, off, old_cts;
+
+	if (fyp->cts.top < 2)
+		return -1;
+
+	cts &= 3;	/* keep 2 bits */
+
+	/* get position and offset */
+	pos = (fyp->cts.top - 2) / (sizeof(*fyp->cts.stack) * 8);
+	off = (fyp->cts.top - 2) % (sizeof(*fyp->cts.stack) * 8);
+
+	old_cts = (int)((fyp->cts.stack[pos] >> off) & 3);
+
+	/* clear the bits first */
+	fyp->cts.stack[pos] &= ~(3 << off);
+	/* set the state */
+	fyp->cts.stack[pos] |= (cts & 3) << off;
+
+	return old_cts;
+}
+
+static inline int
+fy_parse_streaming_alias_collection_state_top(struct fy_parser *fyp)
+{
+	int pos, off;
+
+	if (fyp->cts.top < 2)
+		return -1;
+
+	/* get position and offset */
+	pos = (fyp->cts.top - 2) / (sizeof(*fyp->cts.stack) * 8);
+	off = (fyp->cts.top - 2) % (sizeof(*fyp->cts.stack) * 8);
+
+	return (int)((fyp->cts.stack[pos] >> off) & 3);
+}
+
+static inline bool
+fy_parse_streaming_alias_collection_state_in_map_key(struct fy_parser *fyp)
+{
+	int cts = fy_parse_streaming_alias_collection_state_top(fyp);
+	return cts == FYCTS_MAP_KEY;
+}
+
+static inline void
+fy_parse_streaming_alias_collection_state_toggle_map(struct fy_parser *fyp)
+{
+	int cts = fy_parse_streaming_alias_collection_state_top(fyp);
+	if (cts >= 0 && (cts & FYCTS_MAP))
+		fy_parse_streaming_alias_collection_state_set_top(fyp, cts ^ FYCTS_MAP_TOGGLE);
+}
+
+int
+fy_parse_streaming_alias_collection_state_push(struct fy_parser *fyp, int cts)
+{
+	uint32_t *new_stack;
+	int size;
+
+	assert(cts >= 0);
+
+	/* if first one, just point to the local area */
+	if (fyp->cts.stack == NULL) {
+		fyp->cts.stack = fyp->cts.local;
+		fyp->cts.top = 0;
+		fyp->cts.alloc = sizeof(fyp->cts.local) * 8;	/* in bits */
+	}
+	/* grow the stack if required */
+	if (fyp->cts.top + 2 >= fyp->cts.alloc) {
+		assert(fyp->cts.alloc > 0);
+		assert(fyp->cts.stack);
+		size = fyp->cts.alloc / 8;	/* convert to bytes */
+		new_stack = malloc(size * 2);
+		fyp_error_check(fyp, new_stack != NULL, err_out,
+				"realloc() failed!");
+		memcpy(new_stack, fyp->cts.stack, size);
+		memset((uint8_t *)new_stack + size, 0, size);
+		fyp->cts.alloc *= 2;
+		if (fyp->cts.stack != fyp->cts.local)
+			free(fyp->cts.stack);
+		fyp->cts.stack = new_stack;
+	}
+
+	fyp->cts.top += 2;
+	fy_parse_streaming_alias_collection_state_set_top(fyp, cts);
+	return cts;
+err_out:
+	return -1;
+}
+
+int
+fy_parse_streaming_alias_collection_state_pop(struct fy_parser *fyp)
+{
+	int ret;
+
+	ret = fy_parse_streaming_alias_collection_state_top(fyp);
+	if (ret >= 0)
+		fyp->cts.top -= 2;
+	return ret;
+}
+
+static int
+fy_parser_event_resolve_hook_collect(struct fy_parser *fyp, struct fy_eventp *fyep)
+{
+	struct fy_eventp *fyep_clone = NULL;
+	struct fy_streaming_alias *fysa;
+	long map_add, seq_add;
+
+	if (!fyp || !fyep)
+		return -1;
+
+	map_add = seq_add = 0;
+	switch (fyep->e.type) {
+	case FYET_MAPPING_START:
+		map_add = 1;
+		break;
+	case FYET_MAPPING_END:
+		map_add = -1;
+		break;
+	case FYET_SEQUENCE_START:
+		seq_add = 1;
+		break;
+	case FYET_SEQUENCE_END:
+		seq_add = -1;
+		break;
+	default:
+		break;
+	}
+
+	/* for all streaming aliases that are collecting... */
+	for (fysa = fy_streaming_alias_list_head(&fyp->streaming_aliases); fysa != NULL; fysa = fy_streaming_alias_next(&fyp->streaming_aliases, fysa)) {
+		if (!fysa->collecting)
+			continue;
+
+		/* clone event, stripping the anchors */
+		fyep_clone = fy_parse_eventp_clone(fyp, fyep, true);
+		fyp_error_check(fyp, fyep_clone != NULL, err_out,
+				"fy_parse_eventp_clone() failed!");
+
+		/* add to the list */
+		fy_eventp_list_add_tail(&fysa->events, fyep_clone);
+		fyep_clone = NULL;
+
+		/* the scalar will be collected every time */
+		fysa->mapping_nest += map_add;
+		fysa->sequence_nest += seq_add;
+
+		if (fysa->mapping_nest == 0 && fysa->sequence_nest == 0)
+			fysa->collecting = false;
+	}
+
+	return 0;
+
+err_out:
+	fy_parse_eventp_recycle(fyp, fyep_clone);
+	fyp->stream_error = true;
+	return -1;
+}
+
+struct fy_eventp *fy_parser_event_resolve_hook_alias(struct fy_parser *fyp, struct fy_eventp *fyep)
+{
+	struct fy_token *fyt_anchor = NULL;
+	struct fy_streaming_alias *fysa;
+	struct fy_streaming_alias_state *fysas;
+
+	if (!fyp || !fyep)
+		return NULL;
+
+	/* if it's not an alias, continue normal processing */
+	if (fyep->e.type != FYET_ALIAS)
+		return fyep;
+
+	/* it's an alias, get the token and dispose the event */
+	fyt_anchor = fyep->e.alias.anchor;
+	fyep->e.alias.anchor = NULL;
+	fy_parse_eventp_recycle(fyp, fyep);
+	fyep = NULL;
+
+	/* start generation of alias events */
+	fysa = fy_parser_streaming_alias_lookup(fyp, fyt_anchor);
+
+	/* we don't support forward aliases for now like we do in document mode ... */
+	FYP_TOKEN_ERROR_CHECK(fyp, fyt_anchor, FYEM_PARSE,
+			fysa, err_out,
+			"alias not found; note streaming mode does not support forward alias references");
+
+	/* if this is a reference to a collecting alias, then it's recursive */
+	FYP_TOKEN_ERROR_CHECK(fyp, fyt_anchor, FYEM_PARSE,
+			!fysa->collecting, err_out,
+			"Recursive alias reference detected");
+
+	fy_token_unref(fyt_anchor);
+	fyt_anchor = NULL;
+
+	fysas = fy_parse_streaming_alias_state_push(fyp, fysa);
+	fyp_error_check(fyp, fysas, err_out,
+			"fy_parse_streaming_alias_push() failed!");
+	assert(fysas->next);
+
+	fyep = fy_parse_eventp_clone(fyp, fysas->next, true);
+	fyp_error_check(fyp, fyep != NULL, err_out,
+			"fy_parse_eventp_clone() failed!");
+
+	/* advance event */
+	fy_parse_streaming_alias_state_next_event(fyp);
+
+	return fyep;
+
+err_out:
+	fy_token_unref(fyt_anchor);
+	fyp->stream_error = true;
+	return NULL;
+}
+
+struct fy_eventp *fy_parser_event_resolve_hook_anchor_start(struct fy_parser *fyp, struct fy_eventp *fyep)
+{
+	struct fy_token *fyt_anchor = NULL;
+	struct fy_streaming_alias *fysa = NULL;
+
+	if (!fyep)
+		return NULL;
+
+	/* is there an anchor?, is so get it and clear it */
+	fyt_anchor = fy_event_get_and_clear_anchor_token(&fyep->e);
+	if (!fyt_anchor)
+		return fyep;
+
+	fysa = fy_parse_streaming_alias_create(fyp, fyt_anchor);
+	fyp_error_check(fyp, fysa != NULL, err_out,
+		"fy_parser_streaming_alias_create() failed!");
+	fyt_anchor = NULL;
+
+	/* we just mark that we're collecting
+	 * the collection hook will pick up the first event
+	 * including the scalar one
+	 */
+	fysa->collecting = true;
+	fysa->sequence_nest = 0;
+	fysa->mapping_nest = 0;
+
+	/* always add to the head of the list (overrides what follows with the same name) */
+	fy_streaming_alias_list_add(&fyp->streaming_aliases, fysa);
+
+	return fyep;
+
+err_out:
+	fy_token_unref(fyt_anchor);
+	fy_parse_streaming_alias_clean(fyp, fysa);
+	fy_parse_streaming_alias_recycle(fyp, fysa);
+	fy_parse_eventp_recycle(fyp, fyep);
+	return NULL;
+}
+
+static struct fy_document *
+fy_parser_get_merge_key_argument(struct fy_parser *fyp, struct fy_document_builder *fydb, struct fy_node *fyn)
+{
+	struct fy_streaming_alias *fysa;
+	struct fy_document *fyd_new = NULL;
+	struct fy_document_state *fyds = NULL;
+	int rc;
+
+	if (!fy_node_is_alias(fyn))
+		return NULL;
+
+	/* get the alias */
+	fysa = fy_parser_streaming_alias_lookup(fyp, fyn->scalar);
+	FYP_TOKEN_ERROR_CHECK(fyp, fyn->scalar, FYEM_PARSE,
+			fysa, err_out,
+			"Unable to find merge key argument alias");
+
+	/* if this is a reference to a collecting alias, then it's recursive */
+	FYP_TOKEN_ERROR_CHECK(fyp, fyn->scalar, FYEM_PARSE,
+			!fysa->collecting, err_out,
+			"merge key recursive alias reference detected");
+
+	fyds = fy_parser_get_document_state(fyp);
+	fyp_error_check(fyp, fyds, err_out,
+			"fy_parser_get_document_state() failed");
+
+	rc = fy_document_builder_set_in_document(fydb, fyds, true);
+	fyp_error_check(fyp, !rc, err_out,
+			"fy_document_builder_set_target_document() failed\n");
+
+	/* build a document from the events of the alias (must be the same) */
+	fyd_new = fy_document_builder_event_document(fydb, &fysa->events);
+	fyp_error_check(fyp, fyd_new, err_out,
+			"fy_document_builder_event_document() failed\n");
+
+	FYP_TOKEN_ERROR_CHECK(fyp, fyn->scalar, FYEM_PARSE,
+			fy_node_is_mapping(fyd_new->root), err_out,
+			"alias argument does not refer to mapping");
+
+	return fyd_new;
+
+err_out:
+	fy_document_destroy(fyd_new);
+	return NULL;
+}
+
+static struct fy_document *
+fy_parser_get_merge_key_document(struct fy_parser *fyp, struct fy_eventp *fyep)
+{
+	struct fy_event *fye;
+	struct fy_document_builder_cfg cfg;
+	struct fy_document_builder *fydb = NULL;
+	struct fy_document *fyd = NULL, *fyd_arg = NULL;
+	struct fy_document_state *fyds;
+	struct fy_node *fyn = NULL, *fyn_src = NULL;
+	struct fy_node *new_root = NULL;
+	struct fy_node_pair *fynp, *fynp_exists;
+	void *iters, *iterm;
+	int rc;
+
+	fye = &fyep->e;
+
+	memset(&cfg, 0, sizeof(cfg));
+	cfg.parse_cfg = fyp->cfg;
+	cfg.diag = fy_diag_ref(fyp->diag);
+
+	fydb = fy_document_builder_create(&cfg);
+	fyp_error_check(fyp, fydb, err_out,
+			"fy_document_builder_create() failed\n");
+
+	fyds = fy_parser_get_document_state(fyp);
+	/* start with this document state */
+	fyds = fy_parser_get_document_state(fyp);
+	rc = fy_document_builder_set_in_document(fydb, fyds, true);
+	fyp_error_check(fyp, !rc, err_out,
+			"fy_document_builder_set_in_document() failed\n");
+
+	fyd = fy_document_builder_load_document(fydb, fyp);
+	fyp_error_check(fyp, fyd, err_out,
+			"fy_document_builder_load_document() failed\n");
+
+	FYP_TOKEN_ERROR_CHECK(fyp, fy_event_get_token(fye), FYEM_PARSE,
+			fyd->root, err_out,
+			"merge key arguments must exist");
+
+	/* single alias, replace */
+	if (fy_node_is_alias(fyd->root)) {
+		fyd_arg = fy_parser_get_merge_key_argument(fyp, fydb, fyd->root);
+		fyp_error_check(fyp, fyd_arg, err_out,
+				"fy_parser_get_merge_key_argument() failed\n");
+		fy_node_free(fyd->root);
+		fyd->root = fy_node_copy(fyd, fyd_arg->root);
+
+		fy_document_destroy(fyd_arg);
+		fyd_arg = NULL;
+
+	} else if (fy_node_is_mapping(fyd->root)) {
+
+		/* nothing, already a mapping */
+
+	} else if (fy_node_is_sequence(fyd->root)) {
+
+		new_root = fy_node_create_mapping(fyd);
+		fyp_error_check(fyp, new_root, err_out,
+				"fy_node_create_mapping() failed\n");
+
+		iters = NULL;
+		while ((fyn_src = fy_node_sequence_iterate(fyd->root, &iters)) != NULL) {
+
+			if (fy_node_is_alias(fyn_src)) {
+				fyd_arg = fy_parser_get_merge_key_argument(fyp, fydb, fyn_src);
+				fyp_error_check(fyp, fyd_arg, err_out,
+						"fy_parser_get_merge_key_argument() failed\n");
+
+				fyn = fy_node_copy(fyd, fyd_arg->root);
+				fyp_error_check(fyp, fyn, err_out,
+						"fy_node_copy() failed\n");
+				fy_document_destroy(fyd_arg);
+				fyd_arg = NULL;
+
+			} else {
+				FYP_NODE_ERROR_CHECK(fyp, fyn_src, FYEM_PARSE,
+						fy_node_is_mapping(fyn_src), err_out,
+						"merge key argument is not a mapping or an alias to such");
+				fyn = fy_node_copy(fyd, fyn_src);
+				fyp_error_check(fyp, fyn, err_out,
+						"fy_node_copy() failed\n");
+			}
+
+			iterm = NULL;
+			while ((fynp = fy_node_mapping_iterate(fyn, &iterm)) != NULL) {
+				fynp_exists = fy_node_mapping_lookup_pair(new_root, fynp->key);
+
+				/* do not override existing keys */
+				if (fynp_exists)
+					continue;
+
+				/* add it to the mapping */
+				rc = fy_node_mapping_append(new_root, fy_node_copy(fyd, fynp->key), fy_node_copy(fyd, fynp->value));
+				fyp_error_check(fyp, !rc, err_out,
+						"fy_node_mapping_append() failed\n");
+			}
+
+			/* and we're done with it */
+			fy_node_free(fyn);
+			fyn = NULL;
+		}
+		fy_node_free(fyd->root);
+		fyd->root = new_root;
+
+	} else {
+		FYP_TOKEN_ERROR(fyp, fy_event_get_token(fye), FYEM_PARSE,
+				"merge key argument is neither an alias or a mapping");
+		goto err_out;
+	}
+
+	fy_document_builder_destroy(fydb);
+	fydb = NULL;
+
+	return fyd;
+
+err_out:
+	fy_node_free(new_root);
+	fy_document_destroy(fyd_arg);
+	fy_document_destroy(fyd);
+	fy_document_builder_destroy(fydb);
+	return NULL;
+}
+
+struct fy_eventp *fy_parser_event_resolve_hook_merge_key_start(struct fy_parser *fyp, struct fy_eventp *fyep)
+{
+	struct fy_document *fyd = NULL;
+	struct fy_document_iterator *fydi = NULL;
+	struct fy_eventp *fyep_next = NULL;
+	struct fy_event *fye;
+	struct fy_streaming_alias *fysa;
+	struct fy_streaming_alias_state *fysas;
+
+	FYP_TOKEN_ERROR_CHECK(fyp, fyep->e.scalar.value, FYEM_PARSE,
+			!fyp->mks.active, err_out,
+			"No recursive merge key processing is supported");
+
+	fyd = fy_parser_get_merge_key_document(fyp, fyep);
+	FYP_TOKEN_ERROR_CHECK(fyp, fyep->e.scalar.value, FYEM_PARSE,
+			fyd, err_out,
+			"No merge key argument document");
+
+	fysa = fy_parse_streaming_alias_create(fyp, NULL);
+	fyp_error_check(fyp, fysa, err_out,
+			"fy_parse_streaming_alias_create() failed");
+
+	fydi = fy_document_iterator_create();
+	fyp_error_check(fyp, fydi, err_out,
+			"fy_document_iterator_create() failed");
+
+	fy_document_iterator_node_start(fydi, fyd->root);
+
+	/* now append all to the (fake) streaming anchor */
+	while ((fye = fy_document_iterator_body_next(fydi)) != NULL) {
+		fyep_next = container_of(fye, struct fy_eventp, e);
+		fy_eventp_list_add_tail(&fysa->events, fyep_next);
+	}
+
+	fy_document_iterator_destroy(fydi);
+	fy_document_destroy(fyd);
+	fyd = NULL;
+
+	/* and add it to the start of the list */
+	fy_streaming_alias_list_add(&fyp->streaming_aliases, fysa);
+
+	/* OK, trim mapping start and end */
+	fyep_next = fy_eventp_list_head(&fysa->events);
+	fyp_error_check(fyp, fyep_next->e.type == FYET_MAPPING_START, err_out,
+			"not a mapping merge key start");
+	fy_eventp_list_del(&fysa->events, fyep_next);
+	fy_eventp_free(fyep_next);
+
+	fyep_next = fy_eventp_list_tail(&fysa->events);
+	fyp_error_check(fyp, fyep_next->e.type == FYET_MAPPING_END, err_out,
+			"not a mapping merge key end");
+	fy_eventp_list_del(&fysa->events, fyep_next);
+	fy_eventp_free(fyep_next);
+
+	/* OK, push the new state */
+	fysas = fy_parse_streaming_alias_state_push(fyp, fysa);
+	fyp_error_check(fyp, fysas, err_out,
+			"fy_parse_streaming_alias_push() failed!");
+	assert(fysas->next);
+
+	/* dispose of the event */
+	fy_parse_eventp_recycle(fyp, fyep);
+	fyep = NULL;
+
+	fyep = fy_parse_eventp_clone(fyp, fysas->next, true);
+	fyp_error_check(fyp, fyep != NULL, err_out,
+			"fy_parse_eventp_clone() failed!");
+
+	/* advance event */
+	fy_parse_streaming_alias_state_next_event(fyp);
+
+	return fyep;
+
+err_out:
+	fy_document_iterator_destroy(fydi);
+	fy_document_destroy(fyd);
+	fy_parse_eventp_recycle(fyp, fyep_next);
+	fy_parse_eventp_recycle(fyp, fyep);
+	return NULL;
+}
+
+struct fy_eventp *fy_parser_event_resolve_hook_merge_key(struct fy_parser *fyp, struct fy_eventp *fyep)
+{
+	/* will toggle the map key bit if it is in a mapping */
+	fy_parse_streaming_alias_collection_state_toggle_map(fyp);
+	switch (fyep->e.type) {
+	case FYET_SCALAR:
+		/* if a merge key is detected do the dance */
+		if (fy_parse_streaming_alias_collection_state_in_map_key(fyp) &&
+		    fy_token_scalar_style(fyep->e.scalar.value) == FYSS_PLAIN &&
+		    fy_plain_atom_streq(fy_token_atom(fyep->e.scalar.value), "<<"))
+			return fy_parser_event_resolve_hook_merge_key_start(fyp, fyep);
+		break;
+	case FYET_ALIAS:
+		/* nothing for alias */
+		break;
+	case FYET_MAPPING_START:
+		fy_parse_streaming_alias_collection_state_push(fyp, FYCTS_MAP_VAL);	/* it will toggle to key at the first one */
+		break;
+	case FYET_SEQUENCE_START:
+		fy_parse_streaming_alias_collection_state_push(fyp, FYCTS_SEQ);
+		break;
+	case FYET_MAPPING_END:
+	case FYET_SEQUENCE_END:
+		fy_parse_streaming_alias_collection_state_pop(fyp);
+		break;
+	default:
+		break;
+	}
+
+	return fyep;
+}
+
+/* NOTE: order is _very_ important, do not re-arrange if you're not sure */
+struct fy_eventp *fy_parser_event_resolve_hook(struct fy_parser *fyp, struct fy_eventp *fyep)
+{
+	int rc;
+
+	/* merge key processing for version 1.1 only! */
+	if (fy_reader_get_mode(fyp->reader) == fyrm_yaml_1_1) {
+		fyep = fy_parser_event_resolve_hook_merge_key(fyp, fyep);
+		fyp_error_check(fyp, fyep != NULL, err_out,
+				"fy_parser_event_resolve_hook_collection_tracking() failed!");
+	}
+
+	/* anchor marking */
+	fyep = fy_parser_event_resolve_hook_anchor_start(fyp, fyep);
+	fyp_error_check(fyp, fyep != NULL, err_out,
+			"fy_parser_event_resolve_hook_anchor_start() failed!");
+
+	/* collect afterwards */
+	rc = fy_parser_event_resolve_hook_collect(fyp, fyep);
+	fyp_error_check(fyp, !rc, err_out,
+			"fy_parser_event_resolve_hook_collect() failed!");
+
+	/* finally do first entry into alias processing */
+	fyep = fy_parser_event_resolve_hook_alias(fyp, fyep);
+	fyp_error_check(fyp, fyep != NULL, err_out,
+			"fy_parser_event_resolve_hook_alias() failed!");
+
+	return fyep;
+
+err_out:
+	return NULL;
+}
+
+struct fy_eventp *fy_parser_parse_resolve_prolog(struct fy_parser *fyp)
+{
+	struct fy_streaming_alias *fysa;
+	struct fy_streaming_alias_state *fysas;
+	struct fy_eventp *fyep, *fyep_src;
+	bool was_merge_key;
+	int rc;
+
+	if (!(fyp->cfg.flags & FYPCF_RESOLVE_DOCUMENT))
+		return NULL;
+
+	fysas = fy_parse_streaming_alias_state_top(fyp);
+	if (!fysas)
+		return NULL;
+
+	was_merge_key = false;
+	for (;;) {
+		fysa = fysas->fysa;
+		assert(fysa);
+
+		assert(fysas->next != NULL);
+
+		/* keep track of it */
+		fyep_src = fysas->next;
+
+		/* merge key entries don't have an anchor */
+		was_merge_key = fysa->anchor == NULL;
+
+		/* advance event */
+		fy_parse_streaming_alias_state_next_event(fyp);
+
+		/* not an alias, continue normally */
+		if (fyep_src->e.type != FYET_ALIAS)
+			break;
+
+		/* get the anchor that was defined closest to this one */
+		fysa = fy_parser_streaming_alias_lookup_pivot(fyp, fysa, fyep_src->e.alias.anchor);
+		fyp_error_check(fyp, fysa, err_out,
+				"fy_parser_streaming_alias_lookup_pivot() failed!");
+
+		/* and push */
+		fysas = fy_parse_streaming_alias_state_push(fyp, fysa);
+		fyp_error_check(fyp, fysas, err_out,
+				"fy_parse_streaming_alias_state_push() failed!");
+	}
+
+	fyep = fy_parse_eventp_clone(fyp, fyep_src, true);
+	fyp_error_check(fyp, fyep != NULL, err_out,
+			"fy_parse_eventp_clone() failed!");
+
+	if (was_merge_key) {
+		rc = fy_parser_event_resolve_hook_collect(fyp, fyep_src);
+		fyp_error_check(fyp, !rc, err_out,
+			"fy_parser_event_resolve_hook_collect() failed!");
+	}
+
+	return fyep;
+
+err_out:
+	fyp->stream_error = true;
+	return NULL;
+}
+
+struct fy_eventp *fy_parser_parse_resolve_epilog(struct fy_parser *fyp, struct fy_eventp *fyep)
+{
+	if (!(fyp->cfg.flags & FYPCF_RESOLVE_DOCUMENT))
+		return fyep;
+
+	fyep = fy_parser_event_resolve_hook(fyp, fyep);
+	if (!fyep)
+		fyp->stream_error = true;
+
+	return fyep;
 }

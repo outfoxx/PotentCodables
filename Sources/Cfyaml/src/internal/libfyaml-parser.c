@@ -18,6 +18,8 @@
 #include <unistd.h>
 #include <limits.h>
 #include <ctype.h>
+#include <time.h>
+#include <inttypes.h>
 
 #include <libfyaml.h>
 
@@ -27,6 +29,7 @@
 
 #include "fy-parse.h"
 #include "fy-walk.h"
+#include "fy-blob.h"
 
 #include "fy-valgrind.h"
 
@@ -94,7 +97,7 @@ static struct option lopts[] = {
 #define LIBYAML_MODES	""
 #endif
 
-#define MODES	"parse|scan|copy|testsuite|dump|dump2|build|walk|reader|compose|iterate|comment|pathspec" LIBYAML_MODES
+#define MODES	"parse|scan|copy|testsuite|dump|dump2|build|walk|reader|compose|iterate|comment|pathspec|shell-split|parse-timing" LIBYAML_MODES
 
 static void display_usage(FILE *fp, char *progname)
 {
@@ -2882,6 +2885,71 @@ int do_build(const struct fy_parse_cfg *cfg, int argc, char *argv[])
 	do_accel_test(cfg, argc, argv);
 #endif
 
+	struct fy_emitter_cfg ecfg;
+	struct fy_emitter* emit;
+
+	memset(&ecfg, 0, sizeof(ecfg));
+	// ecfg.flags = FYECF_MODE_BLOCK;
+	ecfg.flags = FYECF_MODE_MANUAL;
+
+	emit = fy_emitter_create(&ecfg);
+
+	// key:
+	// - a: 1
+
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_STREAM_START));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_DOCUMENT_START, false, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_START, FYNS_BLOCK, NULL, NULL));
+	fy_emit_event(emit,
+		fy_emit_event_create(emit, FYET_SCALAR, FYSS_PLAIN, "key", FY_NT, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SEQUENCE_START, FYNS_BLOCK, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_START, FYNS_BLOCK, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SCALAR, FYSS_PLAIN, "a", FY_NT, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SCALAR, FYSS_PLAIN, "1", FY_NT, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_END));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SEQUENCE_END));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_END));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_DOCUMENT_END, true, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_STREAM_END));
+
+	fy_emitter_destroy(emit);
+
+	emit = fy_emitter_create(&ecfg);
+
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_STREAM_START));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_DOCUMENT_START, false, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_START, FYNS_FLOW, NULL, NULL));
+	fy_emit_event(emit,
+		fy_emit_event_create(emit, FYET_SCALAR, FYSS_PLAIN, "key", FY_NT, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SEQUENCE_START, FYNS_FLOW, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_START, FYNS_FLOW, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SCALAR, FYSS_PLAIN, "a", FY_NT, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SCALAR, FYSS_PLAIN, "1", FY_NT, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_END));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SEQUENCE_END));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_END));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_DOCUMENT_END, true, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_STREAM_END));
+
+	fy_emitter_destroy(emit);
+
+	emit = fy_emitter_create(&ecfg);
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_STREAM_START));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_DOCUMENT_START, false, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_START, FYNS_BLOCK, NULL, NULL));
+	fy_emit_event(emit,
+		fy_emit_event_create(emit, FYET_SCALAR, FYSS_PLAIN, "key", FY_NT, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SEQUENCE_START, FYNS_BLOCK, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_START, FYNS_BLOCK, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SCALAR, FYSS_PLAIN, "a", FY_NT, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SCALAR, FYSS_PLAIN, "1", FY_NT, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_END));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_SEQUENCE_END));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_MAPPING_END));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_DOCUMENT_END, true, NULL, NULL));
+	fy_emit_event(emit, fy_emit_event_create(emit, FYET_STREAM_END));
+	fy_emitter_destroy(emit);
+
 	return 0;
 }
 
@@ -3615,7 +3683,7 @@ int do_walk(struct fy_parser *fyp, const char *walkpath, const char *walkstart, 
 	struct fy_path_exec_cfg xcfg_local, *xcfg = &xcfg_local;
 	char *path;
 	unsigned int flags;
-	int rc, count;
+	int rc;
 
 	flags = 0;
 	if (sort)
@@ -3651,7 +3719,6 @@ int do_walk(struct fy_parser *fyp, const char *walkpath, const char *walkstart, 
 	fypx = fy_path_exec_create(xcfg);
 	assert(fypx);
 
-	count = 0;
 	while ((fyd = fy_parse_load_document(fyp)) != NULL) {
 
 		if (resolve) {
@@ -3743,8 +3810,6 @@ next:
 		fy_walk_result_free_rl(NULL, result);
 
 		fy_parse_document_destroy(fyp, fyd);
-
-		count++;
 	}
 
 	fy_path_exec_unref(fypx);
@@ -3755,6 +3820,291 @@ next:
 
 	fy_input_unref(fyi);
 	fy_path_parser_cleanup(fypp);
+
+	return 0;
+}
+
+int do_crash(const struct fy_parse_cfg *cfg, int argc, char *argv[])
+{
+	struct fy_document *fyd = NULL;
+	struct fy_node *fyn = NULL;
+	//                                                 illegal>
+	char key[12] = {0x26, 0x2b, 0x74, 0x68, 0x65, 0x62, 0x65, 0x86, 0x6e, 0x67, 0x77, 0x00};
+	int rc = -1;
+
+	fyd = fy_document_build_from_string(cfg, "base: &base\n    name: this-is-a-name\n", FY_NT);
+	if (!fyd) {
+		fprintf(stderr, "failed to build document");
+		goto failed;
+	}
+
+	fyn = fy_node_buildf(fyd, "abc");
+	if (!fyn) {
+		fprintf(stderr, "failed to build a node");
+		goto failed;
+	}
+
+	rc = fy_document_insert_at(fyd, key, FY_NT, fyn);
+	fyn = NULL;
+	if (rc) {
+		fprintf(stderr, "failed to insert document\n");
+		goto failed;
+	}
+	rc = fy_emit_document_to_fp(fyd, FYECF_DEFAULT | FYECF_SORT_KEYS, stdout);
+	if (rc) {
+		fprintf(stderr, "failed to emit document to stdout\n");
+		goto failed;
+	}
+
+	rc = 0;
+failed:
+	fy_node_free(fyn);
+	fy_document_destroy(fyd);
+	return rc;
+}
+
+int do_bad_utf8(const struct fy_parse_cfg *cfg, int argc, char *argv[])
+{
+	// char key[12] = {0x26, 0x2b, 0x74, 0x68, 0x65, 0x62, 0x65, 0x86, 0x6e, 0x67, 0x77, 0x00};
+	// char key[11] = {0x26, 0x2b, 0x74, 0x68, 0x65, 0x62, 0x65, 0x6e, 0x67, 0x77, 0x00};
+	// char key[] = {
+	//	0x22, 0xCE, 0xA4, 0xCE, 0xB9, 0xCE, 0xBC, 0xCE,
+	//	0xAE, 0x20, 0xCE, 0xB5, 0xCE, 0xBB, 0xCE, 0xBB,
+	//	0xCE, 0xB7, 0xCE, 0xBD, 0xCE, 0xB9, 0xCE, 0xBA,
+	//	0xCE, 0xAE, 0x22, 0x0A, 0x00
+	//};
+	char key[] = {
+		0x67, 0xe7, 0x67, 0x54, 0x67, 0x67, 0x67, 0x67, 0xe8,
+		0x67, 0x4e, 0x64, 0x6a, 0x67, 0x67, 0xaa, 0x6b, 0x73, 0x00
+	};
+	int *fwd;
+	int *bwd;
+	const char *s;
+	const char *e;
+	int len, i, c, w, pos;
+
+	len = strlen(key);
+
+	fwd = alloca(sizeof(*fwd) * len);
+	bwd = alloca(sizeof(*bwd) * len);
+
+	memset(fwd, 0, sizeof(*fwd) * len);
+	memset(bwd, 0, sizeof(*bwd) * len);
+
+	s = key;
+	e = s + strlen(key);
+
+	printf("forward utf8 check\n");
+	pos = 0;
+	while (s < e) {
+		c = fy_utf8_get(s, e - s, &w);
+		if (c < 0) {
+			switch (c) {
+			case FYUG_EOF:
+				printf("EOF before end at pos %d\n", pos);
+				break;
+			case FYUG_INV:
+				printf("INV before end at pos %d\n", pos);
+				break;
+			case FYUG_PARTIAL:
+				printf("PARTIAL before end at pos %d\n", pos);
+				break;
+			default:
+				printf("UKNNOWN %d before end at pos %d\n", c, pos);
+				break;
+			}
+			break;
+		}
+		fwd[pos] = c;
+		s += w;
+		pos++;
+	}
+	printf("forward utf8 check complete (end pos %d)\n", pos);
+
+	for (i = 0; i < pos; i++)
+		printf("0x%02x%s", fwd[i], i < (pos - 1) ? " " : "\n");
+
+	printf("backward utf8 check\n");
+	pos = 0;
+	s = key;
+	while (s < e) {
+		c = fy_utf8_get_right(s, e - s, &w);
+		if (c < 0) {
+			switch (c) {
+			case FYUG_EOF:
+				printf("EOF before end at pos %d\n", pos);
+				break;
+			case FYUG_INV:
+				printf("INV before end at pos %d\n", pos);
+				break;
+			case FYUG_PARTIAL:
+				printf("PARTIAL before end at pos %d\n", pos);
+				break;
+			default:
+				printf("UKNNOWN %d before end at pos %d\n", c, pos);
+				break;
+			}
+			break;
+		}
+		bwd[pos] = c;
+		e -= w;
+		pos++;
+	}
+	printf("backward utf8 check complete (end pos %d)\n", pos);
+
+	for (i = pos - 1; i >= 0; i--)
+		printf("0x%02x%s", bwd[i], i > 0 ? " " : "\n");
+
+	return 0;
+}
+
+int do_shell_split(int in_argc, char *in_argv[])
+{
+	char buf[256], line[256 + 1];
+	char *s, *e;
+	const char * const *argv;
+	int i, argc;
+	void *mem;
+
+	printf("shell split; Ctrl-D to exit\n");
+	buf[sizeof(buf)-1] = '\0';
+	while (fgets(buf, sizeof(buf) - 1, stdin)) {
+		buf[sizeof(buf)-1] = '\0';
+		strcpy(line, buf);
+		s = line;
+		e = s + strlen(line);
+		while (e > s && e[-1] == '\n')
+			*--e = '\0';
+
+		printf("input: '%s'\n", line);
+
+		mem = fy_utf8_split_posix(line, &argc, &argv);
+		if (!mem) {
+			fprintf(stderr, "Bad input '%s'\n", line);
+		} else {
+			for (i = 0; i < argc; i++) {
+				fprintf(stderr, "%d: %s\n", i, argv[i]);
+			}
+			assert(argv[argc] == NULL);
+			free(mem);
+		}
+	}
+	return 0;
+}
+
+int do_parse_timing(int argc, char *argv[], bool disable_mmap)
+{
+	void *blob;
+	size_t blob_size;
+	int i, c, w;
+	struct timespec before, after;
+	int64_t ns;
+	const uint8_t *s, *e, *ss;
+	size_t count;
+	struct fy_utf8_result res;
+
+#undef BEFORE
+#define BEFORE() \
+	do { \
+		clock_gettime(CLOCK_MONOTONIC, &before); \
+	} while(0)
+
+#undef AFTER
+#define AFTER() \
+	({ \
+		clock_gettime(CLOCK_MONOTONIC, &after); \
+		(int64_t)(after.tv_sec - before.tv_sec) * (int64_t)1000000000UL + (int64_t)(after.tv_nsec - before.tv_nsec); \
+	})
+
+	for (i = optind; i < argc; i++) {
+
+		printf("file=%s\n", argv[i]);
+
+		BEFORE();
+		blob = fy_blob_read(argv[i], &blob_size);
+		assert(blob);
+		ns = AFTER();
+
+		printf("read %zu bytes in %"PRId64"ns\n", blob_size, ns);
+
+		BEFORE();
+		s = blob;
+		e = s + blob_size;
+		count = 0;
+		while (s < e) {
+			if (*s++ == 'e')
+				count++;
+		}
+		ns = AFTER();
+		printf("%zu 'e' chars method 1 in %"PRId64"ns\n", count, ns);
+
+		BEFORE();
+		s = blob;
+		e = s + blob_size;
+		count = 0;
+		while ((ss = memchr(s, 'e', e - s)) != NULL) {
+			count++;
+			s = ss + 1;
+		}
+		ns = AFTER();
+		printf("%zu 'e' chars method 2 in %"PRId64"ns\n", count, ns);
+
+		BEFORE();
+		s = blob;
+		e = s + blob_size;
+		count = 0;
+		while ((c = fy_utf8_get(s, e - s, &w)) >= 0) {
+			if (c == 'e')
+				count++;
+			s += w;
+		}
+		ns = AFTER();
+		printf("%zu 'e' utf8 characters using method 1 in %"PRId64"ns\n", count, ns);
+
+		BEFORE();
+		s = blob;
+		e = s + blob_size;
+		count = 0;
+		while ((c = fy_utf8_get_s(s, e, &w)) >= 0) {
+			if (c == 'e')
+				count++;
+			s += w;
+		}
+		ns = AFTER();
+		printf("%zu 'e' utf8 characters using method 2 in %"PRId64"ns\n", count, ns);
+
+		BEFORE();
+		s = blob;
+		e = s + blob_size - FY_UTF8_MAX_WIDTH;
+		count = 0;
+		while (s < e && (c = fy_utf8_get_s_nocheck(s, &w)) >= 0) {
+			if (c == 'e')
+				count++;
+			s += w;
+		}
+		while ((c = fy_utf8_get_s(s, e, &w)) >= 0) {
+			if (c == 'e')
+				count++;
+			s += w;
+		}
+		ns = AFTER();
+		printf("%zu 'e' utf8 characters using method 3 in %"PRId64"ns\n", count, ns);
+
+		BEFORE();
+		s = blob;
+		e = s + blob_size;
+		count = 0;
+		while ((res = fy_utf8_get_s_res(s, e)).c >= 0) {
+			if (res.c == 'e')
+				count++;
+			s += res.w;
+		}
+		ns = AFTER();
+		printf("%zu 'e' utf8 characters using method 4 in %"PRId64"ns\n", count, ns);
+
+		free(blob);
+
+	}
 
 	return 0;
 }
@@ -3950,7 +4300,11 @@ int main(int argc, char *argv[])
 	    strcmp(mode, "iterate") &&
 	    strcmp(mode, "comment") &&
 	    strcmp(mode, "pathspec") &&
-	    strcmp(mode, "bypath")
+	    strcmp(mode, "bypath") &&
+	    strcmp(mode, "crash") &&
+	    strcmp(mode, "badutf8") &&
+	    strcmp(mode, "shell-split") &&
+	    strcmp(mode, "parse-timing")
 #if defined(HAVE_LIBYAML) && HAVE_LIBYAML
 	    && strcmp(mode, "libyaml-scan")
 	    && strcmp(mode, "libyaml-parse")
@@ -4041,6 +4395,15 @@ int main(int argc, char *argv[])
 
 	if (!strcmp(mode, "build")) {
 		rc = do_build(&cfg, argc - optind, argv + optind);
+		return !rc ? EXIT_SUCCESS : EXIT_FAILURE;
+	}
+
+	if (!strcmp(mode, "crash")) {
+		rc = do_crash(&cfg, argc - optind, argv + optind);
+		return !rc ? EXIT_SUCCESS : EXIT_FAILURE;
+	}
+	if (!strcmp(mode, "badutf8")) {
+		rc = do_bad_utf8(&cfg, argc - optind, argv + optind);
 		return !rc ? EXIT_SUCCESS : EXIT_FAILURE;
 	}
 
@@ -4189,6 +4552,18 @@ int main(int argc, char *argv[])
 		rc = do_bypath(fyp, walkpath, walkstart);
 		if (rc < 0) {
 			/* fprintf(stderr, "do_bypath() error %d\n", rc); */
+			goto cleanup;
+		}
+	} else if (!strcmp(mode, "shell-split")) {
+		rc = do_shell_split(argc, argv);
+		if (rc < 0) {
+			/* fprintf(stderr, "do_shell_split() error %d\n", rc); */
+			goto cleanup;
+		}
+	} else if (!strcmp(mode, "parse-timing")) {
+		rc = do_parse_timing(argc, argv, !!(cfg.flags & FYPCF_DISABLE_MMAP_OPT));
+		if (rc < 0) {
+			/* fprintf(stderr, "do_parse_timing() error %d\n", rc); */
 			goto cleanup;
 		}
 	}

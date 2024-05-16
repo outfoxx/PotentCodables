@@ -5,12 +5,10 @@ comma:=,
 build-test-all: clean build-test-macos build-test-ios build-test-watchos build-test-tvos
 
 check-tools:
-	@which findsimulator || (echo "findsimulator is required. run 'make install-tools'" && exit 1)
 	@which xcbeautify || (echo "xcbeautify is required. run 'make install-tools'" && exit 1)
 
 install-tools:
-	brew tap a7ex/homebrew-formulae
-	brew install xcbeautify findsimulator
+	brew install xcbeautify
 
 clean:
 	@rm -rf TestResults
@@ -58,6 +56,8 @@ update-fyaml:
 	cd Sources/Cfyaml && ./bootstrap.sh
 	cd Sources/Cfyaml && ./configure
 	cd Sources/Cfyaml && sed -i '' 's/HAVE_LIBYAML 1/HAVE_LIBYAML 0/g' config.h
+	echo '\n#pragma clang diagnostic ignored "-Wconversion"' >> Sources/Cfyaml/config.h
+
 
 doc-symbol-graphs:
 	rm -rf .build/all-symbol-graphs || 0

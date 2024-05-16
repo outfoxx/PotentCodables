@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <limits.h>
 #include <errno.h>
 
 #include <libfyaml.h>
@@ -216,9 +217,9 @@ void fy_input_close(struct fy_input *fyi)
 	case fyit_file:
 	case fyit_fd:
 
-		if (fyi->addr && fyi->addr != MAP_FAILED) {
+		if (fyi->addr) {
 			munmap(fyi->addr, fyi->length);
-			fyi->addr = MAP_FAILED;
+			fyi->addr = NULL;
 		}
 
 		if (fyi->fd != -1) {
@@ -257,6 +258,61 @@ void fy_input_close(struct fy_input *fyi)
 	default:
 		break;
 	}
+}
+
+ssize_t fy_input_estimate_queued_size(const struct fy_input *fyi)
+{
+	struct stat sb;
+	int fd, rc;
+
+	if (!fyi || fyi->state != FYIS_QUEUED)
+		return 0;
+
+	memset(&sb, 0, sizeof(sb));
+
+	switch (fyi->cfg.type) {
+	case fyit_file:
+		rc = stat(fyi->cfg.file.filename, &sb);
+		if (rc)
+			return -1;
+		break;
+
+	case fyit_stream:
+		fd = fileno(fyi->cfg.stream.fp);
+		if (fd < 0)
+			return -1;
+		rc = fstat(fd, &sb);
+		if (rc)
+			return -1;
+		break;
+
+	case fyit_memory:
+		return (ssize_t)fyi->cfg.memory.size;
+
+	case fyit_alloc:
+		return (ssize_t)fyi->cfg.alloc.size;
+
+	case fyit_fd:
+		rc = fstat(fyi->cfg.fd.fd, &sb);
+		if (rc)
+			return -1;
+		break;
+
+	case fyit_callback:
+	default:
+		return SSIZE_MAX;	/* cannot determine */
+	}
+
+	/* only do it for regular files */
+	if ((sb.st_mode & S_IFMT) != S_IFREG)
+		return SSIZE_MAX;
+
+	/* check for very impossible roll-over */
+	if ((size_t)sb.st_size > (size_t)SSIZE_MAX)
+		return SSIZE_MAX;
+
+	/* ok, we did find it */
+	return (ssize_t)sb.st_size;
 }
 
 struct fy_diag *fy_reader_get_diag(struct fy_reader *fyr)
@@ -412,12 +468,14 @@ int fy_reader_input_open(struct fy_reader *fyr, struct fy_input *fyi, const stru
 			fyi->addr = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fyi->fd, 0);
 
 			/* convert from MAP_FAILED to NULL */
-			if (fyi->addr == MAP_FAILED)
+			if (fyi->addr == MAP_FAILED) {
 				fyr_debug(fyr, "mmap failed for file %s",
 						fyi->cfg.file.filename);
+				fyi->addr = NULL;
+			}
 		}
 		/* if we've managed to mmap, we' good */
-		if (fyi->addr != MAP_FAILED)
+		if (fyi->addr)
 			break;
 
 		/* if we're not ignoring stdio, open a FILE* using the fd */
@@ -462,7 +520,7 @@ int fy_reader_input_open(struct fy_reader *fyr, struct fy_input *fyi, const stru
 		/* all the rest need it */
 	default:
 		/* if we're not in mmap mode */
-		if (fyi->addr != MAP_FAILED)
+		if (fyi->addr && !fyr->current_input_cfg.disable_mmap_opt)
 			break;
 
 		fyi->chunk = fyi->cfg.chunk;
@@ -509,7 +567,7 @@ int fy_reader_input_done(struct fy_reader *fyr)
 	switch (fyi->cfg.type) {
 	case fyit_file:
 	case fyit_fd:
-		if (fyi->addr != MAP_FAILED)
+		if (fyi->addr)
 			break;
 
 		/* fall-through */
@@ -609,7 +667,7 @@ const void *fy_reader_ptr_slow_path(struct fy_reader *fyr, size_t *leftp)
 {
 	struct fy_input *fyi;
 	const void *p;
-	int left;
+	size_t left;
 
 	if (fyr->current_ptr) {
 		if (leftp)
@@ -625,7 +683,7 @@ const void *fy_reader_ptr_slow_path(struct fy_reader *fyr, size_t *leftp)
 	switch (fyi->cfg.type) {
 	case fyit_file:
 	case fyit_fd:
-		if (fyi->addr != MAP_FAILED) {
+		if (fyi->addr) {
 			left = fyi->length - (fyr->this_input_start + fyr->current_input_pos);
 			p = fyi->addr + fyr->current_input_pos;
 			break;
@@ -690,7 +748,7 @@ const void *fy_reader_input_try_pull(struct fy_reader *fyr, struct fy_input *fyi
 	case fyit_file:
 	case fyit_fd:
 
-		if (fyi->addr != MAP_FAILED) {
+		if (fyi->addr) {
 			assert(fyi->length >= (fyr->this_input_start + pos));
 
 			left = fyi->length - (fyr->this_input_start + pos);
@@ -979,7 +1037,7 @@ struct fy_input *fy_input_create(const struct fy_input_cfg *fyic)
 	fyi->chop = 0;
 	fyi->fp = NULL;
 	fyi->fd = -1;
-	fyi->addr = MAP_FAILED;
+	fyi->addr = NULL;
 	fyi->length = -1;
 
 	/* default modes */

@@ -16,6 +16,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include <libfyaml.h>
 
@@ -339,9 +340,6 @@ struct fy_node *fy_node_get_nearest_child_of(struct fy_node *fyn_base,
 void fy_parse_document_destroy(struct fy_parser *fyp, struct fy_document *fyd)
 {
 	struct fy_node *fyn;
-	struct fy_anchor *fya;
-	struct fy_anchor *fyan;
-	struct fy_accel_entry *xle;
 
 	if (!fyd)
 		return;
@@ -352,29 +350,7 @@ void fy_parse_document_destroy(struct fy_parser *fyp, struct fy_document *fyd)
 	fyd->root = NULL;
 	fy_node_detach_and_free(fyn);
 
-	/* remove all anchors */
-	for (fya = fy_anchor_list_head(&fyd->anchors); fya; fya = fyan) {
-		fyan = fy_anchor_next(&fyd->anchors, fya);
-		fy_anchor_list_del(&fyd->anchors, fya);
-
-		if (fy_document_is_accelerated(fyd)) {
-			xle = fy_accel_entry_lookup_key_value(fyd->axl, fya->anchor, fya);
-			fy_accel_entry_remove(fyd->axl, xle);
-
-			xle = fy_accel_entry_lookup_key_value(fyd->naxl, fya->fyn, fya);
-			fy_accel_entry_remove(fyd->naxl, xle);
-		}
-
-		fy_anchor_destroy(fya);
-	}
-
-	if (fy_document_is_accelerated(fyd)) {
-		fy_accel_cleanup(fyd->axl);
-		free(fyd->axl);
-
-		fy_accel_cleanup(fyd->naxl);
-		free(fyd->naxl);
-	}
+	fy_document_purge_anchors(fyd);
 
 	fy_document_state_unref(fyd->fyds);
 
@@ -2933,9 +2909,40 @@ static void fy_resolve_parent_node(struct fy_document *fyd, struct fy_node *fyn,
 	}
 }
 
-typedef void (*fy_node_applyf)(struct fy_node *fyn);
+void fy_document_purge_anchors(struct fy_document *fyd)
+{
+	struct fy_anchor *fya;
+	struct fy_anchor *fyan;
+	struct fy_accel_entry *xle;
 
-void fy_node_apply(struct fy_node *fyn, fy_node_applyf func)
+	/* remove all anchors */
+	for (fya = fy_anchor_list_head(&fyd->anchors); fya; fya = fyan) {
+		fyan = fy_anchor_next(&fyd->anchors, fya);
+		fy_anchor_list_del(&fyd->anchors, fya);
+
+		if (fy_document_is_accelerated(fyd)) {
+			xle = fy_accel_entry_lookup_key_value(fyd->axl, fya->anchor, fya);
+			fy_accel_entry_remove(fyd->axl, xle);
+
+			xle = fy_accel_entry_lookup_key_value(fyd->naxl, fya->fyn, fya);
+			fy_accel_entry_remove(fyd->naxl, xle);
+		}
+
+		fy_anchor_destroy(fya);
+	}
+
+	if (fy_document_is_accelerated(fyd)) {
+		fy_accel_cleanup(fyd->axl);
+		free(fyd->axl);
+
+		fy_accel_cleanup(fyd->naxl);
+		free(fyd->naxl);
+	}
+}
+
+typedef void (*fy_node_applyf)(struct fy_node *fyn, void *user);
+
+void fy_node_apply(struct fy_node *fyn, fy_node_applyf func, void *user)
 {
 	struct fy_node *fyni;
 	struct fy_node_pair *fynp;
@@ -2943,7 +2950,7 @@ void fy_node_apply(struct fy_node *fyn, fy_node_applyf func)
 	if (!fyn || !func)
 		return;
 
-	(*func)(fyn);
+	(*func)(fyn, user);
 
 	switch (fyn->type) {
 	case FYNT_SCALAR:
@@ -2952,21 +2959,21 @@ void fy_node_apply(struct fy_node *fyn, fy_node_applyf func)
 	case FYNT_SEQUENCE:
 		for (fyni = fy_node_list_head(&fyn->sequence); fyni;
 				fyni = fy_node_next(&fyn->sequence, fyni))
-			fy_node_apply(fyni, func);
+			fy_node_apply(fyni, func, user);
 		break;
 
 	case FYNT_MAPPING:
 		for (fynp = fy_node_pair_list_head(&fyn->mapping); fynp;
 				fynp = fy_node_pair_next(&fyn->mapping, fynp)) {
 
-			fy_node_apply(fynp->key, func);
-			fy_node_apply(fynp->value, func);
+			fy_node_apply(fynp->key, func, user);
+			fy_node_apply(fynp->value, func, user);
 		}
 		break;
 	}
 }
 
-static void clear_system_marks(struct fy_node *fyn)
+static void clear_system_marks(struct fy_node *fyn, void *user)
 {
 	fyn->marks &= ~FYNWF_SYSTEM_MARKS;
 }
@@ -2974,36 +2981,66 @@ static void clear_system_marks(struct fy_node *fyn)
 /* clear all the system markers */
 void fy_node_clear_system_marks(struct fy_node *fyn)
 {
-	fy_node_apply(fyn, clear_system_marks);
+	fy_node_apply(fyn, clear_system_marks, NULL);
+}
+
+static void count_aliases(struct fy_node *fyn, void *user)
+{
+	int *countp = user;
+
+	if (fyn->style == FYNS_ALIAS)
+		(*countp)++;
+}
+
+int fy_node_count_aliases(struct fy_node *fyn)
+{
+	int count;
+
+	count = 0;
+
+	fy_node_apply(fyn, count_aliases, &count);
+
+	return count;
 }
 
 int fy_document_resolve(struct fy_document *fyd)
 {
-	int rc;
+	int rc, num_aliases, num_aliases_prev;
 	bool ret;
 
 	if (!fyd)
 		return 0;
 
-	fy_node_clear_system_marks(fyd->root);
+	num_aliases_prev = INT_MAX;
+	do {
+		fy_node_clear_system_marks(fyd->root);
 
-	/* for resolution to work, no reference loops should exist */
-	ret = fy_check_ref_loop(fyd, fyd->root,
-			FYNWF_MAXDEPTH_DEFAULT | FYNWF_FOLLOW, NULL);
+		/* for resolution to work, no reference loops should exist */
+		ret = fy_check_ref_loop(fyd, fyd->root,
+				FYNWF_MAXDEPTH_DEFAULT | FYNWF_FOLLOW, NULL);
 
-	fy_node_clear_system_marks(fyd->root);
+		fy_node_clear_system_marks(fyd->root);
 
-	if (ret)
-		goto err_out;
+		if (ret)
+			goto err_out;
 
+		/* now resolve any anchor nodes */
+		rc = fy_resolve_anchor_node(fyd, fyd->root);
+		if (rc)
+			goto err_out_rc;
 
-	/* now resolve any anchor nodes */
-	rc = fy_resolve_anchor_node(fyd, fyd->root);
-	if (rc)
-		goto err_out_rc;
+		/* redo parent resolution */
+		fy_resolve_parent_node(fyd, fyd->root, NULL);
 
-	/* redo parent resolution */
-	fy_resolve_parent_node(fyd, fyd->root, NULL);
+		/* count the remaining aliases */
+		num_aliases = fy_node_count_aliases(fyd->root);
+		if (num_aliases == num_aliases_prev)
+			goto err_out;
+
+	} while (num_aliases > 0);
+
+	/* remove all anchors after resolution */
+	fy_document_purge_anchors(fyd);
 
 	return 0;
 
@@ -3343,6 +3380,44 @@ enum fy_node_style fy_node_get_style(struct fy_node *fyn)
 	return fyn ? fyn->style : FYNS_PLAIN;
 }
 
+struct fy_token *fy_node_get_start_token(struct fy_node *fyn)
+{
+        if (!fyn)
+                return NULL;
+
+        switch (fyn->type) {
+        case FYNT_MAPPING:
+                return fyn->mapping_start;
+        case FYNT_SEQUENCE:
+                return fyn->sequence_start;
+        case FYNT_SCALAR:
+                return fyn->scalar;
+	default:
+		/* should not happen, but play it safe */
+		break;
+        }
+	return NULL;
+}
+
+struct fy_token *fy_node_get_end_token(struct fy_node *fyn)
+{
+        if (!fyn)
+                return NULL;
+
+        switch (fyn->type) {
+        case FYNT_MAPPING:
+                return fyn->mapping_end;
+        case FYNT_SEQUENCE:
+                return fyn->sequence_end;
+        case FYNT_SCALAR:
+                return fyn->scalar;
+	default:
+		/* should not happen, but play it safe */
+		break;
+        }
+	return NULL;
+}
+
 bool fy_node_is_null(struct fy_node *fyn)
 {
 	if (!fyn)
@@ -3351,7 +3426,7 @@ bool fy_node_is_null(struct fy_node *fyn)
 	if (fyn->type != FYNT_SCALAR)
 		return false;
 
-	return fyn->scalar == NULL;
+	return fyn->scalar == NULL || fyn->scalar->scalar.is_null;
 }
 
 bool fy_node_is_attached(struct fy_node *fyn)
@@ -4070,9 +4145,10 @@ fy_node_by_path_internal(struct fy_node *fyn,
 			__func__, __LINE__, fy_node_get_path(fyn), (int)(e - s), s); */
 	fyn = fy_node_follow_aliases(fyn, flags, true);
 
-	/* scalar can't match (it has no key) */
+	/* scalar can be only last element in the path (it has no key) */
 	if (fy_node_is_scalar(fyn)) {
-		fyn = NULL;
+		if (*s)
+			fyn = NULL;	/* not end of the path - fail */
 		goto out;
 	}
 
@@ -4338,25 +4414,40 @@ struct fy_node *fy_node_by_path(struct fy_node *fyn,
 				const char *path, size_t len,
 				enum fy_node_walk_flags flags)
 {
+	struct fy_document *fyd;
 	struct fy_anchor *fya;
 	const char *s, *e, *t, *anchor;
 	size_t alen;
 	char c;
-	int idx;
+	int idx, w;
 	char *end_idx;
 
 	if (!fyn || !path)
 		return NULL;
 
-	/* if it's a YPATH, just punt to that method */
-	if ((flags & FYNWF_PTR(FYNWF_PTR_MASK)) == FYNWF_PTR_YPATH)
-		return fy_node_by_ypath(fyn, path, len);
-
-	s = path;
 	if (len == (size_t)-1)
 		len = strlen(path);
 
+	/* verify that the path string is well formed UTF8 */
+	s = path;
 	e = s + len;
+
+	fyd = fyn->fyd;
+	while (s < e) {
+		c = fy_utf8_get(s, e - s, &w);
+		if (c < 0) {
+			fyd_error(fyd, "fy_node_by_path() malformed path string\n");
+			return NULL;
+		}
+		s += w;
+	}
+
+	/* rewind */
+	s = path;
+
+	/* if it's a YPATH, just punt to that method */
+	if ((flags & FYNWF_PTR(FYNWF_PTR_MASK)) == FYNWF_PTR_YPATH)
+		return fy_node_by_ypath(fyn, path, len);
 
 	/* fyd_notice(fyn->fyd, "%s: %.*s", __func__, (int)(len), s); */
 
@@ -5306,6 +5397,17 @@ err_out:
 	return -1;
 }
 
+int fy_node_remove_tag(struct fy_node *fyn)
+{
+	if (!fyn || !fyn->tag)
+		return -1;
+
+	fy_token_unref(fyn->tag);
+	fyn->tag = NULL;
+
+	return 0;
+}
+
 struct fy_node *fy_node_create_sequence(struct fy_document *fyd)
 {
 	struct fy_node *fyn;
@@ -5641,7 +5743,7 @@ const void *a, const void *b, void *arg
 }
 
 /* not! thread safe! */
-#if !defined(HAVE_QSORT_R) || !HAVE_QSORT_R
+#if !defined(HAVE_QSORT_R) || !HAVE_QSORT_R || defined(__EMSCRIPTEN__)
 static struct fy_node_mapping_sort_ctx *fy_node_mapping_sort_ctx_no_qsort_r;
 
 static int fy_node_mapping_sort_cmp_no_qsort_r(const void *a, const void *b)
@@ -5762,7 +5864,7 @@ void fy_node_mapping_perform_sort(struct fy_node *fyn_map,
 	ctx.arg = key_cmp ? arg : &def_arg;
 	ctx.fynpp = fynpp;
 	ctx.count = count;
-#if defined(HAVE_QSORT_R) && HAVE_QSORT_R
+#if defined(HAVE_QSORT_R) && HAVE_QSORT_R && !defined(__EMSCRIPTEN__)
 #ifdef __APPLE__
 	qsort_r(fynpp, count, sizeof(*fynpp), &ctx, fy_node_mapping_sort_cmp);
 #else
@@ -5988,6 +6090,75 @@ fy_flow_document_build_from_string(const struct fy_parse_cfg *cfg,
 
 	fy_parser_set_reader(fyp, fyr);
 	fy_parser_set_flow_only_mode(fyp, true);
+
+	fyd = fy_parse_load_document(fyp);
+
+	fy_parse_cleanup(fyp);
+
+	if (fyd && consumed) {
+		fy_reader_get_mark(fyr, &mark);
+		*consumed = mark.input_pos;
+	}
+
+	fy_reader_cleanup(fyr);
+	fy_input_unref(fyi);
+
+	return fyd;
+
+err_no_input_open:
+	fy_input_unref(fyi);
+err_no_input:
+	fy_parse_cleanup(fyp);
+err_no_parse:
+	fy_reader_cleanup(fyr);
+	return NULL;
+}
+
+struct fy_document *
+fy_block_document_build_from_string(const struct fy_parse_cfg *cfg,
+				   const char *str, size_t len, size_t *consumed)
+{
+	struct flow_reader_container frc;
+	struct fy_reader *fyr = NULL;
+	struct fy_parser fyp_data, *fyp = &fyp_data;
+	struct fy_parse_cfg cfg_data;
+	struct fy_input *fyi;
+	struct fy_document *fyd;
+	struct fy_mark mark;
+	int rc;
+
+	if (!str)
+		return NULL;
+
+	if (consumed)
+		*consumed = 0;
+
+	if (!cfg) {
+		memset(&cfg_data, 0, sizeof(cfg_data));
+		cfg_data.flags = FYPCF_DEFAULT_PARSE;
+		cfg = &cfg_data;
+	}
+
+	memset(&frc, 0, sizeof(frc));
+	fyr = &frc.reader;
+	frc.cfg = cfg;
+
+	fy_reader_setup(fyr, &reader_ops);
+
+	rc = fy_parse_setup(fyp, cfg);
+	if (rc)
+		goto err_no_parse;
+
+	fyi = fy_input_from_data(str, len, NULL, false);
+	if (!fyi)
+		goto err_no_input;
+
+	rc = fy_reader_input_open(fyr, fyi, NULL);
+	if (rc)
+		goto err_no_input_open;
+
+	fy_parser_set_reader(fyp, fyr);
+	fy_parser_set_block_only_mode(fyp, true);
 
 	fyd = fy_parse_load_document(fyp);
 

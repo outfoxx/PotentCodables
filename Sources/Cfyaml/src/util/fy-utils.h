@@ -18,6 +18,10 @@
 #include <unistd.h>
 #include <termios.h>
 
+#if defined(__linux__)
+#include <sys/sysmacros.h>
+#endif
+
 #if defined(__APPLE__) && (_POSIX_C_SOURCE < 200809L)
 FILE *open_memstream(char **ptr, size_t *sizeloc);
 #endif
@@ -64,5 +68,42 @@ int fy_term_query_size_raw(int fd, int *rows, int *cols);
 
 /* the non raw methods will set the terminal to raw and then restore */
 int fy_term_query_size(int fd, int *rows, int *cols);
+
+struct fy_comment_iter {
+	const char *start;
+	size_t size;
+	const char *end;
+	const char *next;
+	int line;
+};
+
+int fy_comment_iter_begin(const char *comment, size_t size, struct fy_comment_iter *iter);
+const char *fy_comment_iter_next_line(struct fy_comment_iter *iter, size_t *lenp);
+void fy_comment_iter_end(struct fy_comment_iter *iter);
+
+char *fy_get_cooked_comment(const char *raw_comment, size_t size);
+
+struct fy_keyword_iter {
+	const char *keyword;
+	size_t keyword_len;
+	const char *start;
+	size_t size;
+	const char *end;
+	const char *next;
+	int pc;
+};
+
+int fy_keyword_iter_begin(const char *text, size_t size, const char *keyword, struct fy_keyword_iter *iter);
+const char *fy_keyword_iter_next(struct fy_keyword_iter *iter);
+void fy_keyword_iter_advance(struct fy_keyword_iter *iter, size_t advance);
+void fy_keyword_iter_end(struct fy_keyword_iter *iter);
+
+#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+
+#if !defined(S_ISDIR) && defined(S_IFMT) && defined(S_IFDIR)
+#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#endif
 
 #endif

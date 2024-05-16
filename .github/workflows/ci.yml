@@ -17,12 +17,11 @@ jobs:
 
     - name: Install Tools
       run: |
-        brew tap a7ex/homebrew-formulae
-        brew install xcbeautify sonar-scanner findsimulator 
+        brew install sonar-scanner 
       env:
         HOMEBREW_NO_INSTALL_CLEANUP: 1
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     
@@ -58,14 +57,7 @@ jobs:
 
     steps:
 
-    - name: Install Tools
-      run: |
-        brew tap a7ex/homebrew-formulae
-        brew install xcbeautify findsimulator 
-      env:
-        HOMEBREW_NO_INSTALL_CLEANUP: 1
-      
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Select Xcode
       run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
@@ -75,7 +67,7 @@ jobs:
 
     - name: Report Test Results
       uses: kishikawakatsumi/xcresulttool@v1
-      if: always()
+      if: success() || failure()
       with:
           title: Test Results ${{ matrix.platform }}
           path: ./TestResults/${{ matrix.platform }}.xcresult
@@ -88,17 +80,17 @@ jobs:
 
     steps:
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
+      uses: swift-actions/setup-swift@v2
 
     - name: Build/Test
       run: swift test --parallel --xunit-output test-results.xml
 
     - name: Report Test Results
       uses: dorny/test-reporter@v1
-      if: always()
+      if: success() || failure()
       with:
         name: Test Results linux
         path: test-results.xml

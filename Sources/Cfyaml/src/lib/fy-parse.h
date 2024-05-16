@@ -42,6 +42,9 @@
 struct fy_parser;
 struct fy_input;
 
+/* for the event */
+FY_PARSE_TYPE_DECL_ALLOC(eventp);
+
 enum fy_flow_type {
 	FYFT_NONE,
 	FYFT_MAP,
@@ -137,6 +140,33 @@ struct fy_parse_state_log {
 };
 FY_PARSE_TYPE_DECL(parse_state_log);
 
+struct fy_streaming_alias {
+	struct list_head node;
+	struct fy_token *anchor;
+	bool collecting;
+	long mapping_nest;
+	long sequence_nest;
+	struct fy_eventp_list events;
+};
+FY_PARSE_TYPE_DECL(streaming_alias);
+
+struct fy_streaming_alias_state {
+	struct fy_streaming_alias *fysa;
+	struct fy_eventp *next;
+};
+
+/* 2 bits per collection tracking state
+ * pos: * 2
+ * bit 0 - 0 map, 1 seq
+ * bit 1 - 0 key, 1 val (if map)
+ */
+#define FYCTS_SCALAR  0
+#define FYCTS_SEQ     1
+#define FYCTS_MAP     2
+#define FYCTS_MAP_KEY 2
+#define FYCTS_MAP_VAL 3
+#define FYCTS_MAP_TOGGLE 1
+
 struct fy_parser {
 	struct fy_parse_cfg cfg;
 
@@ -159,6 +189,7 @@ struct fy_parser {
 	bool bare_document_only : 1;		/* no document start indicators allowed, no directives */
 	bool stream_has_content : 1;
 	bool parse_flow_only : 1;	/* document is in flow form, and stop parsing at the end */
+	bool parse_block_only : 1;	/* document is in embedded block form, and stop parsing at the end */
 	bool colon_follows_colon : 1;	/* "foo"::bar -> "foo": :bar */
 	bool had_directives : 1;	/* document had directives */
 	int flow_level;
@@ -183,6 +214,7 @@ struct fy_parser {
 	int indent;
 	int parent_indent;
 	int indent_line;
+	int starting_indent;
 	/* simple key stack */
 	struct fy_simple_key_list simple_keys;
 	/* state stack */
@@ -203,6 +235,7 @@ struct fy_parser {
 	struct fy_simple_key_list recycled_simple_key;
 	struct fy_parse_state_log_list recycled_parse_state_log;
 	struct fy_flow_list recycled_flow;
+	struct fy_streaming_alias_list recycled_streaming_alias;
 
 	struct fy_eventp_list recycled_eventp;
 	struct fy_token_list recycled_token;
@@ -223,6 +256,31 @@ struct fy_parser {
 	struct fy_composer *fyc;
 	fy_parse_composer_cb fyc_cb;
 	void *fyc_userdata;
+
+	/* last generated event atom */
+	struct fy_atom last_event_handle;
+
+	struct fy_streaming_alias_list streaming_aliases;
+	/* streaming alias state */
+	struct {
+		int alloc;
+		int top;
+		struct fy_streaming_alias_state *stack;
+		struct fy_streaming_alias_state local[8];
+	} sas;
+	/* collection tracking state */
+	struct {
+		int alloc;
+		int top;
+		uint32_t *stack;
+		uint32_t local[8];	/* 8 * 32 = 256 / 2 = 128 levels before needing dynamic allocation */
+	} cts;
+	/* merge key state */
+	struct {
+		bool active;
+		struct fy_eventp_list args;
+		struct fy_document *fyd;
+	} mks;
 };
 
 static inline struct fy_input *
@@ -533,6 +591,12 @@ fy_parser_set_flow_only_mode(struct fy_parser *fyp, bool flow_only_mode)
 	fyp->parse_flow_only = flow_only_mode;
 }
 
+static inline void
+fy_parser_set_block_only_mode(struct fy_parser *fyp, bool block_only_mode)
+{
+	fyp->parse_block_only = block_only_mode;
+}
+
 #define fy_fill_atom_a(_fyp, _advance) \
 	fy_fill_atom((_fyp), (_advance), alloca(sizeof(struct fy_atom)))
 
@@ -550,6 +614,7 @@ int fy_parse_setup(struct fy_parser *fyp, const struct fy_parse_cfg *cfg);
 void fy_parse_cleanup(struct fy_parser *fyp);
 
 int fy_parse_input_append(struct fy_parser *fyp, const struct fy_input_cfg *fyic);
+ssize_t fy_parse_estimate_queued_input_size(struct fy_parser *fyp);
 
 struct fy_eventp *fy_parse_private(struct fy_parser *fyp);
 
@@ -588,5 +653,13 @@ static inline int fy_document_state_version_compare(struct fy_document_state *fy
 }
 
 int fy_parse_set_composer(struct fy_parser *fyp, fy_parse_composer_cb cb, void *userdata);
+
+struct fy_streaming_alias *
+fy_parse_streaming_alias_create(struct fy_parser *fyp, struct fy_token *fyt_anchor);
+void fy_parse_streaming_alias_clean(struct fy_parser *fyp, struct fy_streaming_alias *fysa);
+void fy_parse_streaming_aliases_reset(struct fy_parser *fyp);
+
+struct fy_eventp *fy_parser_parse_resolve_prolog(struct fy_parser *fyp);
+struct fy_eventp *fy_parser_parse_resolve_epilog(struct fy_parser *fyp, struct fy_eventp *fyep);
 
 #endif

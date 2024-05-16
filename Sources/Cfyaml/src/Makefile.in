@@ -16,6 +16,7 @@
 
 
 
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -90,9 +91,31 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+target_triplet = @target@
 bin_PROGRAMS = fy-tool$(EXEEXT)
-noinst_PROGRAMS = $(am__EXEEXT_1)
-@HAVE_LIBYAML_TRUE@am__append_1 = libfyaml-parser
+noinst_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
+
+# note that each target lib has blake3 compiled again but with a suffix
+@TARGET_HAS_SSE2_TRUE@am__append_1 = libb3sse2.la
+@TARGET_HAS_SSE2_TRUE@am__append_2 = libb3sse2.la
+@TARGET_HAS_SSE41_TRUE@am__append_3 = libb3sse41.la
+@TARGET_HAS_SSE41_TRUE@am__append_4 = libb3sse41.la
+@TARGET_HAS_AVX2_TRUE@am__append_5 = libb3avx2.la
+@TARGET_HAS_AVX2_TRUE@am__append_6 = libb3avx2.la
+@TARGET_HAS_AVX512_TRUE@am__append_7 = libb3avx512.la
+@TARGET_HAS_AVX512_TRUE@am__append_8 = libb3avx512.la
+@TARGET_HAS_NEON_TRUE@am__append_9 = libb3neon.la
+@TARGET_CPU_ARM_TRUE@@TARGET_HAS_NEON_TRUE@am__append_10 = -mfpu=neon
+@TARGET_CPU_ARM_TRUE@@TARGET_HAS_NEON_TRUE@am__append_11 = -mfpu=neon
+@TARGET_HAS_NEON_TRUE@am__append_12 = libb3neon.la
+
+# libfyaml-parser needs both LIBYAML and static
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@am__append_13 = libfyaml-parser
+
+# fy-thread
+
+# fy-b3sum
+@HAVE_STATIC_TRUE@am__append_14 = fy-thread fy-b3sum
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_enable_debug.m4 \
@@ -112,8 +135,11 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(includedir)"
-@HAVE_LIBYAML_TRUE@am__EXEEXT_1 = libfyaml-parser$(EXEEXT)
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@am__EXEEXT_1 =  \
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@	libfyaml-parser$(EXEEXT)
+@HAVE_STATIC_TRUE@am__EXEEXT_2 = fy-thread$(EXEEXT) fy-b3sum$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
+LIBRARIES = $(noinst_LIBRARIES)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -141,28 +167,122 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-LTLIBRARIES = $(lib_LTLIBRARIES)
-libfyaml_la_LIBADD =
+LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
+libb3avx2_la_LIBADD =
+am__libb3avx2_la_SOURCES_DIST = blake3/blake3_avx2.c \
+	blake3/blake3_avx2_x86-64_unix.S blake3/blake3.c
 am__dirstamp = $(am__leading_dot)dirstamp
-am_libfyaml_la_OBJECTS = lib/libfyaml_la-fy-parse.lo \
-	lib/libfyaml_la-fy-utf8.lo lib/libfyaml_la-fy-types.lo \
-	lib/libfyaml_la-fy-diag.lo lib/libfyaml_la-fy-dump.lo \
-	lib/libfyaml_la-fy-atom.lo lib/libfyaml_la-fy-ctype.lo \
-	lib/libfyaml_la-fy-token.lo lib/libfyaml_la-fy-input.lo \
-	lib/libfyaml_la-fy-docstate.lo lib/libfyaml_la-fy-doc.lo \
-	lib/libfyaml_la-fy-docbuilder.lo lib/libfyaml_la-fy-emit.lo \
-	lib/libfyaml_la-fy-utils.lo lib/libfyaml_la-fy-event.lo \
-	xxhash/libfyaml_la-xxhash.lo lib/libfyaml_la-fy-accel.lo \
-	lib/libfyaml_la-fy-walk.lo lib/libfyaml_la-fy-path.lo \
-	lib/libfyaml_la-fy-composer.lo
-libfyaml_la_OBJECTS = $(am_libfyaml_la_OBJECTS)
+@TARGET_HAS_AVX2_TRUE@am_libb3avx2_la_OBJECTS =  \
+@TARGET_HAS_AVX2_TRUE@	blake3/libb3avx2_la-blake3_avx2.lo \
+@TARGET_HAS_AVX2_TRUE@	blake3/libb3avx2_la-blake3_avx2_x86-64_unix.lo \
+@TARGET_HAS_AVX2_TRUE@	blake3/libb3avx2_la-blake3.lo
+libb3avx2_la_OBJECTS = $(am_libb3avx2_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+libb3avx2_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libb3avx2_la_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+@TARGET_HAS_AVX2_TRUE@am_libb3avx2_la_rpath =
+libb3avx512_la_LIBADD =
+am__libb3avx512_la_SOURCES_DIST = blake3/blake3_avx512.c \
+	blake3/blake3_avx512_x86-64_unix.S blake3/blake3.c
+@TARGET_HAS_AVX512_TRUE@am_libb3avx512_la_OBJECTS = blake3/libb3avx512_la-blake3_avx512.lo \
+@TARGET_HAS_AVX512_TRUE@	blake3/libb3avx512_la-blake3_avx512_x86-64_unix.lo \
+@TARGET_HAS_AVX512_TRUE@	blake3/libb3avx512_la-blake3.lo
+libb3avx512_la_OBJECTS = $(am_libb3avx512_la_OBJECTS)
+libb3avx512_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libb3avx512_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
+	$@
+@TARGET_HAS_AVX512_TRUE@am_libb3avx512_la_rpath =
+libb3neon_la_LIBADD =
+am__libb3neon_la_SOURCES_DIST = blake3/blake3_neon.c blake3/blake3.c
+@TARGET_HAS_NEON_TRUE@am_libb3neon_la_OBJECTS =  \
+@TARGET_HAS_NEON_TRUE@	blake3/libb3neon_la-blake3_neon.lo \
+@TARGET_HAS_NEON_TRUE@	blake3/libb3neon_la-blake3.lo
+libb3neon_la_OBJECTS = $(am_libb3neon_la_OBJECTS)
+libb3neon_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libb3neon_la_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+@TARGET_HAS_NEON_TRUE@am_libb3neon_la_rpath =
+libb3portable_la_LIBADD =
+am_libb3portable_la_OBJECTS =  \
+	blake3/libb3portable_la-blake3_portable.lo \
+	blake3/libb3portable_la-blake3.lo
+libb3portable_la_OBJECTS = $(am_libb3portable_la_OBJECTS)
+libb3portable_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libb3portable_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
+libb3sse2_la_LIBADD =
+am__libb3sse2_la_SOURCES_DIST = blake3/blake3_sse2.c \
+	blake3/blake3_sse2_x86-64_unix.S blake3/blake3.c
+@TARGET_HAS_SSE2_TRUE@am_libb3sse2_la_OBJECTS =  \
+@TARGET_HAS_SSE2_TRUE@	blake3/libb3sse2_la-blake3_sse2.lo \
+@TARGET_HAS_SSE2_TRUE@	blake3/libb3sse2_la-blake3_sse2_x86-64_unix.lo \
+@TARGET_HAS_SSE2_TRUE@	blake3/libb3sse2_la-blake3.lo
+libb3sse2_la_OBJECTS = $(am_libb3sse2_la_OBJECTS)
+libb3sse2_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libb3sse2_la_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+@TARGET_HAS_SSE2_TRUE@am_libb3sse2_la_rpath =
+libb3sse41_la_LIBADD =
+am__libb3sse41_la_SOURCES_DIST = blake3/blake3_sse41.c \
+	blake3/blake3_sse41_x86-64_unix.S blake3/blake3.c
+@TARGET_HAS_SSE41_TRUE@am_libb3sse41_la_OBJECTS =  \
+@TARGET_HAS_SSE41_TRUE@	blake3/libb3sse41_la-blake3_sse41.lo \
+@TARGET_HAS_SSE41_TRUE@	blake3/libb3sse41_la-blake3_sse41_x86-64_unix.lo \
+@TARGET_HAS_SSE41_TRUE@	blake3/libb3sse41_la-blake3.lo
+libb3sse41_la_OBJECTS = $(am_libb3sse41_la_OBJECTS)
+libb3sse41_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libb3sse41_la_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+@TARGET_HAS_SSE41_TRUE@am_libb3sse41_la_rpath =
+libfyaml_la_DEPENDENCIES = libb3portable.la $(am__append_2) \
+	$(am__append_4) $(am__append_6) $(am__append_8) \
+	$(am__append_12)
+am_libfyaml_la_OBJECTS = lib/libfyaml_la-fy-parse.lo \
+	lib/libfyaml_la-fy-types.lo lib/libfyaml_la-fy-diag.lo \
+	lib/libfyaml_la-fy-dump.lo lib/libfyaml_la-fy-atom.lo \
+	lib/libfyaml_la-fy-token.lo lib/libfyaml_la-fy-input.lo \
+	lib/libfyaml_la-fy-docstate.lo lib/libfyaml_la-fy-doc.lo \
+	lib/libfyaml_la-fy-docbuilder.lo lib/libfyaml_la-fy-emit.lo \
+	lib/libfyaml_la-fy-event.lo lib/libfyaml_la-fy-accel.lo \
+	lib/libfyaml_la-fy-walk.lo lib/libfyaml_la-fy-path.lo \
+	lib/libfyaml_la-fy-composer.lo xxhash/libfyaml_la-xxhash.lo \
+	util/libfyaml_la-fy-ctype.lo util/libfyaml_la-fy-utf8.lo \
+	util/libfyaml_la-fy-utils.lo util/libfyaml_la-fy-blob.lo \
+	thread/libfyaml_la-fy-thread.lo \
+	blake3/libfyaml_la-blake3_host_state.lo \
+	blake3/libfyaml_la-blake3_backend.lo \
+	blake3/libfyaml_la-blake3_be_cpusimd.lo \
+	blake3/libfyaml_la-fy-blake3.lo
+libfyaml_la_OBJECTS = $(am_libfyaml_la_OBJECTS)
 libfyaml_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libfyaml_la_CFLAGS) \
 	$(CFLAGS) $(libfyaml_la_LDFLAGS) $(LDFLAGS) -o $@
+am__fy_b3sum_SOURCES_DIST = internal/fy-b3sum.c valgrind/fy-valgrind.h
+@HAVE_STATIC_TRUE@am_fy_b3sum_OBJECTS =  \
+@HAVE_STATIC_TRUE@	internal/fy_b3sum-fy-b3sum.$(OBJEXT)
+fy_b3sum_OBJECTS = $(am_fy_b3sum_OBJECTS)
+am__DEPENDENCIES_1 =
+@HAVE_STATIC_TRUE@fy_b3sum_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@HAVE_STATIC_TRUE@	libfyaml.la
+fy_b3sum_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(fy_b3sum_CFLAGS) \
+	$(CFLAGS) $(fy_b3sum_LDFLAGS) $(LDFLAGS) -o $@
+am__fy_thread_SOURCES_DIST = internal/fy-thread.c \
+	valgrind/fy-valgrind.h
+@HAVE_STATIC_TRUE@am_fy_thread_OBJECTS =  \
+@HAVE_STATIC_TRUE@	internal/fy_thread-fy-thread.$(OBJEXT)
+fy_thread_OBJECTS = $(am_fy_thread_OBJECTS)
+@HAVE_STATIC_TRUE@fy_thread_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@HAVE_STATIC_TRUE@	libfyaml.la
+fy_thread_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(fy_thread_CFLAGS) \
+	$(CFLAGS) $(fy_thread_LDFLAGS) $(LDFLAGS) -o $@
 am_fy_tool_OBJECTS = tool/fy_tool-fy-tool.$(OBJEXT)
 fy_tool_OBJECTS = $(am_fy_tool_OBJECTS)
 fy_tool_DEPENDENCIES = libfyaml.la
@@ -171,11 +291,11 @@ fy_tool_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(CFLAGS) $(fy_tool_LDFLAGS) $(LDFLAGS) -o $@
 am__libfyaml_parser_SOURCES_DIST = internal/libfyaml-parser.c \
 	valgrind/fy-valgrind.h
-@HAVE_LIBYAML_TRUE@am_libfyaml_parser_OBJECTS = internal/libfyaml_parser-libfyaml-parser.$(OBJEXT)
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@am_libfyaml_parser_OBJECTS = internal/libfyaml_parser-libfyaml-parser.$(OBJEXT)
 libfyaml_parser_OBJECTS = $(am_libfyaml_parser_OBJECTS)
-am__DEPENDENCIES_1 =
-@HAVE_LIBYAML_TRUE@libfyaml_parser_DEPENDENCIES =  \
-@HAVE_LIBYAML_TRUE@	$(am__DEPENDENCIES_1) libfyaml.la
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@libfyaml_parser_DEPENDENCIES =  \
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@	$(am__DEPENDENCIES_1) \
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@	libfyaml.la
 libfyaml_parser_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libfyaml_parser_CFLAGS) $(CFLAGS) $(libfyaml_parser_LDFLAGS) \
@@ -195,12 +315,32 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade =  \
+am__depfiles_remade = blake3/$(DEPDIR)/libb3avx2_la-blake3.Plo \
+	blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2.Plo \
+	blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2_x86-64_unix.Plo \
+	blake3/$(DEPDIR)/libb3avx512_la-blake3.Plo \
+	blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512.Plo \
+	blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512_x86-64_unix.Plo \
+	blake3/$(DEPDIR)/libb3neon_la-blake3.Plo \
+	blake3/$(DEPDIR)/libb3neon_la-blake3_neon.Plo \
+	blake3/$(DEPDIR)/libb3portable_la-blake3.Plo \
+	blake3/$(DEPDIR)/libb3portable_la-blake3_portable.Plo \
+	blake3/$(DEPDIR)/libb3sse2_la-blake3.Plo \
+	blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2.Plo \
+	blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2_x86-64_unix.Plo \
+	blake3/$(DEPDIR)/libb3sse41_la-blake3.Plo \
+	blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41.Plo \
+	blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41_x86-64_unix.Plo \
+	blake3/$(DEPDIR)/libfyaml_la-blake3_backend.Plo \
+	blake3/$(DEPDIR)/libfyaml_la-blake3_be_cpusimd.Plo \
+	blake3/$(DEPDIR)/libfyaml_la-blake3_host_state.Plo \
+	blake3/$(DEPDIR)/libfyaml_la-fy-blake3.Plo \
+	internal/$(DEPDIR)/fy_b3sum-fy-b3sum.Po \
+	internal/$(DEPDIR)/fy_thread-fy-thread.Po \
 	internal/$(DEPDIR)/libfyaml_parser-libfyaml-parser.Po \
 	lib/$(DEPDIR)/libfyaml_la-fy-accel.Plo \
 	lib/$(DEPDIR)/libfyaml_la-fy-atom.Plo \
 	lib/$(DEPDIR)/libfyaml_la-fy-composer.Plo \
-	lib/$(DEPDIR)/libfyaml_la-fy-ctype.Plo \
 	lib/$(DEPDIR)/libfyaml_la-fy-diag.Plo \
 	lib/$(DEPDIR)/libfyaml_la-fy-doc.Plo \
 	lib/$(DEPDIR)/libfyaml_la-fy-docbuilder.Plo \
@@ -213,12 +353,25 @@ am__depfiles_remade =  \
 	lib/$(DEPDIR)/libfyaml_la-fy-path.Plo \
 	lib/$(DEPDIR)/libfyaml_la-fy-token.Plo \
 	lib/$(DEPDIR)/libfyaml_la-fy-types.Plo \
-	lib/$(DEPDIR)/libfyaml_la-fy-utf8.Plo \
-	lib/$(DEPDIR)/libfyaml_la-fy-utils.Plo \
 	lib/$(DEPDIR)/libfyaml_la-fy-walk.Plo \
+	thread/$(DEPDIR)/libfyaml_la-fy-thread.Plo \
 	tool/$(DEPDIR)/fy_tool-fy-tool.Po \
+	util/$(DEPDIR)/libfyaml_la-fy-blob.Plo \
+	util/$(DEPDIR)/libfyaml_la-fy-ctype.Plo \
+	util/$(DEPDIR)/libfyaml_la-fy-utf8.Plo \
+	util/$(DEPDIR)/libfyaml_la-fy-utils.Plo \
 	xxhash/$(DEPDIR)/libfyaml_la-xxhash.Plo
 am__mv = mv -f
+CPPASCOMPILE = $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
+LTCPPASCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CCASFLAGS) $(CCASFLAGS)
+AM_V_CPPAS = $(am__v_CPPAS_@AM_V@)
+am__v_CPPAS_ = $(am__v_CPPAS_@AM_DEFAULT_V@)
+am__v_CPPAS_0 = @echo "  CPPAS   " $@;
+am__v_CPPAS_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -237,10 +390,19 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libfyaml_la_SOURCES) $(fy_tool_SOURCES) \
+SOURCES = $(libb3avx2_la_SOURCES) $(libb3avx512_la_SOURCES) \
+	$(libb3neon_la_SOURCES) $(libb3portable_la_SOURCES) \
+	$(libb3sse2_la_SOURCES) $(libb3sse41_la_SOURCES) \
+	$(libfyaml_la_SOURCES) $(fy_b3sum_SOURCES) \
+	$(fy_thread_SOURCES) $(fy_tool_SOURCES) \
 	$(libfyaml_parser_SOURCES)
-DIST_SOURCES = $(libfyaml_la_SOURCES) $(fy_tool_SOURCES) \
-	$(am__libfyaml_parser_SOURCES_DIST)
+DIST_SOURCES = $(am__libb3avx2_la_SOURCES_DIST) \
+	$(am__libb3avx512_la_SOURCES_DIST) \
+	$(am__libb3neon_la_SOURCES_DIST) $(libb3portable_la_SOURCES) \
+	$(am__libb3sse2_la_SOURCES_DIST) \
+	$(am__libb3sse41_la_SOURCES_DIST) $(libfyaml_la_SOURCES) \
+	$(am__fy_b3sum_SOURCES_DIST) $(am__fy_thread_SOURCES_DIST) \
+	$(fy_tool_SOURCES) $(am__libfyaml_parser_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -277,18 +439,21 @@ AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AM_MAKEFLAGS = @AM_MAKEFLAGS@
 AR = @AR@
 AS = @AS@
+ASAN_CFLAGS = @ASAN_CFLAGS@
+ASAN_LIBS = @ASAN_LIBS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCAS = @CCAS@
+CCASDEPMODE = @CCASDEPMODE@
+CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CHECK_CFLAGS = @CHECK_CFLAGS@
 CHECK_LDFLAGS = @CHECK_LDFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
-CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
@@ -316,13 +481,16 @@ FGREP = @FGREP@
 FILECMD = @FILECMD@
 GIT = @GIT@
 GREP = @GREP@
+HAVE_ASAN = @HAVE_ASAN@
 HAVE_CHECK = @HAVE_CHECK@
 HAVE_COMPATIBLE_CHECK = @HAVE_COMPATIBLE_CHECK@
 HAVE_DEVMODE = @HAVE_DEVMODE@
+HAVE_LIBCLANG = @HAVE_LIBCLANG@
 HAVE_LIBYAML = @HAVE_LIBYAML@
 HAVE_NETWORK = @HAVE_NETWORK@
+HAVE_PORTABLE_TARGET = @HAVE_PORTABLE_TARGET@
 HAVE_QSORT_R = @HAVE_QSORT_R@
-INCLTDL = @INCLTDL@
+HAVE_STATIC = @HAVE_STATIC@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -334,6 +502,10 @@ JSONTESTSUITEURL = @JSONTESTSUITEURL@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LEX = @LEX@
+LIBCLANG_CFLAGS = @LIBCLANG_CFLAGS@
+LIBCLANG_CPPFLAGS = @LIBCLANG_CPPFLAGS@
+LIBCLANG_LDFLAGS = @LIBCLANG_LDFLAGS@
+LIBCLANG_LIBS = @LIBCLANG_LIBS@
 LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -342,8 +514,8 @@ LIBTOOL_VERSION = @LIBTOOL_VERSION@
 LIBYAML_CFLAGS = @LIBYAML_CFLAGS@
 LIBYAML_LIBS = @LIBYAML_LIBS@
 LIPO = @LIPO@
+LLVM_CONFIG = @LLVM_CONFIG@
 LN_S = @LN_S@
-LTDLDEPS = @LTDLDEPS@
 LTDLINCL = @LTDLINCL@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
@@ -443,60 +615,120 @@ shavedir = @shavedir@
 srcdir = @srcdir@
 subdirs = @subdirs@
 sysconfdir = @sysconfdir@
+target = @target@
 target_alias = @target_alias@
+target_cpu = @target_cpu@
+target_os = @target_os@
+target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+noinst_LIBRARIES = 
+lib_LTLIBRARIES = libfyaml.la
+
+# the portable implementation
+noinst_LTLIBRARIES = libb3portable.la $(am__append_1) $(am__append_3) \
+	$(am__append_5) $(am__append_7) $(am__append_9)
 AM_CPPFLAGS = \
         -I$(top_srcdir)/src \
         -I$(top_srcdir)/include
 
 AM_CFLAGS = 
-lib_LTLIBRARIES = libfyaml.la
-libfyaml_la_SOURCES = \
-        lib/fy-parse.c lib/fy-parse.h \
-	lib/fy-utf8.c lib/fy-utf8.h \
-	lib/fy-types.c lib/fy-types.h \
-	lib/fy-list.h \
-	lib/fy-typelist.h \
-	lib/fy-diag.c lib/fy-diag.h \
-	lib/fy-dump.c lib/fy-dump.h \
-	lib/fy-atom.c lib/fy-atom.h \
-	lib/fy-ctype.c lib/fy-ctype.h \
-	lib/fy-token.c lib/fy-token.h \
-	lib/fy-input.c lib/fy-input.h \
-	lib/fy-docstate.c lib/fy-docstate.h \
-	lib/fy-doc.c lib/fy-doc.h \
-	lib/fy-docbuilder.c lib/fy-docbuilder.h \
-	lib/fy-emit.c lib/fy-emit.h lib/fy-emit-accum.h \
-	lib/fy-utils.c lib/fy-utils.h \
-	lib/fy-event.h lib/fy-event.c \
-	xxhash/xxhash.c xxhash/xxhash.h \
-	lib/fy-accel.c lib/fy-accel.h \
-	lib/fy-walk.c lib/fy-walk.h \
-	lib/fy-path.c lib/fy-path.h \
-	lib/fy-composer.c lib/fy-composer.h
+libfyaml_la_SOURCES = lib/fy-parse.c lib/fy-parse.h lib/fy-types.c \
+	lib/fy-types.h lib/fy-diag.c lib/fy-diag.h lib/fy-dump.c \
+	lib/fy-dump.h lib/fy-atom.c lib/fy-atom.h lib/fy-token.c \
+	lib/fy-token.h lib/fy-input.c lib/fy-input.h lib/fy-docstate.c \
+	lib/fy-docstate.h lib/fy-doc.c lib/fy-doc.h \
+	lib/fy-docbuilder.c lib/fy-docbuilder.h lib/fy-emit.c \
+	lib/fy-emit.h lib/fy-emit-accum.h lib/fy-event.h \
+	lib/fy-event.c lib/fy-accel.c lib/fy-accel.h lib/fy-walk.c \
+	lib/fy-walk.h lib/fy-path.c lib/fy-path.h lib/fy-composer.c \
+	lib/fy-composer.h xxhash/xxhash.c xxhash/xxhash.h \
+	util/fy-list.h util/fy-typelist.h util/fy-ctype.c \
+	util/fy-ctype.h util/fy-utf8.c util/fy-utf8.h util/fy-utils.c \
+	util/fy-utils.h util/fy-endian.h util/fy-blob.c util/fy-blob.h \
+	util/fy-id.h util/fy-align.h util/fy-bit64.h \
+	thread/fy-thread.h thread/fy-thread.c blake3/blake3.h \
+	blake3/blake3_impl.h blake3/blake3_internal.h \
+	blake3/blake3_host_state.c blake3/blake3_backend.c \
+	blake3/blake3_be_cpusimd.c blake3/fy-blake3.c
 
-libfyaml_la_CPPFLAGS = $(AM_CPPFLAGS) \
-				       -I$(top_srcdir)/src/lib \
-				       -I$(top_srcdir)/src/xxhash
-
+# blake3 section
+libfyaml_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/lib \
+	-I$(top_srcdir)/src/xxhash -I$(top_srcdir)/src/util \
+	-I$(top_srcdir)/src/thread -I$(top_srcdir)/src/blake3
 libfyaml_la_CFLAGS = $(AM_CFLAGS)
-libfyaml_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) \
+libfyaml_la_LDFLAGS = -no-undefined $(AM_LDFLAGS) $(AM_LIBLDFLAGS) \
 		      -version $(LIBTOOL_VERSION)
 
-@HAVE_LIBYAML_TRUE@libfyaml_parser_SOURCES = \
-@HAVE_LIBYAML_TRUE@	internal/libfyaml-parser.c \
-@HAVE_LIBYAML_TRUE@	valgrind/fy-valgrind.h
+libfyaml_la_LIBADD = libb3portable.la $(am__append_2) $(am__append_4) \
+	$(am__append_6) $(am__append_8) $(am__append_12)
+LIBB3_COMMON_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/util -I$(top_srcdir)/src/thread
+libb3portable_la_SOURCES = blake3/blake3_portable.c blake3/blake3.c
+libb3portable_la_CPPFLAGS = $(LIBB3_COMMON_CPPFLAGS) -DHASHER_SUFFIX=portable -DSIMD_DEGREE=1
+libb3portable_la_CFLAGS = $(AM_CPPFLAGS)
+@TARGET_HAS_SSE2_TRUE@libb3sse2_la_SOURCES = blake3/blake3_sse2.c blake3/blake3_sse2_x86-64_unix.S blake3/blake3.c
+@TARGET_HAS_SSE2_TRUE@libb3sse2_la_CPPFLAGS = $(LIBB3_COMMON_CPPFLAGS) -msse2 -DHASHER_SUFFIX=sse2 -DSIMD_DEGREE=4
+@TARGET_HAS_SSE2_TRUE@libb3sse2_la_CFLAGS = $(AM_CPPFLAGS) -msse2
+@TARGET_HAS_SSE41_TRUE@libb3sse41_la_SOURCES = blake3/blake3_sse41.c blake3/blake3_sse41_x86-64_unix.S blake3/blake3.c
+@TARGET_HAS_SSE41_TRUE@libb3sse41_la_CPPFLAGS = $(LIBB3_COMMON_CPPFLAGS) -msse4.1 -DHASHER_SUFFIX=sse41 -DSIMD_DEGREE=4
+@TARGET_HAS_SSE41_TRUE@libb3sse41_la_CFLAGS = $(AM_CPPFLAGS) -msse4.1
+@TARGET_HAS_AVX2_TRUE@libb3avx2_la_SOURCES = blake3/blake3_avx2.c blake3/blake3_avx2_x86-64_unix.S blake3/blake3.c
+@TARGET_HAS_AVX2_TRUE@libb3avx2_la_CPPFLAGS = $(LIBB3_COMMON_CPPFLAGS) -mavx2 -DHASHER_SUFFIX=avx2 -DSIMD_DEGREE=8
+@TARGET_HAS_AVX2_TRUE@libb3avx2_la_CFLAGS = $(AM_CPPFLAGS) -mavx2
+@TARGET_HAS_AVX512_TRUE@libb3avx512_la_SOURCES = blake3/blake3_avx512.c blake3/blake3_avx512_x86-64_unix.S blake3/blake3.c
+@TARGET_HAS_AVX512_TRUE@libb3avx512_la_CPPFLAGS = $(LIBB3_COMMON_CPPFLAGS) -mavx512f -mavx512vl -DHASHER_SUFFIX=avx512 -DSIMD_DEGREE=16
+@TARGET_HAS_AVX512_TRUE@libb3avx512_la_CFLAGS = $(AM_CPPFLAGS) -mavx512f -mavx512vl
+@TARGET_HAS_NEON_TRUE@libb3neon_la_SOURCES = blake3/blake3_neon.c blake3/blake3.c
+@TARGET_HAS_NEON_TRUE@libb3neon_la_CPPFLAGS =  \
+@TARGET_HAS_NEON_TRUE@	$(LIBB3_COMMON_CPPFLAGS) \
+@TARGET_HAS_NEON_TRUE@	-DHASHER_SUFFIX=neon -DSIMD_DEGREE=4 \
+@TARGET_HAS_NEON_TRUE@	$(am__append_10)
+@TARGET_HAS_NEON_TRUE@libb3neon_la_CFLAGS = $(AM_CPPFLAGS) \
+@TARGET_HAS_NEON_TRUE@	$(am__append_11)
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@libfyaml_parser_SOURCES = \
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@	internal/libfyaml-parser.c \
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@	valgrind/fy-valgrind.h
 
-@HAVE_LIBYAML_TRUE@libfyaml_parser_CPPFLAGS = $(AM_CPPFLAGS) \
-@HAVE_LIBYAML_TRUE@			   -I$(top_srcdir)/src/valgrind \
-@HAVE_LIBYAML_TRUE@			   -I$(top_srcdir)/src/lib \
-@HAVE_LIBYAML_TRUE@			   -I$(top_srcdir)/src/xxhash
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@libfyaml_parser_CPPFLAGS = $(AM_CPPFLAGS) \
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/valgrind \
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/lib \
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/xxhash \
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/util \
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/thread
 
-@HAVE_LIBYAML_TRUE@libfyaml_parser_LDADD = $(AM_LDADD) $(LIBYAML_LIBS) libfyaml.la
-@HAVE_LIBYAML_TRUE@libfyaml_parser_CFLAGS = $(AM_CFLAGS) $(LIBYAML_CFLAGS)
-@HAVE_LIBYAML_TRUE@libfyaml_parser_LDFLAGS = $(AM_LDFLAGS)
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@libfyaml_parser_LDADD = $(AM_LDADD) $(LIBYAML_LIBS) libfyaml.la
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@libfyaml_parser_CFLAGS = $(AM_CFLAGS) $(LIBYAML_CFLAGS)
+@HAVE_LIBYAML_TRUE@@HAVE_STATIC_TRUE@libfyaml_parser_LDFLAGS = $(AM_LDFLAGS) -static
+@HAVE_STATIC_TRUE@fy_thread_SOURCES = \
+@HAVE_STATIC_TRUE@	internal/fy-thread.c \
+@HAVE_STATIC_TRUE@	valgrind/fy-valgrind.h
+
+@HAVE_STATIC_TRUE@fy_thread_CPPFLAGS = $(AM_CPPFLAGS) \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/valgrind \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/lib \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/xxhash \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/util \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/thread
+
+@HAVE_STATIC_TRUE@fy_thread_LDADD = $(AM_LDADD) $(LIBYAML_LIBS) libfyaml.la
+@HAVE_STATIC_TRUE@fy_thread_CFLAGS = $(AM_CFLAGS) $(LIBYAML_CFLAGS)
+@HAVE_STATIC_TRUE@fy_thread_LDFLAGS = $(AM_LDFLAGS) -static
+@HAVE_STATIC_TRUE@fy_b3sum_SOURCES = \
+@HAVE_STATIC_TRUE@	internal/fy-b3sum.c \
+@HAVE_STATIC_TRUE@	valgrind/fy-valgrind.h
+
+@HAVE_STATIC_TRUE@fy_b3sum_CPPFLAGS = $(AM_CPPFLAGS) \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/valgrind \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/lib \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/xxhash \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/util \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/thread \
+@HAVE_STATIC_TRUE@			   -I$(top_srcdir)/src/blake3
+
+@HAVE_STATIC_TRUE@fy_b3sum_LDADD = $(AM_LDADD) $(LIBYAML_LIBS) libfyaml.la
+@HAVE_STATIC_TRUE@fy_b3sum_CFLAGS = $(AM_CFLAGS) $(LIBYAML_CFLAGS)
+@HAVE_STATIC_TRUE@fy_b3sum_LDFLAGS = $(AM_LDFLAGS) -static
 fy_tool_SOURCES = \
 	tool/fy-tool.c \
 	valgrind/fy-valgrind.h
@@ -511,7 +743,7 @@ include_HEADERS = \
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .S .c .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -600,6 +832,9 @@ clean-noinstPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
+clean-noinstLIBRARIES:
+	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
+
 install-libLTLIBRARIES: $(lib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
 	@list='$(lib_LTLIBRARIES)'; test -n "$(libdir)" || list=; \
@@ -634,6 +869,73 @@ clean-libLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
+
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
+blake3/$(am__dirstamp):
+	@$(MKDIR_P) blake3
+	@: > blake3/$(am__dirstamp)
+blake3/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) blake3/$(DEPDIR)
+	@: > blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3avx2_la-blake3_avx2.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3avx2_la-blake3_avx2_x86-64_unix.lo:  \
+	blake3/$(am__dirstamp) blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3avx2_la-blake3.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+
+libb3avx2.la: $(libb3avx2_la_OBJECTS) $(libb3avx2_la_DEPENDENCIES) $(EXTRA_libb3avx2_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libb3avx2_la_LINK) $(am_libb3avx2_la_rpath) $(libb3avx2_la_OBJECTS) $(libb3avx2_la_LIBADD) $(LIBS)
+blake3/libb3avx512_la-blake3_avx512.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3avx512_la-blake3_avx512_x86-64_unix.lo:  \
+	blake3/$(am__dirstamp) blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3avx512_la-blake3.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+
+libb3avx512.la: $(libb3avx512_la_OBJECTS) $(libb3avx512_la_DEPENDENCIES) $(EXTRA_libb3avx512_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libb3avx512_la_LINK) $(am_libb3avx512_la_rpath) $(libb3avx512_la_OBJECTS) $(libb3avx512_la_LIBADD) $(LIBS)
+blake3/libb3neon_la-blake3_neon.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3neon_la-blake3.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+
+libb3neon.la: $(libb3neon_la_OBJECTS) $(libb3neon_la_DEPENDENCIES) $(EXTRA_libb3neon_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libb3neon_la_LINK) $(am_libb3neon_la_rpath) $(libb3neon_la_OBJECTS) $(libb3neon_la_LIBADD) $(LIBS)
+blake3/libb3portable_la-blake3_portable.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3portable_la-blake3.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+
+libb3portable.la: $(libb3portable_la_OBJECTS) $(libb3portable_la_DEPENDENCIES) $(EXTRA_libb3portable_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libb3portable_la_LINK)  $(libb3portable_la_OBJECTS) $(libb3portable_la_LIBADD) $(LIBS)
+blake3/libb3sse2_la-blake3_sse2.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3sse2_la-blake3_sse2_x86-64_unix.lo:  \
+	blake3/$(am__dirstamp) blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3sse2_la-blake3.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+
+libb3sse2.la: $(libb3sse2_la_OBJECTS) $(libb3sse2_la_DEPENDENCIES) $(EXTRA_libb3sse2_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libb3sse2_la_LINK) $(am_libb3sse2_la_rpath) $(libb3sse2_la_OBJECTS) $(libb3sse2_la_LIBADD) $(LIBS)
+blake3/libb3sse41_la-blake3_sse41.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3sse41_la-blake3_sse41_x86-64_unix.lo:  \
+	blake3/$(am__dirstamp) blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libb3sse41_la-blake3.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+
+libb3sse41.la: $(libb3sse41_la_OBJECTS) $(libb3sse41_la_DEPENDENCIES) $(EXTRA_libb3sse41_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libb3sse41_la_LINK) $(am_libb3sse41_la_rpath) $(libb3sse41_la_OBJECTS) $(libb3sse41_la_LIBADD) $(LIBS)
 lib/$(am__dirstamp):
 	@$(MKDIR_P) lib
 	@: > lib/$(am__dirstamp)
@@ -642,8 +944,6 @@ lib/$(DEPDIR)/$(am__dirstamp):
 	@: > lib/$(DEPDIR)/$(am__dirstamp)
 lib/libfyaml_la-fy-parse.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
-lib/libfyaml_la-fy-utf8.lo: lib/$(am__dirstamp) \
-	lib/$(DEPDIR)/$(am__dirstamp)
 lib/libfyaml_la-fy-types.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/libfyaml_la-fy-diag.lo: lib/$(am__dirstamp) \
@@ -651,8 +951,6 @@ lib/libfyaml_la-fy-diag.lo: lib/$(am__dirstamp) \
 lib/libfyaml_la-fy-dump.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/libfyaml_la-fy-atom.lo: lib/$(am__dirstamp) \
-	lib/$(DEPDIR)/$(am__dirstamp)
-lib/libfyaml_la-fy-ctype.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/libfyaml_la-fy-token.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
@@ -666,9 +964,15 @@ lib/libfyaml_la-fy-docbuilder.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 lib/libfyaml_la-fy-emit.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
-lib/libfyaml_la-fy-utils.lo: lib/$(am__dirstamp) \
-	lib/$(DEPDIR)/$(am__dirstamp)
 lib/libfyaml_la-fy-event.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/libfyaml_la-fy-accel.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/libfyaml_la-fy-walk.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/libfyaml_la-fy-path.lo: lib/$(am__dirstamp) \
+	lib/$(DEPDIR)/$(am__dirstamp)
+lib/libfyaml_la-fy-composer.lo: lib/$(am__dirstamp) \
 	lib/$(DEPDIR)/$(am__dirstamp)
 xxhash/$(am__dirstamp):
 	@$(MKDIR_P) xxhash
@@ -678,17 +982,57 @@ xxhash/$(DEPDIR)/$(am__dirstamp):
 	@: > xxhash/$(DEPDIR)/$(am__dirstamp)
 xxhash/libfyaml_la-xxhash.lo: xxhash/$(am__dirstamp) \
 	xxhash/$(DEPDIR)/$(am__dirstamp)
-lib/libfyaml_la-fy-accel.lo: lib/$(am__dirstamp) \
-	lib/$(DEPDIR)/$(am__dirstamp)
-lib/libfyaml_la-fy-walk.lo: lib/$(am__dirstamp) \
-	lib/$(DEPDIR)/$(am__dirstamp)
-lib/libfyaml_la-fy-path.lo: lib/$(am__dirstamp) \
-	lib/$(DEPDIR)/$(am__dirstamp)
-lib/libfyaml_la-fy-composer.lo: lib/$(am__dirstamp) \
-	lib/$(DEPDIR)/$(am__dirstamp)
+util/$(am__dirstamp):
+	@$(MKDIR_P) util
+	@: > util/$(am__dirstamp)
+util/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) util/$(DEPDIR)
+	@: > util/$(DEPDIR)/$(am__dirstamp)
+util/libfyaml_la-fy-ctype.lo: util/$(am__dirstamp) \
+	util/$(DEPDIR)/$(am__dirstamp)
+util/libfyaml_la-fy-utf8.lo: util/$(am__dirstamp) \
+	util/$(DEPDIR)/$(am__dirstamp)
+util/libfyaml_la-fy-utils.lo: util/$(am__dirstamp) \
+	util/$(DEPDIR)/$(am__dirstamp)
+util/libfyaml_la-fy-blob.lo: util/$(am__dirstamp) \
+	util/$(DEPDIR)/$(am__dirstamp)
+thread/$(am__dirstamp):
+	@$(MKDIR_P) thread
+	@: > thread/$(am__dirstamp)
+thread/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) thread/$(DEPDIR)
+	@: > thread/$(DEPDIR)/$(am__dirstamp)
+thread/libfyaml_la-fy-thread.lo: thread/$(am__dirstamp) \
+	thread/$(DEPDIR)/$(am__dirstamp)
+blake3/libfyaml_la-blake3_host_state.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libfyaml_la-blake3_backend.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libfyaml_la-blake3_be_cpusimd.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
+blake3/libfyaml_la-fy-blake3.lo: blake3/$(am__dirstamp) \
+	blake3/$(DEPDIR)/$(am__dirstamp)
 
 libfyaml.la: $(libfyaml_la_OBJECTS) $(libfyaml_la_DEPENDENCIES) $(EXTRA_libfyaml_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libfyaml_la_LINK) -rpath $(libdir) $(libfyaml_la_OBJECTS) $(libfyaml_la_LIBADD) $(LIBS)
+internal/$(am__dirstamp):
+	@$(MKDIR_P) internal
+	@: > internal/$(am__dirstamp)
+internal/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) internal/$(DEPDIR)
+	@: > internal/$(DEPDIR)/$(am__dirstamp)
+internal/fy_b3sum-fy-b3sum.$(OBJEXT): internal/$(am__dirstamp) \
+	internal/$(DEPDIR)/$(am__dirstamp)
+
+fy-b3sum$(EXEEXT): $(fy_b3sum_OBJECTS) $(fy_b3sum_DEPENDENCIES) $(EXTRA_fy_b3sum_DEPENDENCIES) 
+	@rm -f fy-b3sum$(EXEEXT)
+	$(AM_V_CCLD)$(fy_b3sum_LINK) $(fy_b3sum_OBJECTS) $(fy_b3sum_LDADD) $(LIBS)
+internal/fy_thread-fy-thread.$(OBJEXT): internal/$(am__dirstamp) \
+	internal/$(DEPDIR)/$(am__dirstamp)
+
+fy-thread$(EXEEXT): $(fy_thread_OBJECTS) $(fy_thread_DEPENDENCIES) $(EXTRA_fy_thread_DEPENDENCIES) 
+	@rm -f fy-thread$(EXEEXT)
+	$(AM_V_CCLD)$(fy_thread_LINK) $(fy_thread_OBJECTS) $(fy_thread_LDADD) $(LIBS)
 tool/$(am__dirstamp):
 	@$(MKDIR_P) tool
 	@: > tool/$(am__dirstamp)
@@ -701,12 +1045,6 @@ tool/fy_tool-fy-tool.$(OBJEXT): tool/$(am__dirstamp) \
 fy-tool$(EXEEXT): $(fy_tool_OBJECTS) $(fy_tool_DEPENDENCIES) $(EXTRA_fy_tool_DEPENDENCIES) 
 	@rm -f fy-tool$(EXEEXT)
 	$(AM_V_CCLD)$(fy_tool_LINK) $(fy_tool_OBJECTS) $(fy_tool_LDADD) $(LIBS)
-internal/$(am__dirstamp):
-	@$(MKDIR_P) internal
-	@: > internal/$(am__dirstamp)
-internal/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) internal/$(DEPDIR)
-	@: > internal/$(DEPDIR)/$(am__dirstamp)
 internal/libfyaml_parser-libfyaml-parser.$(OBJEXT):  \
 	internal/$(am__dirstamp) internal/$(DEPDIR)/$(am__dirstamp)
 
@@ -716,21 +1054,48 @@ libfyaml-parser$(EXEEXT): $(libfyaml_parser_OBJECTS) $(libfyaml_parser_DEPENDENC
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f blake3/*.$(OBJEXT)
+	-rm -f blake3/*.lo
 	-rm -f internal/*.$(OBJEXT)
 	-rm -f lib/*.$(OBJEXT)
 	-rm -f lib/*.lo
+	-rm -f thread/*.$(OBJEXT)
+	-rm -f thread/*.lo
 	-rm -f tool/*.$(OBJEXT)
+	-rm -f util/*.$(OBJEXT)
+	-rm -f util/*.lo
 	-rm -f xxhash/*.$(OBJEXT)
 	-rm -f xxhash/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3avx2_la-blake3.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2_x86-64_unix.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3avx512_la-blake3.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512_x86-64_unix.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3neon_la-blake3.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3neon_la-blake3_neon.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3portable_la-blake3.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3portable_la-blake3_portable.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3sse2_la-blake3.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2_x86-64_unix.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3sse41_la-blake3.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41_x86-64_unix.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libfyaml_la-blake3_backend.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libfyaml_la-blake3_be_cpusimd.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libfyaml_la-blake3_host_state.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@blake3/$(DEPDIR)/libfyaml_la-fy-blake3.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@internal/$(DEPDIR)/fy_b3sum-fy-b3sum.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@internal/$(DEPDIR)/fy_thread-fy-thread.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@internal/$(DEPDIR)/libfyaml_parser-libfyaml-parser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-accel.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-atom.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-composer.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-ctype.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-diag.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-doc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-docbuilder.Plo@am__quote@ # am--include-marker
@@ -743,10 +1108,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-path.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-token.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-types.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-utf8.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-utils.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@lib/$(DEPDIR)/libfyaml_la-fy-walk.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@thread/$(DEPDIR)/libfyaml_la-fy-thread.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tool/$(DEPDIR)/fy_tool-fy-tool.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libfyaml_la-fy-blob.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libfyaml_la-fy-ctype.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libfyaml_la-fy-utf8.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libfyaml_la-fy-utils.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@xxhash/$(DEPDIR)/libfyaml_la-xxhash.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -754,6 +1122,58 @@ $(am__depfiles_remade):
 	@echo '# dummy' >$@-t && $(am__mv) $@-t $@
 
 am--depfiles: $(am__depfiles_remade)
+
+.S.o:
+@am__fastdepCCAS_TRUE@	$(AM_V_CPPAS)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCCAS_TRUE@	$(CPPASCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCCAS_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS@am__nodep@)$(CPPASCOMPILE) -c -o $@ $<
+
+.S.obj:
+@am__fastdepCCAS_TRUE@	$(AM_V_CPPAS)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCCAS_TRUE@	$(CPPASCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCCAS_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS@am__nodep@)$(CPPASCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.S.lo:
+@am__fastdepCCAS_TRUE@	$(AM_V_CPPAS)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCCAS_TRUE@	$(LTCPPASCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCCAS_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS@am__nodep@)$(LTCPPASCOMPILE) -c -o $@ $<
+
+blake3/libb3avx2_la-blake3_avx2_x86-64_unix.lo: blake3/blake3_avx2_x86-64_unix.S
+@am__fastdepCCAS_TRUE@	$(AM_V_CPPAS)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT blake3/libb3avx2_la-blake3_avx2_x86-64_unix.lo -MD -MP -MF blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2_x86-64_unix.Tpo -c -o blake3/libb3avx2_la-blake3_avx2_x86-64_unix.lo `test -f 'blake3/blake3_avx2_x86-64_unix.S' || echo '$(srcdir)/'`blake3/blake3_avx2_x86-64_unix.S
+@am__fastdepCCAS_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2_x86-64_unix.Tpo blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2_x86-64_unix.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS)source='blake3/blake3_avx2_x86-64_unix.S' object='blake3/libb3avx2_la-blake3_avx2_x86-64_unix.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o blake3/libb3avx2_la-blake3_avx2_x86-64_unix.lo `test -f 'blake3/blake3_avx2_x86-64_unix.S' || echo '$(srcdir)/'`blake3/blake3_avx2_x86-64_unix.S
+
+blake3/libb3avx512_la-blake3_avx512_x86-64_unix.lo: blake3/blake3_avx512_x86-64_unix.S
+@am__fastdepCCAS_TRUE@	$(AM_V_CPPAS)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx512_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT blake3/libb3avx512_la-blake3_avx512_x86-64_unix.lo -MD -MP -MF blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512_x86-64_unix.Tpo -c -o blake3/libb3avx512_la-blake3_avx512_x86-64_unix.lo `test -f 'blake3/blake3_avx512_x86-64_unix.S' || echo '$(srcdir)/'`blake3/blake3_avx512_x86-64_unix.S
+@am__fastdepCCAS_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512_x86-64_unix.Tpo blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512_x86-64_unix.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS)source='blake3/blake3_avx512_x86-64_unix.S' object='blake3/libb3avx512_la-blake3_avx512_x86-64_unix.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx512_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o blake3/libb3avx512_la-blake3_avx512_x86-64_unix.lo `test -f 'blake3/blake3_avx512_x86-64_unix.S' || echo '$(srcdir)/'`blake3/blake3_avx512_x86-64_unix.S
+
+blake3/libb3sse2_la-blake3_sse2_x86-64_unix.lo: blake3/blake3_sse2_x86-64_unix.S
+@am__fastdepCCAS_TRUE@	$(AM_V_CPPAS)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT blake3/libb3sse2_la-blake3_sse2_x86-64_unix.lo -MD -MP -MF blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2_x86-64_unix.Tpo -c -o blake3/libb3sse2_la-blake3_sse2_x86-64_unix.lo `test -f 'blake3/blake3_sse2_x86-64_unix.S' || echo '$(srcdir)/'`blake3/blake3_sse2_x86-64_unix.S
+@am__fastdepCCAS_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2_x86-64_unix.Tpo blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2_x86-64_unix.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS)source='blake3/blake3_sse2_x86-64_unix.S' object='blake3/libb3sse2_la-blake3_sse2_x86-64_unix.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o blake3/libb3sse2_la-blake3_sse2_x86-64_unix.lo `test -f 'blake3/blake3_sse2_x86-64_unix.S' || echo '$(srcdir)/'`blake3/blake3_sse2_x86-64_unix.S
+
+blake3/libb3sse41_la-blake3_sse41_x86-64_unix.lo: blake3/blake3_sse41_x86-64_unix.S
+@am__fastdepCCAS_TRUE@	$(AM_V_CPPAS)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse41_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -MT blake3/libb3sse41_la-blake3_sse41_x86-64_unix.lo -MD -MP -MF blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41_x86-64_unix.Tpo -c -o blake3/libb3sse41_la-blake3_sse41_x86-64_unix.lo `test -f 'blake3/blake3_sse41_x86-64_unix.S' || echo '$(srcdir)/'`blake3/blake3_sse41_x86-64_unix.S
+@am__fastdepCCAS_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41_x86-64_unix.Tpo blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41_x86-64_unix.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS)source='blake3/blake3_sse41_x86-64_unix.S' object='blake3/libb3sse41_la-blake3_sse41_x86-64_unix.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse41_la_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS) -c -o blake3/libb3sse41_la-blake3_sse41_x86-64_unix.lo `test -f 'blake3/blake3_sse41_x86-64_unix.S' || echo '$(srcdir)/'`blake3/blake3_sse41_x86-64_unix.S
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -779,19 +1199,96 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
+blake3/libb3avx2_la-blake3_avx2.lo: blake3/blake3_avx2.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx2_la_CPPFLAGS) $(CPPFLAGS) $(libb3avx2_la_CFLAGS) $(CFLAGS) -MT blake3/libb3avx2_la-blake3_avx2.lo -MD -MP -MF blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2.Tpo -c -o blake3/libb3avx2_la-blake3_avx2.lo `test -f 'blake3/blake3_avx2.c' || echo '$(srcdir)/'`blake3/blake3_avx2.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2.Tpo blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3_avx2.c' object='blake3/libb3avx2_la-blake3_avx2.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx2_la_CPPFLAGS) $(CPPFLAGS) $(libb3avx2_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3avx2_la-blake3_avx2.lo `test -f 'blake3/blake3_avx2.c' || echo '$(srcdir)/'`blake3/blake3_avx2.c
+
+blake3/libb3avx2_la-blake3.lo: blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx2_la_CPPFLAGS) $(CPPFLAGS) $(libb3avx2_la_CFLAGS) $(CFLAGS) -MT blake3/libb3avx2_la-blake3.lo -MD -MP -MF blake3/$(DEPDIR)/libb3avx2_la-blake3.Tpo -c -o blake3/libb3avx2_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3avx2_la-blake3.Tpo blake3/$(DEPDIR)/libb3avx2_la-blake3.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3.c' object='blake3/libb3avx2_la-blake3.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx2_la_CPPFLAGS) $(CPPFLAGS) $(libb3avx2_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3avx2_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+
+blake3/libb3avx512_la-blake3_avx512.lo: blake3/blake3_avx512.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx512_la_CPPFLAGS) $(CPPFLAGS) $(libb3avx512_la_CFLAGS) $(CFLAGS) -MT blake3/libb3avx512_la-blake3_avx512.lo -MD -MP -MF blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512.Tpo -c -o blake3/libb3avx512_la-blake3_avx512.lo `test -f 'blake3/blake3_avx512.c' || echo '$(srcdir)/'`blake3/blake3_avx512.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512.Tpo blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3_avx512.c' object='blake3/libb3avx512_la-blake3_avx512.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx512_la_CPPFLAGS) $(CPPFLAGS) $(libb3avx512_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3avx512_la-blake3_avx512.lo `test -f 'blake3/blake3_avx512.c' || echo '$(srcdir)/'`blake3/blake3_avx512.c
+
+blake3/libb3avx512_la-blake3.lo: blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx512_la_CPPFLAGS) $(CPPFLAGS) $(libb3avx512_la_CFLAGS) $(CFLAGS) -MT blake3/libb3avx512_la-blake3.lo -MD -MP -MF blake3/$(DEPDIR)/libb3avx512_la-blake3.Tpo -c -o blake3/libb3avx512_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3avx512_la-blake3.Tpo blake3/$(DEPDIR)/libb3avx512_la-blake3.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3.c' object='blake3/libb3avx512_la-blake3.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3avx512_la_CPPFLAGS) $(CPPFLAGS) $(libb3avx512_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3avx512_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+
+blake3/libb3neon_la-blake3_neon.lo: blake3/blake3_neon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3neon_la_CPPFLAGS) $(CPPFLAGS) $(libb3neon_la_CFLAGS) $(CFLAGS) -MT blake3/libb3neon_la-blake3_neon.lo -MD -MP -MF blake3/$(DEPDIR)/libb3neon_la-blake3_neon.Tpo -c -o blake3/libb3neon_la-blake3_neon.lo `test -f 'blake3/blake3_neon.c' || echo '$(srcdir)/'`blake3/blake3_neon.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3neon_la-blake3_neon.Tpo blake3/$(DEPDIR)/libb3neon_la-blake3_neon.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3_neon.c' object='blake3/libb3neon_la-blake3_neon.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3neon_la_CPPFLAGS) $(CPPFLAGS) $(libb3neon_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3neon_la-blake3_neon.lo `test -f 'blake3/blake3_neon.c' || echo '$(srcdir)/'`blake3/blake3_neon.c
+
+blake3/libb3neon_la-blake3.lo: blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3neon_la_CPPFLAGS) $(CPPFLAGS) $(libb3neon_la_CFLAGS) $(CFLAGS) -MT blake3/libb3neon_la-blake3.lo -MD -MP -MF blake3/$(DEPDIR)/libb3neon_la-blake3.Tpo -c -o blake3/libb3neon_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3neon_la-blake3.Tpo blake3/$(DEPDIR)/libb3neon_la-blake3.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3.c' object='blake3/libb3neon_la-blake3.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3neon_la_CPPFLAGS) $(CPPFLAGS) $(libb3neon_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3neon_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+
+blake3/libb3portable_la-blake3_portable.lo: blake3/blake3_portable.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3portable_la_CPPFLAGS) $(CPPFLAGS) $(libb3portable_la_CFLAGS) $(CFLAGS) -MT blake3/libb3portable_la-blake3_portable.lo -MD -MP -MF blake3/$(DEPDIR)/libb3portable_la-blake3_portable.Tpo -c -o blake3/libb3portable_la-blake3_portable.lo `test -f 'blake3/blake3_portable.c' || echo '$(srcdir)/'`blake3/blake3_portable.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3portable_la-blake3_portable.Tpo blake3/$(DEPDIR)/libb3portable_la-blake3_portable.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3_portable.c' object='blake3/libb3portable_la-blake3_portable.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3portable_la_CPPFLAGS) $(CPPFLAGS) $(libb3portable_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3portable_la-blake3_portable.lo `test -f 'blake3/blake3_portable.c' || echo '$(srcdir)/'`blake3/blake3_portable.c
+
+blake3/libb3portable_la-blake3.lo: blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3portable_la_CPPFLAGS) $(CPPFLAGS) $(libb3portable_la_CFLAGS) $(CFLAGS) -MT blake3/libb3portable_la-blake3.lo -MD -MP -MF blake3/$(DEPDIR)/libb3portable_la-blake3.Tpo -c -o blake3/libb3portable_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3portable_la-blake3.Tpo blake3/$(DEPDIR)/libb3portable_la-blake3.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3.c' object='blake3/libb3portable_la-blake3.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3portable_la_CPPFLAGS) $(CPPFLAGS) $(libb3portable_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3portable_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+
+blake3/libb3sse2_la-blake3_sse2.lo: blake3/blake3_sse2.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse2_la_CPPFLAGS) $(CPPFLAGS) $(libb3sse2_la_CFLAGS) $(CFLAGS) -MT blake3/libb3sse2_la-blake3_sse2.lo -MD -MP -MF blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2.Tpo -c -o blake3/libb3sse2_la-blake3_sse2.lo `test -f 'blake3/blake3_sse2.c' || echo '$(srcdir)/'`blake3/blake3_sse2.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2.Tpo blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3_sse2.c' object='blake3/libb3sse2_la-blake3_sse2.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse2_la_CPPFLAGS) $(CPPFLAGS) $(libb3sse2_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3sse2_la-blake3_sse2.lo `test -f 'blake3/blake3_sse2.c' || echo '$(srcdir)/'`blake3/blake3_sse2.c
+
+blake3/libb3sse2_la-blake3.lo: blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse2_la_CPPFLAGS) $(CPPFLAGS) $(libb3sse2_la_CFLAGS) $(CFLAGS) -MT blake3/libb3sse2_la-blake3.lo -MD -MP -MF blake3/$(DEPDIR)/libb3sse2_la-blake3.Tpo -c -o blake3/libb3sse2_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3sse2_la-blake3.Tpo blake3/$(DEPDIR)/libb3sse2_la-blake3.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3.c' object='blake3/libb3sse2_la-blake3.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse2_la_CPPFLAGS) $(CPPFLAGS) $(libb3sse2_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3sse2_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+
+blake3/libb3sse41_la-blake3_sse41.lo: blake3/blake3_sse41.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse41_la_CPPFLAGS) $(CPPFLAGS) $(libb3sse41_la_CFLAGS) $(CFLAGS) -MT blake3/libb3sse41_la-blake3_sse41.lo -MD -MP -MF blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41.Tpo -c -o blake3/libb3sse41_la-blake3_sse41.lo `test -f 'blake3/blake3_sse41.c' || echo '$(srcdir)/'`blake3/blake3_sse41.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41.Tpo blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3_sse41.c' object='blake3/libb3sse41_la-blake3_sse41.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse41_la_CPPFLAGS) $(CPPFLAGS) $(libb3sse41_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3sse41_la-blake3_sse41.lo `test -f 'blake3/blake3_sse41.c' || echo '$(srcdir)/'`blake3/blake3_sse41.c
+
+blake3/libb3sse41_la-blake3.lo: blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse41_la_CPPFLAGS) $(CPPFLAGS) $(libb3sse41_la_CFLAGS) $(CFLAGS) -MT blake3/libb3sse41_la-blake3.lo -MD -MP -MF blake3/$(DEPDIR)/libb3sse41_la-blake3.Tpo -c -o blake3/libb3sse41_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libb3sse41_la-blake3.Tpo blake3/$(DEPDIR)/libb3sse41_la-blake3.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3.c' object='blake3/libb3sse41_la-blake3.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libb3sse41_la_CPPFLAGS) $(CPPFLAGS) $(libb3sse41_la_CFLAGS) $(CFLAGS) -c -o blake3/libb3sse41_la-blake3.lo `test -f 'blake3/blake3.c' || echo '$(srcdir)/'`blake3/blake3.c
+
 lib/libfyaml_la-fy-parse.lo: lib/fy-parse.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT lib/libfyaml_la-fy-parse.lo -MD -MP -MF lib/$(DEPDIR)/libfyaml_la-fy-parse.Tpo -c -o lib/libfyaml_la-fy-parse.lo `test -f 'lib/fy-parse.c' || echo '$(srcdir)/'`lib/fy-parse.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/libfyaml_la-fy-parse.Tpo lib/$(DEPDIR)/libfyaml_la-fy-parse.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/fy-parse.c' object='lib/libfyaml_la-fy-parse.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o lib/libfyaml_la-fy-parse.lo `test -f 'lib/fy-parse.c' || echo '$(srcdir)/'`lib/fy-parse.c
-
-lib/libfyaml_la-fy-utf8.lo: lib/fy-utf8.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT lib/libfyaml_la-fy-utf8.lo -MD -MP -MF lib/$(DEPDIR)/libfyaml_la-fy-utf8.Tpo -c -o lib/libfyaml_la-fy-utf8.lo `test -f 'lib/fy-utf8.c' || echo '$(srcdir)/'`lib/fy-utf8.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/libfyaml_la-fy-utf8.Tpo lib/$(DEPDIR)/libfyaml_la-fy-utf8.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/fy-utf8.c' object='lib/libfyaml_la-fy-utf8.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o lib/libfyaml_la-fy-utf8.lo `test -f 'lib/fy-utf8.c' || echo '$(srcdir)/'`lib/fy-utf8.c
 
 lib/libfyaml_la-fy-types.lo: lib/fy-types.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT lib/libfyaml_la-fy-types.lo -MD -MP -MF lib/$(DEPDIR)/libfyaml_la-fy-types.Tpo -c -o lib/libfyaml_la-fy-types.lo `test -f 'lib/fy-types.c' || echo '$(srcdir)/'`lib/fy-types.c
@@ -820,13 +1317,6 @@ lib/libfyaml_la-fy-atom.lo: lib/fy-atom.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/fy-atom.c' object='lib/libfyaml_la-fy-atom.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o lib/libfyaml_la-fy-atom.lo `test -f 'lib/fy-atom.c' || echo '$(srcdir)/'`lib/fy-atom.c
-
-lib/libfyaml_la-fy-ctype.lo: lib/fy-ctype.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT lib/libfyaml_la-fy-ctype.lo -MD -MP -MF lib/$(DEPDIR)/libfyaml_la-fy-ctype.Tpo -c -o lib/libfyaml_la-fy-ctype.lo `test -f 'lib/fy-ctype.c' || echo '$(srcdir)/'`lib/fy-ctype.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/libfyaml_la-fy-ctype.Tpo lib/$(DEPDIR)/libfyaml_la-fy-ctype.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/fy-ctype.c' object='lib/libfyaml_la-fy-ctype.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o lib/libfyaml_la-fy-ctype.lo `test -f 'lib/fy-ctype.c' || echo '$(srcdir)/'`lib/fy-ctype.c
 
 lib/libfyaml_la-fy-token.lo: lib/fy-token.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT lib/libfyaml_la-fy-token.lo -MD -MP -MF lib/$(DEPDIR)/libfyaml_la-fy-token.Tpo -c -o lib/libfyaml_la-fy-token.lo `test -f 'lib/fy-token.c' || echo '$(srcdir)/'`lib/fy-token.c
@@ -870,26 +1360,12 @@ lib/libfyaml_la-fy-emit.lo: lib/fy-emit.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o lib/libfyaml_la-fy-emit.lo `test -f 'lib/fy-emit.c' || echo '$(srcdir)/'`lib/fy-emit.c
 
-lib/libfyaml_la-fy-utils.lo: lib/fy-utils.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT lib/libfyaml_la-fy-utils.lo -MD -MP -MF lib/$(DEPDIR)/libfyaml_la-fy-utils.Tpo -c -o lib/libfyaml_la-fy-utils.lo `test -f 'lib/fy-utils.c' || echo '$(srcdir)/'`lib/fy-utils.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/libfyaml_la-fy-utils.Tpo lib/$(DEPDIR)/libfyaml_la-fy-utils.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/fy-utils.c' object='lib/libfyaml_la-fy-utils.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o lib/libfyaml_la-fy-utils.lo `test -f 'lib/fy-utils.c' || echo '$(srcdir)/'`lib/fy-utils.c
-
 lib/libfyaml_la-fy-event.lo: lib/fy-event.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT lib/libfyaml_la-fy-event.lo -MD -MP -MF lib/$(DEPDIR)/libfyaml_la-fy-event.Tpo -c -o lib/libfyaml_la-fy-event.lo `test -f 'lib/fy-event.c' || echo '$(srcdir)/'`lib/fy-event.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lib/$(DEPDIR)/libfyaml_la-fy-event.Tpo lib/$(DEPDIR)/libfyaml_la-fy-event.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/fy-event.c' object='lib/libfyaml_la-fy-event.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o lib/libfyaml_la-fy-event.lo `test -f 'lib/fy-event.c' || echo '$(srcdir)/'`lib/fy-event.c
-
-xxhash/libfyaml_la-xxhash.lo: xxhash/xxhash.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT xxhash/libfyaml_la-xxhash.lo -MD -MP -MF xxhash/$(DEPDIR)/libfyaml_la-xxhash.Tpo -c -o xxhash/libfyaml_la-xxhash.lo `test -f 'xxhash/xxhash.c' || echo '$(srcdir)/'`xxhash/xxhash.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) xxhash/$(DEPDIR)/libfyaml_la-xxhash.Tpo xxhash/$(DEPDIR)/libfyaml_la-xxhash.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xxhash/xxhash.c' object='xxhash/libfyaml_la-xxhash.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o xxhash/libfyaml_la-xxhash.lo `test -f 'xxhash/xxhash.c' || echo '$(srcdir)/'`xxhash/xxhash.c
 
 lib/libfyaml_la-fy-accel.lo: lib/fy-accel.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT lib/libfyaml_la-fy-accel.lo -MD -MP -MF lib/$(DEPDIR)/libfyaml_la-fy-accel.Tpo -c -o lib/libfyaml_la-fy-accel.lo `test -f 'lib/fy-accel.c' || echo '$(srcdir)/'`lib/fy-accel.c
@@ -918,6 +1394,104 @@ lib/libfyaml_la-fy-composer.lo: lib/fy-composer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='lib/fy-composer.c' object='lib/libfyaml_la-fy-composer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o lib/libfyaml_la-fy-composer.lo `test -f 'lib/fy-composer.c' || echo '$(srcdir)/'`lib/fy-composer.c
+
+xxhash/libfyaml_la-xxhash.lo: xxhash/xxhash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT xxhash/libfyaml_la-xxhash.lo -MD -MP -MF xxhash/$(DEPDIR)/libfyaml_la-xxhash.Tpo -c -o xxhash/libfyaml_la-xxhash.lo `test -f 'xxhash/xxhash.c' || echo '$(srcdir)/'`xxhash/xxhash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) xxhash/$(DEPDIR)/libfyaml_la-xxhash.Tpo xxhash/$(DEPDIR)/libfyaml_la-xxhash.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xxhash/xxhash.c' object='xxhash/libfyaml_la-xxhash.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o xxhash/libfyaml_la-xxhash.lo `test -f 'xxhash/xxhash.c' || echo '$(srcdir)/'`xxhash/xxhash.c
+
+util/libfyaml_la-fy-ctype.lo: util/fy-ctype.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT util/libfyaml_la-fy-ctype.lo -MD -MP -MF util/$(DEPDIR)/libfyaml_la-fy-ctype.Tpo -c -o util/libfyaml_la-fy-ctype.lo `test -f 'util/fy-ctype.c' || echo '$(srcdir)/'`util/fy-ctype.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/libfyaml_la-fy-ctype.Tpo util/$(DEPDIR)/libfyaml_la-fy-ctype.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='util/fy-ctype.c' object='util/libfyaml_la-fy-ctype.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o util/libfyaml_la-fy-ctype.lo `test -f 'util/fy-ctype.c' || echo '$(srcdir)/'`util/fy-ctype.c
+
+util/libfyaml_la-fy-utf8.lo: util/fy-utf8.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT util/libfyaml_la-fy-utf8.lo -MD -MP -MF util/$(DEPDIR)/libfyaml_la-fy-utf8.Tpo -c -o util/libfyaml_la-fy-utf8.lo `test -f 'util/fy-utf8.c' || echo '$(srcdir)/'`util/fy-utf8.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/libfyaml_la-fy-utf8.Tpo util/$(DEPDIR)/libfyaml_la-fy-utf8.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='util/fy-utf8.c' object='util/libfyaml_la-fy-utf8.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o util/libfyaml_la-fy-utf8.lo `test -f 'util/fy-utf8.c' || echo '$(srcdir)/'`util/fy-utf8.c
+
+util/libfyaml_la-fy-utils.lo: util/fy-utils.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT util/libfyaml_la-fy-utils.lo -MD -MP -MF util/$(DEPDIR)/libfyaml_la-fy-utils.Tpo -c -o util/libfyaml_la-fy-utils.lo `test -f 'util/fy-utils.c' || echo '$(srcdir)/'`util/fy-utils.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/libfyaml_la-fy-utils.Tpo util/$(DEPDIR)/libfyaml_la-fy-utils.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='util/fy-utils.c' object='util/libfyaml_la-fy-utils.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o util/libfyaml_la-fy-utils.lo `test -f 'util/fy-utils.c' || echo '$(srcdir)/'`util/fy-utils.c
+
+util/libfyaml_la-fy-blob.lo: util/fy-blob.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT util/libfyaml_la-fy-blob.lo -MD -MP -MF util/$(DEPDIR)/libfyaml_la-fy-blob.Tpo -c -o util/libfyaml_la-fy-blob.lo `test -f 'util/fy-blob.c' || echo '$(srcdir)/'`util/fy-blob.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/libfyaml_la-fy-blob.Tpo util/$(DEPDIR)/libfyaml_la-fy-blob.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='util/fy-blob.c' object='util/libfyaml_la-fy-blob.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o util/libfyaml_la-fy-blob.lo `test -f 'util/fy-blob.c' || echo '$(srcdir)/'`util/fy-blob.c
+
+thread/libfyaml_la-fy-thread.lo: thread/fy-thread.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT thread/libfyaml_la-fy-thread.lo -MD -MP -MF thread/$(DEPDIR)/libfyaml_la-fy-thread.Tpo -c -o thread/libfyaml_la-fy-thread.lo `test -f 'thread/fy-thread.c' || echo '$(srcdir)/'`thread/fy-thread.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) thread/$(DEPDIR)/libfyaml_la-fy-thread.Tpo thread/$(DEPDIR)/libfyaml_la-fy-thread.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread/fy-thread.c' object='thread/libfyaml_la-fy-thread.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o thread/libfyaml_la-fy-thread.lo `test -f 'thread/fy-thread.c' || echo '$(srcdir)/'`thread/fy-thread.c
+
+blake3/libfyaml_la-blake3_host_state.lo: blake3/blake3_host_state.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT blake3/libfyaml_la-blake3_host_state.lo -MD -MP -MF blake3/$(DEPDIR)/libfyaml_la-blake3_host_state.Tpo -c -o blake3/libfyaml_la-blake3_host_state.lo `test -f 'blake3/blake3_host_state.c' || echo '$(srcdir)/'`blake3/blake3_host_state.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libfyaml_la-blake3_host_state.Tpo blake3/$(DEPDIR)/libfyaml_la-blake3_host_state.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3_host_state.c' object='blake3/libfyaml_la-blake3_host_state.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o blake3/libfyaml_la-blake3_host_state.lo `test -f 'blake3/blake3_host_state.c' || echo '$(srcdir)/'`blake3/blake3_host_state.c
+
+blake3/libfyaml_la-blake3_backend.lo: blake3/blake3_backend.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT blake3/libfyaml_la-blake3_backend.lo -MD -MP -MF blake3/$(DEPDIR)/libfyaml_la-blake3_backend.Tpo -c -o blake3/libfyaml_la-blake3_backend.lo `test -f 'blake3/blake3_backend.c' || echo '$(srcdir)/'`blake3/blake3_backend.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libfyaml_la-blake3_backend.Tpo blake3/$(DEPDIR)/libfyaml_la-blake3_backend.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3_backend.c' object='blake3/libfyaml_la-blake3_backend.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o blake3/libfyaml_la-blake3_backend.lo `test -f 'blake3/blake3_backend.c' || echo '$(srcdir)/'`blake3/blake3_backend.c
+
+blake3/libfyaml_la-blake3_be_cpusimd.lo: blake3/blake3_be_cpusimd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT blake3/libfyaml_la-blake3_be_cpusimd.lo -MD -MP -MF blake3/$(DEPDIR)/libfyaml_la-blake3_be_cpusimd.Tpo -c -o blake3/libfyaml_la-blake3_be_cpusimd.lo `test -f 'blake3/blake3_be_cpusimd.c' || echo '$(srcdir)/'`blake3/blake3_be_cpusimd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libfyaml_la-blake3_be_cpusimd.Tpo blake3/$(DEPDIR)/libfyaml_la-blake3_be_cpusimd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/blake3_be_cpusimd.c' object='blake3/libfyaml_la-blake3_be_cpusimd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o blake3/libfyaml_la-blake3_be_cpusimd.lo `test -f 'blake3/blake3_be_cpusimd.c' || echo '$(srcdir)/'`blake3/blake3_be_cpusimd.c
+
+blake3/libfyaml_la-fy-blake3.lo: blake3/fy-blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -MT blake3/libfyaml_la-fy-blake3.lo -MD -MP -MF blake3/$(DEPDIR)/libfyaml_la-fy-blake3.Tpo -c -o blake3/libfyaml_la-fy-blake3.lo `test -f 'blake3/fy-blake3.c' || echo '$(srcdir)/'`blake3/fy-blake3.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) blake3/$(DEPDIR)/libfyaml_la-fy-blake3.Tpo blake3/$(DEPDIR)/libfyaml_la-fy-blake3.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='blake3/fy-blake3.c' object='blake3/libfyaml_la-fy-blake3.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_la_CPPFLAGS) $(CPPFLAGS) $(libfyaml_la_CFLAGS) $(CFLAGS) -c -o blake3/libfyaml_la-fy-blake3.lo `test -f 'blake3/fy-blake3.c' || echo '$(srcdir)/'`blake3/fy-blake3.c
+
+internal/fy_b3sum-fy-b3sum.o: internal/fy-b3sum.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fy_b3sum_CPPFLAGS) $(CPPFLAGS) $(fy_b3sum_CFLAGS) $(CFLAGS) -MT internal/fy_b3sum-fy-b3sum.o -MD -MP -MF internal/$(DEPDIR)/fy_b3sum-fy-b3sum.Tpo -c -o internal/fy_b3sum-fy-b3sum.o `test -f 'internal/fy-b3sum.c' || echo '$(srcdir)/'`internal/fy-b3sum.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) internal/$(DEPDIR)/fy_b3sum-fy-b3sum.Tpo internal/$(DEPDIR)/fy_b3sum-fy-b3sum.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='internal/fy-b3sum.c' object='internal/fy_b3sum-fy-b3sum.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fy_b3sum_CPPFLAGS) $(CPPFLAGS) $(fy_b3sum_CFLAGS) $(CFLAGS) -c -o internal/fy_b3sum-fy-b3sum.o `test -f 'internal/fy-b3sum.c' || echo '$(srcdir)/'`internal/fy-b3sum.c
+
+internal/fy_b3sum-fy-b3sum.obj: internal/fy-b3sum.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fy_b3sum_CPPFLAGS) $(CPPFLAGS) $(fy_b3sum_CFLAGS) $(CFLAGS) -MT internal/fy_b3sum-fy-b3sum.obj -MD -MP -MF internal/$(DEPDIR)/fy_b3sum-fy-b3sum.Tpo -c -o internal/fy_b3sum-fy-b3sum.obj `if test -f 'internal/fy-b3sum.c'; then $(CYGPATH_W) 'internal/fy-b3sum.c'; else $(CYGPATH_W) '$(srcdir)/internal/fy-b3sum.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) internal/$(DEPDIR)/fy_b3sum-fy-b3sum.Tpo internal/$(DEPDIR)/fy_b3sum-fy-b3sum.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='internal/fy-b3sum.c' object='internal/fy_b3sum-fy-b3sum.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fy_b3sum_CPPFLAGS) $(CPPFLAGS) $(fy_b3sum_CFLAGS) $(CFLAGS) -c -o internal/fy_b3sum-fy-b3sum.obj `if test -f 'internal/fy-b3sum.c'; then $(CYGPATH_W) 'internal/fy-b3sum.c'; else $(CYGPATH_W) '$(srcdir)/internal/fy-b3sum.c'; fi`
+
+internal/fy_thread-fy-thread.o: internal/fy-thread.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fy_thread_CPPFLAGS) $(CPPFLAGS) $(fy_thread_CFLAGS) $(CFLAGS) -MT internal/fy_thread-fy-thread.o -MD -MP -MF internal/$(DEPDIR)/fy_thread-fy-thread.Tpo -c -o internal/fy_thread-fy-thread.o `test -f 'internal/fy-thread.c' || echo '$(srcdir)/'`internal/fy-thread.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) internal/$(DEPDIR)/fy_thread-fy-thread.Tpo internal/$(DEPDIR)/fy_thread-fy-thread.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='internal/fy-thread.c' object='internal/fy_thread-fy-thread.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fy_thread_CPPFLAGS) $(CPPFLAGS) $(fy_thread_CFLAGS) $(CFLAGS) -c -o internal/fy_thread-fy-thread.o `test -f 'internal/fy-thread.c' || echo '$(srcdir)/'`internal/fy-thread.c
+
+internal/fy_thread-fy-thread.obj: internal/fy-thread.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fy_thread_CPPFLAGS) $(CPPFLAGS) $(fy_thread_CFLAGS) $(CFLAGS) -MT internal/fy_thread-fy-thread.obj -MD -MP -MF internal/$(DEPDIR)/fy_thread-fy-thread.Tpo -c -o internal/fy_thread-fy-thread.obj `if test -f 'internal/fy-thread.c'; then $(CYGPATH_W) 'internal/fy-thread.c'; else $(CYGPATH_W) '$(srcdir)/internal/fy-thread.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) internal/$(DEPDIR)/fy_thread-fy-thread.Tpo internal/$(DEPDIR)/fy_thread-fy-thread.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='internal/fy-thread.c' object='internal/fy_thread-fy-thread.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fy_thread_CPPFLAGS) $(CPPFLAGS) $(fy_thread_CFLAGS) $(CFLAGS) -c -o internal/fy_thread-fy-thread.obj `if test -f 'internal/fy-thread.c'; then $(CYGPATH_W) 'internal/fy-thread.c'; else $(CYGPATH_W) '$(srcdir)/internal/fy-thread.c'; fi`
 
 tool/fy_tool-fy-tool.o: tool/fy-tool.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(fy_tool_CPPFLAGS) $(CPPFLAGS) $(fy_tool_CFLAGS) $(CFLAGS) -MT tool/fy_tool-fy-tool.o -MD -MP -MF tool/$(DEPDIR)/fy_tool-fy-tool.Tpo -c -o tool/fy_tool-fy-tool.o `test -f 'tool/fy-tool.c' || echo '$(srcdir)/'`tool/fy-tool.c
@@ -952,7 +1526,10 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf blake3/.libs blake3/_libs
 	-rm -rf lib/.libs lib/_libs
+	-rm -rf thread/.libs thread/_libs
+	-rm -rf util/.libs util/_libs
 	-rm -rf xxhash/.libs xxhash/_libs
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)
@@ -1068,7 +1645,7 @@ distdir-am: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(LTLIBRARIES) $(HEADERS)
+all-am: Makefile $(PROGRAMS) $(LIBRARIES) $(LTLIBRARIES) $(HEADERS)
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs:
@@ -1101,12 +1678,18 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f blake3/$(DEPDIR)/$(am__dirstamp)
+	-rm -f blake3/$(am__dirstamp)
 	-rm -f internal/$(DEPDIR)/$(am__dirstamp)
 	-rm -f internal/$(am__dirstamp)
 	-rm -f lib/$(DEPDIR)/$(am__dirstamp)
 	-rm -f lib/$(am__dirstamp)
+	-rm -f thread/$(DEPDIR)/$(am__dirstamp)
+	-rm -f thread/$(am__dirstamp)
 	-rm -f tool/$(DEPDIR)/$(am__dirstamp)
 	-rm -f tool/$(am__dirstamp)
+	-rm -f util/$(DEPDIR)/$(am__dirstamp)
+	-rm -f util/$(am__dirstamp)
 	-rm -f xxhash/$(DEPDIR)/$(am__dirstamp)
 	-rm -f xxhash/$(am__dirstamp)
 
@@ -1116,14 +1699,36 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
-	clean-libtool clean-noinstPROGRAMS mostlyclean-am
+	clean-libtool clean-noinstLIBRARIES clean-noinstLTLIBRARIES \
+	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
-		-rm -f internal/$(DEPDIR)/libfyaml_parser-libfyaml-parser.Po
+		-rm -f blake3/$(DEPDIR)/libb3avx2_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2.Plo
+	-rm -f blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2_x86-64_unix.Plo
+	-rm -f blake3/$(DEPDIR)/libb3avx512_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512.Plo
+	-rm -f blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512_x86-64_unix.Plo
+	-rm -f blake3/$(DEPDIR)/libb3neon_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3neon_la-blake3_neon.Plo
+	-rm -f blake3/$(DEPDIR)/libb3portable_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3portable_la-blake3_portable.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse2_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2_x86-64_unix.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse41_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41_x86-64_unix.Plo
+	-rm -f blake3/$(DEPDIR)/libfyaml_la-blake3_backend.Plo
+	-rm -f blake3/$(DEPDIR)/libfyaml_la-blake3_be_cpusimd.Plo
+	-rm -f blake3/$(DEPDIR)/libfyaml_la-blake3_host_state.Plo
+	-rm -f blake3/$(DEPDIR)/libfyaml_la-fy-blake3.Plo
+	-rm -f internal/$(DEPDIR)/fy_b3sum-fy-b3sum.Po
+	-rm -f internal/$(DEPDIR)/fy_thread-fy-thread.Po
+	-rm -f internal/$(DEPDIR)/libfyaml_parser-libfyaml-parser.Po
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-accel.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-atom.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-composer.Plo
-	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-ctype.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-diag.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-doc.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-docbuilder.Plo
@@ -1136,10 +1741,13 @@ distclean: distclean-am
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-path.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-token.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-types.Plo
-	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-utf8.Plo
-	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-utils.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-walk.Plo
+	-rm -f thread/$(DEPDIR)/libfyaml_la-fy-thread.Plo
 	-rm -f tool/$(DEPDIR)/fy_tool-fy-tool.Po
+	-rm -f util/$(DEPDIR)/libfyaml_la-fy-blob.Plo
+	-rm -f util/$(DEPDIR)/libfyaml_la-fy-ctype.Plo
+	-rm -f util/$(DEPDIR)/libfyaml_la-fy-utf8.Plo
+	-rm -f util/$(DEPDIR)/libfyaml_la-fy-utils.Plo
 	-rm -f xxhash/$(DEPDIR)/libfyaml_la-xxhash.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -1211,11 +1819,32 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f internal/$(DEPDIR)/libfyaml_parser-libfyaml-parser.Po
+		-rm -f blake3/$(DEPDIR)/libb3avx2_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2.Plo
+	-rm -f blake3/$(DEPDIR)/libb3avx2_la-blake3_avx2_x86-64_unix.Plo
+	-rm -f blake3/$(DEPDIR)/libb3avx512_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512.Plo
+	-rm -f blake3/$(DEPDIR)/libb3avx512_la-blake3_avx512_x86-64_unix.Plo
+	-rm -f blake3/$(DEPDIR)/libb3neon_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3neon_la-blake3_neon.Plo
+	-rm -f blake3/$(DEPDIR)/libb3portable_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3portable_la-blake3_portable.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse2_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse2_la-blake3_sse2_x86-64_unix.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse41_la-blake3.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41.Plo
+	-rm -f blake3/$(DEPDIR)/libb3sse41_la-blake3_sse41_x86-64_unix.Plo
+	-rm -f blake3/$(DEPDIR)/libfyaml_la-blake3_backend.Plo
+	-rm -f blake3/$(DEPDIR)/libfyaml_la-blake3_be_cpusimd.Plo
+	-rm -f blake3/$(DEPDIR)/libfyaml_la-blake3_host_state.Plo
+	-rm -f blake3/$(DEPDIR)/libfyaml_la-fy-blake3.Plo
+	-rm -f internal/$(DEPDIR)/fy_b3sum-fy-b3sum.Po
+	-rm -f internal/$(DEPDIR)/fy_thread-fy-thread.Po
+	-rm -f internal/$(DEPDIR)/libfyaml_parser-libfyaml-parser.Po
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-accel.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-atom.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-composer.Plo
-	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-ctype.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-diag.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-doc.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-docbuilder.Plo
@@ -1228,10 +1857,13 @@ maintainer-clean: maintainer-clean-am
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-path.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-token.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-types.Plo
-	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-utf8.Plo
-	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-utils.Plo
 	-rm -f lib/$(DEPDIR)/libfyaml_la-fy-walk.Plo
+	-rm -f thread/$(DEPDIR)/libfyaml_la-fy-thread.Plo
 	-rm -f tool/$(DEPDIR)/fy_tool-fy-tool.Po
+	-rm -f util/$(DEPDIR)/libfyaml_la-fy-blob.Plo
+	-rm -f util/$(DEPDIR)/libfyaml_la-fy-ctype.Plo
+	-rm -f util/$(DEPDIR)/libfyaml_la-fy-utf8.Plo
+	-rm -f util/$(DEPDIR)/libfyaml_la-fy-utils.Plo
 	-rm -f xxhash/$(DEPDIR)/libfyaml_la-xxhash.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
@@ -1257,24 +1889,25 @@ uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
 	clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
-	clean-libtool clean-noinstPROGRAMS cscopelist-am ctags \
-	ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir doc-clean-am \
-	doc-clean-local doc-help-am doc-help-local doc-html-am \
-	doc-html-local doc-latexpdf-am doc-latexpdf-local doc-man-am \
-	doc-man-local doc-markdown-am doc-markdown-local dvi dvi-am \
-	html html-am info info-am install install-am \
-	install-binPROGRAMS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-exec-hook \
-	install-html install-html-am install-includeHEADERS \
-	install-info install-info-am install-libLTLIBRARIES \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-binPROGRAMS uninstall-hook \
-	uninstall-includeHEADERS uninstall-libLTLIBRARIES
+	clean-libtool clean-noinstLIBRARIES clean-noinstLTLIBRARIES \
+	clean-noinstPROGRAMS cscopelist-am ctags ctags-am distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir doc-clean-am doc-clean-local \
+	doc-help-am doc-help-local doc-html-am doc-html-local \
+	doc-latexpdf-am doc-latexpdf-local doc-man-am doc-man-local \
+	doc-markdown-am doc-markdown-local dvi dvi-am html html-am \
+	info info-am install install-am install-binPROGRAMS \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-exec-hook install-html \
+	install-html-am install-includeHEADERS install-info \
+	install-info-am install-libLTLIBRARIES install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-hook uninstall-includeHEADERS \
+	uninstall-libLTLIBRARIES
 
 .PRECIOUS: Makefile
 

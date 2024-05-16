@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdarg.h>
-#include <alloca.h>
 
 #include <libfyaml.h>
 
@@ -466,7 +465,7 @@ fy_eventp_vcreate_internal(struct fy_eventp_list *recycled_list, struct fy_diag 
 			goto err_out;
 		}
 
-		fyi = fy_input_from_data(data, len, &handle, true);
+		fyi = fy_input_from_malloc_data(data, len, &handle, true);
 		if (!fyi)
 			goto err_out;
 		data = NULL;
@@ -541,6 +540,77 @@ fy_emit_event_create(struct fy_emitter *emit, enum fy_event_type type, ...)
 	va_end(ap);
 
 	return fye;
+}
+
+int
+fy_emit_vevent(struct fy_emitter *emit, enum fy_event_type type, va_list ap)
+{
+	struct fy_event *fye;
+
+	if (!emit)
+		return -1;
+
+	fye = fy_emit_event_vcreate(emit, type, ap);
+	if (!fye)
+		return -1;
+
+	return fy_emit_event(emit, fye);
+}
+
+int
+fy_emit_eventf(struct fy_emitter *emit, enum fy_event_type type, ...)
+{
+	int rc;
+	va_list ap;
+
+	va_start(ap, type);
+	rc = fy_emit_vevent(emit, type, ap);
+	va_end(ap);
+
+	return rc;
+}
+
+int
+fy_emit_scalar_write(struct fy_emitter *fye, enum fy_scalar_style style,
+		     const char *anchor, const char *tag,
+		     const char *text, size_t len)
+{
+	return fy_emit_eventf(fye, FYET_SCALAR, style, text, len, anchor, tag);
+}
+
+int
+fy_emit_scalar_vprintf(struct fy_emitter *fye, enum fy_scalar_style style,
+		       const char *anchor, const char *tag,
+		       const char *fmt, va_list ap)
+{
+	char *buf;
+	size_t len;
+	int rc;
+
+	rc = vasprintf(&buf, fmt, ap);
+	if (rc < 0)
+		return -1;
+	len = (size_t)rc;
+
+	rc = fy_emit_scalar_write(fye, style, anchor, tag, buf, len);
+	free(buf);
+
+	return rc;
+}
+
+int
+fy_emit_scalar_printf(struct fy_emitter *fye, enum fy_scalar_style style,
+		      const char *anchor, const char *tag,
+		      const char *fmt, ...)
+{
+	va_list ap;
+	int rc;
+
+	va_start(ap, fmt);
+	rc = fy_emit_scalar_vprintf(fye, style, anchor, tag, fmt, ap);
+	va_end(ap);
+
+	return rc;
 }
 
 struct fy_event *
@@ -670,6 +740,36 @@ struct fy_token *fy_event_get_anchor_token(struct fy_event *fye)
 	}
 
 	return NULL;
+}
+
+struct fy_token *fy_event_get_and_clear_anchor_token(struct fy_event *fye)
+{
+	struct fy_token *fyt = NULL;
+
+	if (!fye)
+		return NULL;
+
+	switch (fye->type) {
+	case FYET_MAPPING_START:
+		fyt = fye->mapping_start.anchor;
+		fye->mapping_start.anchor = NULL;
+		break;
+
+	case FYET_SEQUENCE_START:
+		fyt = fye->sequence_start.anchor;
+		fye->sequence_start.anchor = NULL;
+		break;
+
+	case FYET_SCALAR:
+		fyt = fye->scalar.anchor;
+		fye->scalar.anchor = NULL;
+		break;
+
+	default:
+		break;
+	}
+
+	return fyt;
 }
 
 struct fy_token *fy_event_get_tag_token(struct fy_event *fye)
@@ -818,6 +918,89 @@ fy_event_get_node_style(struct fy_event *fye)
 	}
 
 	return FYNS_ANY;
+}
+
+struct fy_eventp *fy_parse_eventp_clone(struct fy_parser *fyp, struct fy_eventp *fyep_src, bool strip_anchors)
+{
+	struct fy_eventp *fyep = NULL;
+	struct fy_event *fye, *fye_src;
+
+	if (!fyp || !fyep_src)
+		return NULL;
+
+	if (fyp->recycled_eventp_list)
+		fyep = fy_eventp_list_pop(fyp->recycled_eventp_list);
+	if (!fyep)
+		fyep = fy_eventp_alloc();
+	if (!fyep)
+		return NULL;
+
+	fye_src = &fyep_src->e;
+	fye = &fyep->e;
+
+	fye->type = fye_src->type;
+	switch (fye->type) {
+	case FYET_NONE:
+		break;
+	case FYET_STREAM_START:
+		fye->stream_start.stream_start = fy_token_ref(fye_src->stream_start.stream_start);
+		break;
+	case FYET_STREAM_END:
+		fye->stream_end.stream_end = fy_token_ref(fye_src->stream_end.stream_end);
+		break;
+	case FYET_DOCUMENT_START:
+		fye->document_start.document_start = fy_token_ref(fye_src->document_start.document_start);
+		fye->document_start.document_state = fy_document_state_ref(fye_src->document_start.document_state);
+		break;
+	case FYET_DOCUMENT_END:
+		fye->document_end.document_end = fy_token_ref(fye_src->document_end.document_end);
+		break;
+	case FYET_MAPPING_START:
+		if (!strip_anchors)
+			fye->mapping_start.anchor = fy_token_ref(fye_src->mapping_start.anchor);
+		else
+			fye->mapping_start.anchor = NULL;
+		fye->mapping_start.tag = fy_token_ref(fye_src->mapping_start.tag);
+		fye->mapping_start.mapping_start = fy_token_ref(fye_src->mapping_start.mapping_start);
+		break;
+	case FYET_MAPPING_END:
+		fye->mapping_end.mapping_end = fy_token_ref(fye_src->mapping_end.mapping_end);
+		break;
+	case FYET_SEQUENCE_START:
+		if (!strip_anchors)
+			fye->sequence_start.anchor = fy_token_ref(fye_src->sequence_start.anchor);
+		else
+			fye->sequence_start.anchor = NULL;
+		fye->sequence_start.tag = fy_token_ref(fye_src->sequence_start.tag);
+		fye->sequence_start.sequence_start = fy_token_ref(fye_src->sequence_start.sequence_start);
+		break;
+	case FYET_SEQUENCE_END:
+		fye->sequence_end.sequence_end = fy_token_ref(fye_src->sequence_end.sequence_end);
+		break;
+	case FYET_SCALAR:
+		if (!strip_anchors)
+			fye->scalar.anchor = fy_token_ref(fye_src->scalar.anchor);
+		else
+			fye->scalar.anchor = NULL;
+		fye->scalar.tag = fy_token_ref(fye_src->scalar.tag);
+		fye->scalar.value = fy_token_ref(fye_src->scalar.value);
+		break;
+	case FYET_ALIAS:
+		fye->alias.anchor = fy_token_ref(fye_src->alias.anchor);
+		break;
+	}
+	return fyep;
+}
+
+const char *fy_event_get_anchor(struct fy_event *fye, size_t *anchor_lenp)
+{
+	struct fy_token *anchor;
+
+	anchor = fy_event_get_anchor_token(fye);
+	if (!anchor)
+		return NULL;
+
+	return fy_token_get_text(anchor, anchor_lenp);
 }
 
 const struct fy_version *

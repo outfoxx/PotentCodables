@@ -29,17 +29,26 @@ if HAVE_COMPATIBLE_CHECK
 
 check_PROGRAMS = libfyaml-test
 libfyaml_test_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/valgrind/ \
-			 -I$(top_srcdir)/src/lib/
+			 -I$(top_srcdir)/src/lib/ \
+			 -I$(top_srcdir)/src/util
 libfyaml_test_LDADD = $(AM_LDADD) $(CHECK_LIBS) $(top_builddir)/src/libfyaml.la
 libfyaml_test_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS) 
 libfyaml_test_LDFLAGS = $(AM_LDFLAGS) $(CHECK_LDFLAGS)
 
 libfyaml_test_SOURCES = \
 	libfyaml-test.c \
-	libfyaml-test-private.c \
 	libfyaml-test-core.c \
 	libfyaml-test-meta.c \
 	libfyaml-test-emit.c
+
+# the private tests require static compilation
+# if we're compiling shared only, disable the private parts
+if HAVE_STATIC
+libfyaml_test_SOURCES += \
+	libfyaml-test-private.c \
+	libfyaml-test-private-id.c
+libfyaml_test_LDFLAGS += -static
+endif
 
 TESTS += libfyaml.test
 
@@ -62,24 +71,31 @@ TESTS += jsontestsuite.test
 # normal YAML testsuite using document event stream
 TESTS += testsuite-evstream.test
 
-testsuite.test: test-suite-data json-test-suite-data
+# resolution equivalence
+TESTS += testsuite-resolution.test
 
-test-suite-data:
-	@GIT@ clone "@TESTSUITEURL@" -- $@ && \
-	cd $@ && \
-	@GIT@ checkout --detach @TESTSUITECHECKOUT@
+testsuite.test: test-suite-data.checkout.timestamp
+if HAVE_JQ
+testsuite-json.test: test-suite-data.checkout.timestamp
+endif
+testsuite-evstream.test: test-suite-data.checkout.timestamp
+testsuite-resolution.test: test-suite-data.checkout.timestamp
 
-jsontestsuite.test: json-test-suite-data
+test-suite-data.checkout.timestamp:
+	@GIT@ clone -q "@TESTSUITEURL@" -- test-suite-data && \
+	@GIT@ -C test-suite-data checkout -q --detach @TESTSUITECHECKOUT@ && \
+	touch test-suite-data.checkout.timestamp
 
-json-test-suite-data:
-	@GIT@ clone "@JSONTESTSUITEURL@" -- $@ && \
-	cd $@ && \
-	@GIT@ checkout --detach @JSONTESTSUITECHECKOUT@
+jsontestsuite.test: json-test-suite-data.checkout.timestamp
 
-check-local: test-suite-data json-test-suite-data
+json-test-suite-data.checkout.timestamp:
+	@GIT@ clone -q "@JSONTESTSUITEURL@" -- json-test-suite-data && \
+	@GIT@ -C json-test-suite-data checkout -q --detach @JSONTESTSUITECHECKOUT@ && \
+	touch json-test-suite-data.checkout.timestamp
 
 distclean-local:
-	@rm -rf test-suite-data json-test-suite-data
+	@rm -rf test-suite-data test-suite-data.checkout.timestamp
+	@rm -rf json-test-suite-data json-test-suite-data.checkout.timestamp
 
 endif
 endif
@@ -210,6 +226,7 @@ EXTRA_DIST += \
 	emitter-examples/numbers-flow.yaml \
 	emitter-examples/numbers.yaml \
 	emitter-examples/plainlines.yaml \
+	emitter-examples/plain-scalars-with-commas.yaml \
 	emitter-examples/plainscalar.yaml \
 	emitter-examples/quotedbackslash.yaml \
 	emitter-examples/quoted.yaml \
