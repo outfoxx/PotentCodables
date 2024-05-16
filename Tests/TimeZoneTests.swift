@@ -56,15 +56,28 @@ class TimeZoneTests: XCTestCase {
     let utcTZ = TimeZone.timeZone(from: "20201212111111.000Z")
     XCTAssertEqual(utcTZ?.secondsFromGMT(), 0)
 
+    let secondsOffset: Int
+
+    #if !os(Linux)
+    if #available(macOS 14, iOS 17, tvOS 17, watchOS 10, *) {
+      secondsOffset = 45296
+    }
+    else {
+      secondsOffset = 45300
+    }
+    #else
+    secondsOffset = 45300
+    #endif
+
     let aheadSecsTZ1 = TimeZone.timeZone(from: "20201212111111.000+123456")
-    XCTAssertEqual(aheadSecsTZ1?.secondsFromGMT(), 45300)
+    XCTAssertEqual(aheadSecsTZ1?.secondsFromGMT(), secondsOffset)
     let aheadSecsTZ2 = TimeZone.timeZone(from: "20201212111111.000+12:34:56")
-    XCTAssertEqual(aheadSecsTZ2?.secondsFromGMT(), 45300)
+    XCTAssertEqual(aheadSecsTZ2?.secondsFromGMT(), secondsOffset)
 
     let behindSecsTZ1 = TimeZone.timeZone(from: "20201212111111.000-123456")
-    XCTAssertEqual(behindSecsTZ1?.secondsFromGMT(), -45300)
+    XCTAssertEqual(behindSecsTZ1?.secondsFromGMT(), -secondsOffset)
     let behindSecsTZ2 = TimeZone.timeZone(from: "20201212111111.000-12:34:56")
-    XCTAssertEqual(behindSecsTZ2?.secondsFromGMT(), -45300)
+    XCTAssertEqual(behindSecsTZ2?.secondsFromGMT(), -secondsOffset)
 
     let aheadMinsTZ1 = TimeZone.timeZone(from: "20201212111111.000+1234")
     XCTAssertEqual(aheadMinsTZ1?.secondsFromGMT(), 45240)

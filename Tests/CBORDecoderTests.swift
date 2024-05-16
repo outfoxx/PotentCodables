@@ -983,8 +983,7 @@ class CBORDecoderTests: XCTestCase {
       URL(string: "https://example.com/some/thing")
     )
     XCTAssertThrowsError(
-      try CBORDecoder.default.decode(URL.self, from: Data([0xD8, 0x20, 0x67, 0x62, 0x61,
-                                                           0x64, 0x20, 0x75, 0x72, 0x6C]))
+      try CBORDecoder.default.decode(URL.self, from: Data([0xD8, 0x20, 0x60]))
     ) { error in
       AssertDecodingDataCorrupted(error)
     }

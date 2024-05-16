@@ -881,7 +881,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: IntToBool())
       }
 
@@ -907,7 +907,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToInt<Int>())
       }
 
@@ -933,7 +933,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToInt<Int8>())
       }
 
@@ -959,7 +959,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToInt<Int16>())
       }
 
@@ -985,7 +985,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToInt<Int32>())
       }
 
@@ -1011,7 +1011,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToInt<Int64>())
       }
 
@@ -1037,7 +1037,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToInt<UInt>())
       }
 
@@ -1063,7 +1063,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToInt<UInt8>())
       }
 
@@ -1089,7 +1089,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToInt<UInt16>())
       }
 
@@ -1115,7 +1115,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToInt<UInt32>())
       }
 
@@ -1141,7 +1141,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToInt<UInt64>())
       }
 
@@ -1167,7 +1167,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToString())
       }
 
@@ -1193,7 +1193,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToFloat<Float>())
       }
 
@@ -1219,7 +1219,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToFloat<Double>())
       }
 
@@ -1245,7 +1245,7 @@ class ValueTransformerTests: XCTestCase {
       }
 
       init(from decoder: Decoder) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         value = try container.decode(using: BoolToBoolValue())
       }
 

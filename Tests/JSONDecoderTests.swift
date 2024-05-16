@@ -400,7 +400,7 @@ class JSONDecoderTests: XCTestCase {
       var url: URL
     }
 
-    let json = #"{"url":"Not a URL"}"#
+    let json = #"{"url":""}"#
 
     XCTAssertThrowsError(try JSON.Decoder.default.decode(TestValue.self, from: json)) { error in
       AssertDecodingDataCorrupted(error)
