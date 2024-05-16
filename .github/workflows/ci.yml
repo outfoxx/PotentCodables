@@ -17,8 +17,7 @@ jobs:
 
     - name: Install Tools
       run: |
-        brew tap a7ex/homebrew-formulae
-        brew install xcbeautify sonar-scanner findsimulator 
+        brew install sonar-scanner 
       env:
         HOMEBREW_NO_INSTALL_CLEANUP: 1
 
@@ -58,13 +57,6 @@ jobs:
 
     steps:
 
-    - name: Install Tools
-      run: |
-        brew tap a7ex/homebrew-formulae
-        brew install xcbeautify findsimulator 
-      env:
-        HOMEBREW_NO_INSTALL_CLEANUP: 1
-      
     - uses: actions/checkout@v3
 
     - name: Select Xcode

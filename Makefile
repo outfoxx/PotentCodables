@@ -5,12 +5,10 @@ comma:=,
 build-test-all: clean build-test-macos build-test-ios build-test-watchos build-test-tvos
 
 check-tools:
-	@which findsimulator || (echo "findsimulator is required. run 'make install-tools'" && exit 1)
 	@which xcbeautify || (echo "xcbeautify is required. run 'make install-tools'" && exit 1)
 
 install-tools:
-	brew tap a7ex/homebrew-formulae
-	brew install xcbeautify findsimulator
+	brew install xcbeautify
 
 clean:
 	@rm -rf TestResults
