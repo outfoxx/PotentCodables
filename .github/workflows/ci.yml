@@ -11,7 +11,7 @@ jobs:
   
   check-build-test:
 
-    runs-on: macos-12
+    runs-on: macos-13
 
     steps:
 
@@ -27,7 +27,7 @@ jobs:
         fetch-depth: 0
     
     - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
 
     - name: SwiftLint
       run: |
@@ -48,7 +48,7 @@ jobs:
 
   build-test:
 
-    runs-on: macos-12
+    runs-on: macos-13
 
     needs: [check-build-test]
 
@@ -68,7 +68,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
 
     - name: Build/Test
       run: make build-test-${{ matrix.platform }}

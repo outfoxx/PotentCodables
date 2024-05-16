@@ -148,14 +148,26 @@ class ASN1Tests: XCTestCase {
     XCTAssertEqual(date(3), 7_979_553_224.567)
     XCTAssertEqual(tz(3), .utc)
 
+    let secondsOffset: Int
+    #if !os(Linux)
+    if #available(macOS 14, iOS 17, tvOS 17, watchOS 10, *) {
+      secondsOffset = 40953
+    }
+    else {
+      secondsOffset = 40980
+    }
+    #else
+    secondsOffset = 40980
+    #endif
+
     XCTAssertEqual(date(4), 7_979_553_224 - 40953)
-    XCTAssertEqual(offset(4), 40980)
+    XCTAssertEqual(offset(4), secondsOffset)
     XCTAssertEqual(date(5), 7_979_553_224.567 - 40953)
-    XCTAssertEqual(offset(5), 40980)
+    XCTAssertEqual(offset(5), secondsOffset)
     XCTAssertEqual(date(6), 7_979_553_224 - 40953)
-    XCTAssertEqual(offset(6), 40980)
+    XCTAssertEqual(offset(6), secondsOffset)
     XCTAssertEqual(date(7), 7_979_553_224.567 - 40953)
-    XCTAssertEqual(offset(7), 40980)
+    XCTAssertEqual(offset(7), secondsOffset)
     XCTAssertEqual(date(8), 7_979_553_224 - 40920)
     XCTAssertEqual(offset(8), 40920)
     XCTAssertEqual(date(9), 7_979_553_224.567 - 40920)
@@ -170,13 +182,13 @@ class ASN1Tests: XCTestCase {
     XCTAssertEqual(offset(13), 39600)
 
     XCTAssertEqual(date(14), 7_979_553_224 + 40953)
-    XCTAssertEqual(offset(14), -40980)
+    XCTAssertEqual(offset(14), -secondsOffset)
     XCTAssertEqual(date(15), 7_979_553_224.567 + 40953)
-    XCTAssertEqual(offset(15), -40980)
+    XCTAssertEqual(offset(15), -secondsOffset)
     XCTAssertEqual(date(16), 7_979_553_224 + 40953)
-    XCTAssertEqual(offset(16), -40980)
+    XCTAssertEqual(offset(16), -secondsOffset)
     XCTAssertEqual(date(17), 7_979_553_224.567 + 40953)
-    XCTAssertEqual(offset(17), -40980)
+    XCTAssertEqual(offset(17), -secondsOffset)
     XCTAssertEqual(date(18), 7_979_553_224 + 40920)
     XCTAssertEqual(offset(18), -40920)
     XCTAssertEqual(date(19), 7_979_553_224.567 + 40920)

@@ -517,7 +517,7 @@ class YAMLDecoderTests: XCTestCase {
     let yaml =
     """
     ---
-    url: Not a URL
+    url: ""
     ...
 
     """
