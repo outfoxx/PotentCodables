@@ -20,6 +20,11 @@ class CBOREncoderTests: XCTestCase {
     return Array(try CBOREncoder().encode(value))
   }
 
+  func testEncodeEmpty() {
+    struct Empty: Codable {}
+    XCTAssertEqual(try encode(Empty()), [0xA0])
+  }
+
   func testEncodeNull() {
     XCTAssertEqual(try encode(String?(nil)), [0xF6])
   }

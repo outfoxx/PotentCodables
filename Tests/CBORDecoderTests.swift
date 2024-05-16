@@ -16,6 +16,11 @@ import XCTest
 
 class CBORDecoderTests: XCTestCase {
 
+  func testDecodeEmpty() {
+    struct Empty: Equatable, Codable {}
+    XCTAssertEqual(try CBORDecoder.default.decode(Empty.self, from: Data([0xA0])), Empty())
+  }
+
   func testDecodeNull() {
     XCTAssertNil(try CBORDecoder.default.decodeIfPresent(String.self, from: Data([0xF6])))
   }
