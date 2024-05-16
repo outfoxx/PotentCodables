@@ -17,7 +17,18 @@ internal struct YAMLWriter {
 
   typealias Writer = (String?) -> Void
 
-  static func write(_ documents: YAML.Sequence, sortedKeys: Bool = false, writer: @escaping Writer) throws {
+  enum Width {
+    case normal
+    case wide
+    case infinite
+  }
+
+  static func write(_ documents: YAML.Sequence,
+                    preferredCollectionStyle: YAML.CollectionStyle = .block,
+                    pretty: Bool = true,
+                    width: Width = .normal,
+                    sortedKeys: Bool = false,
+                    writer: @escaping Writer) throws {
 
     func output(
       emitter: OpaquePointer?,
@@ -40,9 +51,15 @@ internal struct YAMLWriter {
 
     try withUnsafePointer(to: writer) { writerPtr in
 
-      var flags: UInt32 = 0
-      if sortedKeys {
-        flags |= FYECF_SORT_KEYS.rawValue
+      var flags: UInt32 = pretty ? FYECF_MODE_PRETTY.rawValue : FYECF_DEFAULT.rawValue
+
+      switch width {
+      case .normal:
+        flags |= FYECF_WIDTH_80.rawValue
+      case .wide:
+        flags |= FYECF_WIDTH_132.rawValue
+      case .infinite:
+        flags |= FYECF_WIDTH_INF.rawValue
       }
 
       var emitterCfg = fy_emitter_cfg(
@@ -62,7 +79,10 @@ internal struct YAMLWriter {
       try documents.forEach {
         emit(emitter: emitter, type: FYET_DOCUMENT_START, args: 0, 0, 0)
 
-        try emit(emitter: emitter, value: $0, sortedKeys: sortedKeys)
+        try emit(emitter: emitter,
+                 value: $0,
+                 preferredCollectionStyle: preferredCollectionStyle,
+                 sortedKeys: sortedKeys)
 
         emit(emitter: emitter, type: FYET_DOCUMENT_END)
       }
@@ -72,7 +92,10 @@ internal struct YAMLWriter {
 
   }
 
-  private static func emit(emitter: OpaquePointer, value: YAML, sortedKeys: Bool) throws {
+  private static func emit(emitter: OpaquePointer,
+                           value: YAML,
+                           preferredCollectionStyle: YAML.CollectionStyle,
+                           sortedKeys: Bool) throws {
 
     switch value {
     case .null(anchor: let anchor):
@@ -92,10 +115,22 @@ internal struct YAMLWriter {
       emit(emitter: emitter, scalar: bool ? "true" : "false", style: FYSS_PLAIN, anchor: anchor, tag: nil)
 
     case .sequence(let sequence, style: let style, tag: let tag, anchor: let anchor):
-      try emit(emitter: emitter, sequence: sequence, sortedKeys: sortedKeys, style: style, anchor: anchor, tag: tag)
+      try emit(emitter: emitter,
+               sequence: sequence,
+               style: style,
+               preferredStyle: preferredCollectionStyle,
+               sortedKeys: sortedKeys,
+               anchor: anchor,
+               tag: tag)
 
     case .mapping(let mapping, style: let style, tag: let tag, anchor: let anchor):
-      try emit(emitter: emitter, mapping: mapping, sortedKeys: sortedKeys, style: style, anchor: anchor, tag: tag)
+      try emit(emitter: emitter,
+               mapping: mapping,
+               style: style,
+               preferredStyle: preferredCollectionStyle,
+               sortedKeys: sortedKeys,
+               anchor: anchor,
+               tag: tag)
 
     case .alias(let alias):
       emit(emitter: emitter, alias: alias)
@@ -106,27 +141,28 @@ internal struct YAMLWriter {
   private static func emit(
     emitter: OpaquePointer,
     mapping: YAML.Mapping,
-    sortedKeys: Bool,
     style: YAML.CollectionStyle,
+    preferredStyle: YAML.CollectionStyle,
+    sortedKeys: Bool,
     anchor: String?,
     tag: YAML.Tag?
   ) throws {
-    var mapping = mapping
     emit(
       emitter: emitter,
       type: FYET_MAPPING_START,
-      args: style.nodeStyle.rawValue,
+      args: style.nodeStyle(preferred: preferredStyle).rawValue,
       anchor.varArg,
       (tag?.rawValue).varArg
     )
+    var mapping = mapping
     if sortedKeys {
       mapping = mapping.sorted {
         $0.key.description < $1.key.description
       }
     }
     try mapping.forEach { entry in
-      try emit(emitter: emitter, value: entry.key, sortedKeys: sortedKeys)
-      try emit(emitter: emitter, value: entry.value, sortedKeys: sortedKeys)
+      try emit(emitter: emitter, value: entry.key, preferredCollectionStyle: preferredStyle, sortedKeys: sortedKeys)
+      try emit(emitter: emitter, value: entry.value, preferredCollectionStyle: preferredStyle, sortedKeys: sortedKeys)
     }
     emit(emitter: emitter, type: FYET_MAPPING_END)
   }
@@ -134,20 +170,21 @@ internal struct YAMLWriter {
   private static func emit(
     emitter: OpaquePointer,
     sequence: [YAML],
-    sortedKeys: Bool,
     style: YAML.CollectionStyle,
+    preferredStyle: YAML.CollectionStyle,
+    sortedKeys: Bool,
     anchor: String?,
     tag: YAML.Tag?
   ) throws {
     emit(
       emitter: emitter,
       type: FYET_SEQUENCE_START,
-      args: style.nodeStyle.rawValue,
+      args: style.nodeStyle(preferred: preferredStyle).rawValue,
       anchor.varArg,
       (tag?.rawValue).varArg
     )
     try sequence.forEach { element in
-      try emit(emitter: emitter, value: element, sortedKeys: sortedKeys)
+      try emit(emitter: emitter, value: element, preferredCollectionStyle: preferredStyle, sortedKeys: sortedKeys)
     }
     emit(emitter: emitter, type: FYET_SEQUENCE_END)
   }
@@ -208,11 +245,11 @@ extension Optional where Wrapped == String {
 
 extension YAML.CollectionStyle {
 
-  var nodeStyle: fy_node_style {
-    switch self {
-    case .any: return FYNS_ANY
-    case .flow: return FYNS_FLOW
-    case .block: return FYNS_BLOCK
+  func nodeStyle(preferred: Self) -> fy_node_style {
+    switch (self, preferred) {
+    case (.any, .any): return FYNS_ANY
+    case (.any, .flow), (.flow, _): return FYNS_FLOW
+    case (.any, .block), (.block, _): return FYNS_BLOCK
     }
   }
 

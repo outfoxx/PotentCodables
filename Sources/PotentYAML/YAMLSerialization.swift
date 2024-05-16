@@ -72,10 +72,17 @@ public enum YAMLSerialization {
     }
 
     public static let sortedKeys = WritingOptions(rawValue: 1 << 0)
+    public static let pretty = WritingOptions(rawValue: 1 << 1)
   }
 
-  public static func data(from yaml: YAML, options: WritingOptions = []) throws -> Data {
-    guard let data = try string(from: yaml, options: options).data(using: .utf8) else {
+  public static func data(from yaml: YAML,
+                          preferredCollectionStyle: YAML.CollectionStyle = .any,
+                          options: WritingOptions = []) throws -> Data {
+    guard
+      let data = try string(from: yaml,
+                            preferredCollectionStyle: preferredCollectionStyle,
+                            options: options).data(using: .utf8)
+    else {
       throw DecodingError
         .dataCorrupted(
           DecodingError
@@ -85,11 +92,17 @@ public enum YAMLSerialization {
     return data
   }
 
-  public static func string(from yaml: YAML, options: WritingOptions = []) throws -> String {
+  public static func string(from yaml: YAML,
+                            preferredCollectionStyle: YAML.CollectionStyle = .any,
+                            options: WritingOptions = []) throws -> String {
 
     var output = String()
 
-    try YAMLWriter.write([yaml], sortedKeys: options.contains(.sortedKeys)) {
+    try YAMLWriter.write([yaml],
+                         preferredCollectionStyle: preferredCollectionStyle,
+                         pretty: options.contains(.pretty),
+                         width: options.contains(.pretty) ? .normal : .infinite,
+                         sortedKeys: options.contains(.sortedKeys)) {
       guard let str = $0 else { return }
       output.append(str)
     }
