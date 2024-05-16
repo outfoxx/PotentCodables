@@ -58,6 +58,8 @@ update-fyaml:
 	cd Sources/Cfyaml && ./bootstrap.sh
 	cd Sources/Cfyaml && ./configure
 	cd Sources/Cfyaml && sed -i '' 's/HAVE_LIBYAML 1/HAVE_LIBYAML 0/g' config.h
+	echo '\n#pragma clang diagnostic ignored "-Wconversion"' >> Sources/Cfyaml/config.h
+
 
 doc-symbol-graphs:
 	rm -rf .build/all-symbol-graphs || 0
