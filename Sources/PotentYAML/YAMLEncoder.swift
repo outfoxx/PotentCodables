@@ -32,6 +32,13 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
       self.rawValue = rawValue
     }
 
+    /// Attempt to output good looking YAML
+    ///
+    /// Aside from selecting the style (flow or block) for mappings
+    /// and sequences, it limits the output width to 80 characters
+    /// by using folded strings when necessary.
+    public static let pretty = OutputFormatting(rawValue: 1 << 0)
+
     /// Produce YAML with dictionary keys sorted in lexicographic order.
     public static let sortedKeys = OutputFormatting(rawValue: 1 << 1)
   }
@@ -80,6 +87,9 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
   /// The output format to produce. Defaults to `[]`.
   public var outputFormatting: OutputFormatting = []
 
+  /// The preferred output style for sequences and mappings. Defaults to `.any`.
+  public var preferredCollectionStyle: YAML.CollectionStyle = .any
+
   /// The strategy to use in encoding dates. Defaults to `.deferredToDate`.
   public var dateEncodingStrategy: DateEncodingStrategy = .deferredToDate
 
@@ -93,6 +103,7 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
       dataEncodingStrategy: dataEncodingStrategy,
       outputFormatting: outputFormatting,
       keyEncodingStrategy: keyEncodingStrategy,
+      preferredCollectionStyle: preferredCollectionStyle,
       userInfo: userInfo
     )
   }
@@ -119,6 +130,7 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
     public let dataEncodingStrategy: YAMLEncoder.DataEncodingStrategy
     public let outputFormatting: YAMLEncoder.OutputFormatting
     public let keyEncodingStrategy: KeyEncodingStrategy
+    public let preferredCollectionStyle: YAML.CollectionStyle
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
@@ -358,7 +370,12 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
     if options.outputFormatting.contains(.sortedKeys) {
       writingOptions.insert(.sortedKeys)
     }
-    return try YAMLSerialization.data(from: value, options: writingOptions)
+    if options.outputFormatting.contains(.pretty) {
+      writingOptions.insert(.pretty)
+    }
+    return try YAMLSerialization.data(from: value,
+                                      preferredCollectionStyle: options.preferredCollectionStyle,
+                                      options: writingOptions)
   }
 
   public static func string(from value: YAML, options: Options) throws -> String {
@@ -366,7 +383,12 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
     if options.outputFormatting.contains(.sortedKeys) {
       writingOptions.insert(.sortedKeys)
     }
-    return try YAMLSerialization.string(from: value, options: writingOptions)
+    if options.outputFormatting.contains(.pretty) {
+      writingOptions.insert(.pretty)
+    }
+    return try YAMLSerialization.string(from: value,
+                                        preferredCollectionStyle: options.preferredCollectionStyle,
+                                        options: writingOptions)
   }
 
 }
