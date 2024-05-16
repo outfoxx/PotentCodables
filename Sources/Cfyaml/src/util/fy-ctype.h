@@ -13,11 +13,9 @@
 #endif
 
 #include <stdint.h>
-#include <alloca.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
-#include <libfyaml.h>
 
 #include "fy-utf8.h"
 
@@ -46,6 +44,16 @@ static inline bool fy_is_alpha(int c)
 static inline bool fy_is_num(int c)
 {
 	return c >= '0' && c <= '9';
+}
+
+static inline bool fy_is_digit(int c)
+{
+	return c >= '0' && c <= '9';
+}
+
+static inline bool fy_is_xdigit(int c)
+{
+	return fy_is_digit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
 static inline bool fy_is_first_alnum(int c)
@@ -149,9 +157,14 @@ static inline bool fy_is_ns_char(int c)
 	return fy_is_nb_char(c) && !fy_is_ws(c);
 }
 
-static inline bool fy_is_indicator(int c)
+static inline bool fy_is_start_indicator(int c)
 {
-	return !!fy_utf8_strchr("-?:,[]{}#&*!|>'\"%%@`", c);
+	return !!fy_utf8_strchr(",[]{}#&*!|>'\"%%@`", c);
+}
+
+static inline bool fy_is_indicator_before_space(int c)
+{
+	return !!fy_utf8_strchr("-:?`", c);
 }
 
 static inline bool fy_is_flow_indicator(int c)
@@ -266,6 +279,8 @@ struct useless_struct_for_semicolon
 FY_CTYPE_AT_BUILDER(first_alpha);
 FY_CTYPE_AT_BUILDER(alpha);
 FY_CTYPE_AT_BUILDER(num);
+FY_CTYPE_AT_BUILDER(digit);
+FY_CTYPE_AT_BUILDER(xdigit);
 FY_CTYPE_AT_BUILDER(first_alnum);
 FY_CTYPE_AT_BUILDER(alnum);
 FY_CTYPE_AT_BUILDER(space);
@@ -280,7 +295,8 @@ FY_CTYPE_AT_BUILDER(print);
 FY_CTYPE_AT_BUILDER(printq);
 FY_CTYPE_AT_BUILDER(nb_char);
 FY_CTYPE_AT_BUILDER(ns_char);
-FY_CTYPE_AT_BUILDER(indicator);
+FY_CTYPE_AT_BUILDER(start_indicator);
+FY_CTYPE_AT_BUILDER(indicator_before_space);
 FY_CTYPE_AT_BUILDER(flow_indicator);
 FY_CTYPE_AT_BUILDER(path_flow_key_start);
 FY_CTYPE_AT_BUILDER(path_flow_key_end);
@@ -295,7 +311,7 @@ FY_CTYPE_AT_BUILDER(json_unescaped);
  */
 
 /* skip for a _single_ linebreak */
-static inline const void *fy_skip_lb(const void *ptr, int left)
+static inline const void *fy_skip_lb(const void *ptr, size_t left)
 {
 	int c, width;
 
@@ -305,7 +321,7 @@ static inline const void *fy_skip_lb(const void *ptr, int left)
 		return NULL;
 
 	/* MS-DOS: check if next character is '\n' */
-	if (c == '\r' && left > width && *(char *)ptr == '\n')
+	if (c == '\r' && left > (size_t)width && *(char *)ptr == '\n')
 		width++;
 
 	return ptr + width;
@@ -315,7 +331,7 @@ static inline const void *fy_skip_lb(const void *ptr, int left)
  * ws character after the last non-ws character, or the end
  * of the chunk
  */
-static inline const void *fy_last_non_ws(const void *ptr, int left)
+static inline const void *fy_last_non_ws(const void *ptr, size_t left)
 {
 	const char *s, *e;
 	int c;

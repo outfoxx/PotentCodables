@@ -20,6 +20,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <ctype.h>
 
 #include "fy-utf8.h"
 #include "fy-ctype.h"
@@ -631,4 +632,246 @@ int fy_term_query_size(int fd, int *rows, int *cols)
 		return -1;
 
 	return ret;
+}
+
+int fy_comment_iter_begin(const char *comment, size_t size, struct fy_comment_iter *iter)
+{
+	if (!comment || !iter)
+		return -1;
+
+	memset(iter, 0, sizeof(*iter));
+	iter->start = comment;
+	iter->size = size == (size_t)-1 ? strlen(comment) : size;
+	iter->end = iter->start + iter->size;
+
+	if (!iter->size)
+		return -1;
+
+	iter->next = iter->start;
+	iter->line = 0;
+
+	return 0;
+}
+
+const char *fy_comment_iter_next_line(struct fy_comment_iter *iter, size_t *lenp)
+{
+	const char *s, *e, *le, *t;
+
+	if (!iter || !lenp || !iter->start)
+		return NULL;
+
+	/* no more */
+	if (iter->next >= iter->end)
+		return NULL;
+again:
+	*lenp = 0;
+
+	s = iter->next;
+	e = iter->end;
+
+	/* skip whitespace */
+	while (s < e && isblank(*s))
+		s++;
+
+	if (s >= e)
+		return NULL;
+
+	/* find end of line */
+	le = memchr(s, '\n', e - s);
+	if (!le) {
+		le = e;
+		iter->next = e;
+	} else {
+		iter->next = le + 1;
+	}
+
+	/* final? check if ends in *\/ */
+	if (le >= e && (le - s) > 2 && le[-2] == '*' && le[-1] == '/')
+		le -= 2;
+
+	/* backtrack while there's space at the end of line */
+	while (le > s && isblank(le[-1]))
+		le--;
+
+	/* check if the whole line is punctuation so it's formatting */
+	t = s;
+	while (t < le && ispunct(*t))
+		t++;
+
+	/* everything is punctuation? */
+	if (t > s && t >= le) {
+		if (((le - s) == 2 && s[0] == '/' && s[1] == '/') || 	/* '//' -> empty line */
+		    ((le - s) == 1 && s[0] == '*')) {			/* '*' -> empty line */
+			iter->line++;
+			return "";
+		}
+		/* for anything else, just try again */
+		goto again;
+	}
+
+	/* something is there, skip over '// ' or '* ' */
+	if ((le - s) > 3 && s[0] == '/' && s[1] == '/' && isblank(s[2]))
+		s += 3;
+	else if ((le - s) > 2 && s[0] == '*' && isblank(s[1]))
+		s += 2;
+	else if (iter->line == 0 && (le - s) > 3 && s[0] == '/' && s[1] == '*' && isblank(s[2]))
+		s += 3;
+
+	iter->line++;
+	*lenp = le - s;
+	return s;
+}
+
+void fy_comment_iter_end(struct fy_comment_iter *iter)
+{
+	/* nothing */
+}
+
+char *fy_get_cooked_comment(const char *raw_comment, size_t size)
+{
+	struct fy_comment_iter iter;
+	FILE *fp;
+	char *buf;
+	const char *line;
+	size_t len, line_len;
+	int ret;
+
+	if (!raw_comment)
+		return NULL;
+
+	fp = open_memstream(&buf, &len);
+	if (!fp)
+		return NULL;
+
+	ret = 0;
+	fy_comment_iter_begin(raw_comment, size, &iter);
+	while ((line = fy_comment_iter_next_line(&iter, &line_len)) != NULL) {
+		ret = fprintf(fp, "%.*s\n", (int)line_len, line);
+		if (ret < 0)
+			break;
+	}
+	fy_comment_iter_end(&iter);
+
+	fclose(fp);
+
+	if (ret < 0) {
+		if (buf)
+			free(buf);
+		return NULL;
+	}
+
+	/* must be freed */
+	return buf;
+}
+
+int fy_keyword_iter_begin(const char *text, size_t size, const char *keyword, struct fy_keyword_iter *iter)
+{
+	if (!text || !size || !keyword || !iter)
+		return -1;
+
+	memset(iter, 0, sizeof(*iter));
+	iter->keyword = keyword;
+	iter->keyword_len = strlen(keyword);
+	iter->start = text;
+	iter->size = size == (size_t)-1 ? strlen(text) : size;
+	iter->end = iter->start + iter->size;
+	iter->pc = '\n';
+
+	if (!iter->size)
+		return -1;
+
+	iter->next = iter->start;
+
+	return 0;
+}
+
+const char *fy_keyword_iter_next(struct fy_keyword_iter *iter)
+{
+	const char *keyword;
+	size_t keyword_len;
+	const char *s, *e;
+	int c, w, pc, mode;
+
+	if (!iter || !iter->start)
+		return NULL;
+
+	/* no more */
+	if (iter->next >= iter->end)
+		return NULL;
+
+	s = iter->next;
+	e = iter->end;
+
+	keyword = iter->keyword;
+	keyword_len = iter->keyword_len;
+
+	mode = 0;
+	pc = iter->pc;
+	while ((c = fy_utf8_get_s(s, e, &w)) >= 0) {
+
+		/* simple state machine to handle quoting */
+		switch (mode) {
+		case 0: /* unquoted */
+			if (c == keyword[0] && (fy_is_any_lb(pc) || fy_is_ws(pc)) &&
+			   (size_t)(e - s) > (keyword_len + 1) && !memcmp(s, keyword, keyword_len) &&
+			   (fy_is_ws(s[keyword_len]) || fy_is_any_lb(s[keyword_len]))) {
+
+				iter->next = s;
+				iter->pc = pc;
+				return s;
+			}
+
+			if (c == '\'')
+				mode = 1;
+			else if (c == '"')
+				mode = 3;
+			break;
+		case 1:	/* single quote */
+			if (c == '\\')
+				mode = 2;	/* escaped single quote? */
+			else if (c == '\'')
+				mode = 0;	/* back to unquoted */
+			break;
+		case 2:	/* single quote backslash */
+			mode = 1;	/* back to single quote mode always */
+			break;
+		case 3: /* double quote */
+			if (c == '\\')
+				mode = 4;	/* escaped quote? */
+			else if (c == '"')
+				mode = 0;	/* back to unquoted */
+			break;
+		case 4:
+			mode = 3;	/* back to double quote mode always */
+			break;
+		}
+		s += w;
+		pc = c;
+	}
+
+	return NULL;
+}
+
+void fy_keyword_iter_advance(struct fy_keyword_iter *iter, size_t advance)
+{
+	int w;
+	const char *prev;
+
+	if (!iter || !iter->next)
+		return;
+
+	prev = iter->next;
+
+	iter->next += advance;
+	if (iter->next >= iter->end)
+		iter->next = iter->end;
+
+	iter->pc = fy_utf8_get_right(prev, (size_t)(iter->next - prev), &w);
+	if (iter->pc < 0)
+		iter->pc = '\n';
+}
+
+void fy_keyword_iter_end(struct fy_keyword_iter *iter)
+{
+	/* nothing */
 }

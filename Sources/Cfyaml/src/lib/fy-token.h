@@ -105,6 +105,7 @@ struct fy_token {
 			const char *path_key;
 			size_t path_key_len;
 			char *path_key_storage;	/* if this is not null, it's \0 terminated */
+			bool is_null;		/* special case; the scalar was NULL */
 		} scalar;
 		struct {
 			unsigned int skip;
@@ -113,6 +114,8 @@ struct fy_token {
 			struct fy_token *fyt_td;
 			char *handle0;	/* zero terminated and allocated, only used by binding */
 			char *suffix0;
+			unsigned int short_length;
+			char *short0;	/* zero terminated and allocated for when the short tag is requested */
 			struct fy_tag tag;	/* prefix is now suffix */
 		} tag;
 		struct {
@@ -439,6 +442,10 @@ static inline bool fy_token_is_flow_ws(struct fy_token *fyt, int c)
 #define FYTTAF_CAN_BE_PLAIN_FLOW	FY_BIT(15)
 #define FYTTAF_QUOTE_AT_0		FY_BIT(16)
 #define FYTTAF_CAN_BE_UNQUOTED_PATH_KEY	FY_BIT(17)
+#define FYTTAF_HAS_ANY_LB		FY_BIT(18)	/* any LB including unicode, not per input */
+#define FYTTAF_HAS_START_IND		FY_BIT(19)	/* has --- at col 0 */
+#define FYTTAF_HAS_END_IND		FY_BIT(20)	/* has ... at col 0 */
+#define FYTTAF_HAS_NON_PRINT		FY_BIT(21)	/* has any non printable utf8 */
 
 int fy_token_text_analyze(struct fy_token *fyt);
 

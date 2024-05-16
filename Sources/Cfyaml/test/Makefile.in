@@ -89,20 +89,32 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+target_triplet = @target@
 @HAVE_COMPATIBLE_CHECK_TRUE@check_PROGRAMS = libfyaml-test$(EXEEXT)
-@HAVE_COMPATIBLE_CHECK_TRUE@am__append_1 = libfyaml.test
+
+# the private tests require static compilation
+# if we're compiling shared only, disable the private parts
+@HAVE_COMPATIBLE_CHECK_TRUE@@HAVE_STATIC_TRUE@am__append_1 = \
+@HAVE_COMPATIBLE_CHECK_TRUE@@HAVE_STATIC_TRUE@	libfyaml-test-private.c \
+@HAVE_COMPATIBLE_CHECK_TRUE@@HAVE_STATIC_TRUE@	libfyaml-test-private-id.c
+
+@HAVE_COMPATIBLE_CHECK_TRUE@@HAVE_STATIC_TRUE@am__append_2 = -static
+@HAVE_COMPATIBLE_CHECK_TRUE@am__append_3 = libfyaml.test
 
 # normal YAML testsuite
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@am__append_2 = testsuite.test
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@am__append_4 = testsuite.test
 
 # YAML testsuite JSON generation
-@HAVE_GIT_TRUE@@HAVE_JQ_TRUE@@HAVE_NETWORK_TRUE@am__append_3 = testsuite-json.test
+@HAVE_GIT_TRUE@@HAVE_JQ_TRUE@@HAVE_NETWORK_TRUE@am__append_5 = testsuite-json.test
 
 # normal JSON testsuite
 
 # normal YAML testsuite using document event stream
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@am__append_4 = jsontestsuite.test \
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	testsuite-evstream.test
+
+# resolution equivalence
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@am__append_6 = jsontestsuite.test \
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	testsuite-evstream.test \
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	testsuite-resolution.test
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_enable_debug.m4 \
@@ -119,14 +131,16 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__libfyaml_test_SOURCES_DIST = libfyaml-test.c \
-	libfyaml-test-private.c libfyaml-test-core.c \
-	libfyaml-test-meta.c libfyaml-test-emit.c
+am__libfyaml_test_SOURCES_DIST = libfyaml-test.c libfyaml-test-core.c \
+	libfyaml-test-meta.c libfyaml-test-emit.c \
+	libfyaml-test-private.c libfyaml-test-private-id.c
+@HAVE_COMPATIBLE_CHECK_TRUE@@HAVE_STATIC_TRUE@am__objects_1 = libfyaml_test-libfyaml-test-private.$(OBJEXT) \
+@HAVE_COMPATIBLE_CHECK_TRUE@@HAVE_STATIC_TRUE@	libfyaml_test-libfyaml-test-private-id.$(OBJEXT)
 @HAVE_COMPATIBLE_CHECK_TRUE@am_libfyaml_test_OBJECTS = libfyaml_test-libfyaml-test.$(OBJEXT) \
-@HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml_test-libfyaml-test-private.$(OBJEXT) \
 @HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml_test-libfyaml-test-core.$(OBJEXT) \
 @HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml_test-libfyaml-test-meta.$(OBJEXT) \
-@HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml_test-libfyaml-test-emit.$(OBJEXT)
+@HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml_test-libfyaml-test-emit.$(OBJEXT) \
+@HAVE_COMPATIBLE_CHECK_TRUE@	$(am__objects_1)
 libfyaml_test_OBJECTS = $(am_libfyaml_test_OBJECTS)
 am__DEPENDENCIES_1 =
 @HAVE_COMPATIBLE_CHECK_TRUE@libfyaml_test_DEPENDENCIES =  \
@@ -157,6 +171,7 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/libfyaml_test-libfyaml-test-core.Po \
 	./$(DEPDIR)/libfyaml_test-libfyaml-test-emit.Po \
 	./$(DEPDIR)/libfyaml_test-libfyaml-test-meta.Po \
+	./$(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po \
 	./$(DEPDIR)/libfyaml_test-libfyaml-test-private.Po \
 	./$(DEPDIR)/libfyaml_test-libfyaml-test.Po
 am__mv = mv -f
@@ -415,18 +430,21 @@ AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AM_MAKEFLAGS = @AM_MAKEFLAGS@
 AR = @AR@
 AS = @AS@
+ASAN_CFLAGS = @ASAN_CFLAGS@
+ASAN_LIBS = @ASAN_LIBS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCAS = @CCAS@
+CCASDEPMODE = @CCASDEPMODE@
+CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CHECK_CFLAGS = @CHECK_CFLAGS@
 CHECK_LDFLAGS = @CHECK_LDFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
-CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
@@ -454,13 +472,16 @@ FGREP = @FGREP@
 FILECMD = @FILECMD@
 GIT = @GIT@
 GREP = @GREP@
+HAVE_ASAN = @HAVE_ASAN@
 HAVE_CHECK = @HAVE_CHECK@
 HAVE_COMPATIBLE_CHECK = @HAVE_COMPATIBLE_CHECK@
 HAVE_DEVMODE = @HAVE_DEVMODE@
+HAVE_LIBCLANG = @HAVE_LIBCLANG@
 HAVE_LIBYAML = @HAVE_LIBYAML@
 HAVE_NETWORK = @HAVE_NETWORK@
+HAVE_PORTABLE_TARGET = @HAVE_PORTABLE_TARGET@
 HAVE_QSORT_R = @HAVE_QSORT_R@
-INCLTDL = @INCLTDL@
+HAVE_STATIC = @HAVE_STATIC@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -472,6 +493,10 @@ JSONTESTSUITEURL = @JSONTESTSUITEURL@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LEX = @LEX@
+LIBCLANG_CFLAGS = @LIBCLANG_CFLAGS@
+LIBCLANG_CPPFLAGS = @LIBCLANG_CPPFLAGS@
+LIBCLANG_LDFLAGS = @LIBCLANG_LDFLAGS@
+LIBCLANG_LIBS = @LIBCLANG_LIBS@
 LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -480,8 +505,8 @@ LIBTOOL_VERSION = @LIBTOOL_VERSION@
 LIBYAML_CFLAGS = @LIBYAML_CFLAGS@
 LIBYAML_LIBS = @LIBYAML_LIBS@
 LIPO = @LIPO@
+LLVM_CONFIG = @LLVM_CONFIG@
 LN_S = @LN_S@
-LTDLDEPS = @LTDLDEPS@
 LTDLINCL = @LTDLINCL@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
@@ -581,7 +606,11 @@ shavedir = @shavedir@
 srcdir = @srcdir@
 subdirs = @subdirs@
 sysconfdir = @sysconfdir@
+target = @target@
 target_alias = @target_alias@
+target_cpu = @target_cpu@
+target_os = @target_os@
+target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
@@ -607,22 +636,22 @@ TESTS_ENVIRONMENT = \
 # TEST_EXTENSIONS = .test
 TEST_LOG_COMPILE = $(SHELL)
 TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) $(top_srcdir)/build-aux/tap-driver.sh
-TESTS = $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4) testerrors.test testemitter.test \
+TESTS = $(am__append_3) $(am__append_4) $(am__append_5) \
+	$(am__append_6) testerrors.test testemitter.test \
 	testemitter-streaming.test
 @HAVE_COMPATIBLE_CHECK_TRUE@libfyaml_test_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/valgrind/ \
-@HAVE_COMPATIBLE_CHECK_TRUE@			 -I$(top_srcdir)/src/lib/
+@HAVE_COMPATIBLE_CHECK_TRUE@			 -I$(top_srcdir)/src/lib/ \
+@HAVE_COMPATIBLE_CHECK_TRUE@			 -I$(top_srcdir)/src/util
 
 @HAVE_COMPATIBLE_CHECK_TRUE@libfyaml_test_LDADD = $(AM_LDADD) $(CHECK_LIBS) $(top_builddir)/src/libfyaml.la
 @HAVE_COMPATIBLE_CHECK_TRUE@libfyaml_test_CFLAGS = $(AM_CFLAGS) $(CHECK_CFLAGS) 
-@HAVE_COMPATIBLE_CHECK_TRUE@libfyaml_test_LDFLAGS = $(AM_LDFLAGS) $(CHECK_LDFLAGS)
-@HAVE_COMPATIBLE_CHECK_TRUE@libfyaml_test_SOURCES = \
-@HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml-test.c \
-@HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml-test-private.c \
+@HAVE_COMPATIBLE_CHECK_TRUE@libfyaml_test_LDFLAGS = $(AM_LDFLAGS) \
+@HAVE_COMPATIBLE_CHECK_TRUE@	$(CHECK_LDFLAGS) $(am__append_2)
+@HAVE_COMPATIBLE_CHECK_TRUE@libfyaml_test_SOURCES = libfyaml-test.c \
 @HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml-test-core.c \
 @HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml-test-meta.c \
-@HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml-test-emit.c
-
+@HAVE_COMPATIBLE_CHECK_TRUE@	libfyaml-test-emit.c \
+@HAVE_COMPATIBLE_CHECK_TRUE@	$(am__append_1)
 
 # Add the error test files
 
@@ -698,6 +727,7 @@ EXTRA_DIST = test-env $(TESTS) test-errors/0002/=== \
 	emitter-examples/nodeprop2.yaml emitter-examples/nodeprop.yaml \
 	emitter-examples/numbers-flow.yaml \
 	emitter-examples/numbers.yaml emitter-examples/plainlines.yaml \
+	emitter-examples/plain-scalars-with-commas.yaml \
 	emitter-examples/plainscalar.yaml \
 	emitter-examples/quotedbackslash.yaml \
 	emitter-examples/quoted.yaml \
@@ -818,6 +848,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfyaml_test-libfyaml-test-core.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfyaml_test-libfyaml-test-emit.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfyaml_test-libfyaml-test-meta.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfyaml_test-libfyaml-test-private.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfyaml_test-libfyaml-test.Po@am__quote@ # am--include-marker
 
@@ -865,20 +896,6 @@ libfyaml_test-libfyaml-test.obj: libfyaml-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test.obj `if test -f 'libfyaml-test.c'; then $(CYGPATH_W) 'libfyaml-test.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test.c'; fi`
 
-libfyaml_test-libfyaml-test-private.o: libfyaml-test-private.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private.o -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo -c -o libfyaml_test-libfyaml-test-private.o `test -f 'libfyaml-test-private.c' || echo '$(srcdir)/'`libfyaml-test-private.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libfyaml-test-private.c' object='libfyaml_test-libfyaml-test-private.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private.o `test -f 'libfyaml-test-private.c' || echo '$(srcdir)/'`libfyaml-test-private.c
-
-libfyaml_test-libfyaml-test-private.obj: libfyaml-test-private.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private.obj -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo -c -o libfyaml_test-libfyaml-test-private.obj `if test -f 'libfyaml-test-private.c'; then $(CYGPATH_W) 'libfyaml-test-private.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libfyaml-test-private.c' object='libfyaml_test-libfyaml-test-private.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private.obj `if test -f 'libfyaml-test-private.c'; then $(CYGPATH_W) 'libfyaml-test-private.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private.c'; fi`
-
 libfyaml_test-libfyaml-test-core.o: libfyaml-test-core.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-core.o -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-core.Tpo -c -o libfyaml_test-libfyaml-test-core.o `test -f 'libfyaml-test-core.c' || echo '$(srcdir)/'`libfyaml-test-core.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-core.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-core.Po
@@ -920,6 +937,34 @@ libfyaml_test-libfyaml-test-emit.obj: libfyaml-test-emit.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libfyaml-test-emit.c' object='libfyaml_test-libfyaml-test-emit.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-emit.obj `if test -f 'libfyaml-test-emit.c'; then $(CYGPATH_W) 'libfyaml-test-emit.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-emit.c'; fi`
+
+libfyaml_test-libfyaml-test-private.o: libfyaml-test-private.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private.o -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo -c -o libfyaml_test-libfyaml-test-private.o `test -f 'libfyaml-test-private.c' || echo '$(srcdir)/'`libfyaml-test-private.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libfyaml-test-private.c' object='libfyaml_test-libfyaml-test-private.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private.o `test -f 'libfyaml-test-private.c' || echo '$(srcdir)/'`libfyaml-test-private.c
+
+libfyaml_test-libfyaml-test-private.obj: libfyaml-test-private.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private.obj -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo -c -o libfyaml_test-libfyaml-test-private.obj `if test -f 'libfyaml-test-private.c'; then $(CYGPATH_W) 'libfyaml-test-private.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libfyaml-test-private.c' object='libfyaml_test-libfyaml-test-private.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private.obj `if test -f 'libfyaml-test-private.c'; then $(CYGPATH_W) 'libfyaml-test-private.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private.c'; fi`
+
+libfyaml_test-libfyaml-test-private-id.o: libfyaml-test-private-id.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private-id.o -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Tpo -c -o libfyaml_test-libfyaml-test-private-id.o `test -f 'libfyaml-test-private-id.c' || echo '$(srcdir)/'`libfyaml-test-private-id.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libfyaml-test-private-id.c' object='libfyaml_test-libfyaml-test-private-id.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private-id.o `test -f 'libfyaml-test-private-id.c' || echo '$(srcdir)/'`libfyaml-test-private-id.c
+
+libfyaml_test-libfyaml-test-private-id.obj: libfyaml-test-private-id.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -MT libfyaml_test-libfyaml-test-private-id.obj -MD -MP -MF $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Tpo -c -o libfyaml_test-libfyaml-test-private-id.obj `if test -f 'libfyaml-test-private-id.c'; then $(CYGPATH_W) 'libfyaml-test-private-id.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private-id.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Tpo $(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='libfyaml-test-private-id.c' object='libfyaml_test-libfyaml-test-private-id.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libfyaml_test_CPPFLAGS) $(CPPFLAGS) $(libfyaml_test_CFLAGS) $(CFLAGS) -c -o libfyaml_test-libfyaml-test-private-id.obj `if test -f 'libfyaml-test-private-id.c'; then $(CYGPATH_W) 'libfyaml-test-private-id.c'; else $(CYGPATH_W) '$(srcdir)/libfyaml-test-private-id.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1173,11 +1218,9 @@ distdir-am: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
-@HAVE_GIT_FALSE@check-local:
-@HAVE_NETWORK_FALSE@check-local:
 check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
-	$(MAKE) $(AM_MAKEFLAGS) check-TESTS check-local
+	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
 all-am: Makefile
 installdirs:
@@ -1225,6 +1268,7 @@ distclean: distclean-am
 		-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-core.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-emit.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-meta.Po
+	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test.Po
 	-rm -f Makefile
@@ -1299,6 +1343,7 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-core.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-emit.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-meta.Po
+	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-private-id.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test-private.Po
 	-rm -f ./$(DEPDIR)/libfyaml_test-libfyaml-test.Po
 	-rm -f Makefile
@@ -1322,44 +1367,46 @@ uninstall-am:
 .MAKE: check-am install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-TESTS \
-	check-am check-local clean clean-checkPROGRAMS clean-generic \
-	clean-libtool cscopelist-am ctags ctags-am distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-local distclean-tags distdir doc-clean-am \
-	doc-clean-local doc-help-am doc-help-local doc-html-am \
-	doc-html-local doc-latexpdf-am doc-latexpdf-local doc-man-am \
-	doc-man-local doc-markdown-am doc-markdown-local dvi dvi-am \
-	html html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	recheck tags tags-am uninstall uninstall-am
+	check-am clean clean-checkPROGRAMS clean-generic clean-libtool \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-local \
+	distclean-tags distdir doc-clean-am doc-clean-local \
+	doc-help-am doc-help-local doc-html-am doc-html-local \
+	doc-latexpdf-am doc-latexpdf-local doc-man-am doc-man-local \
+	doc-markdown-am doc-markdown-local dvi dvi-am html html-am \
+	info info-am install install-am install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am recheck tags tags-am \
+	uninstall uninstall-am
 
 .PRECIOUS: Makefile
 
 
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@testsuite.test: test-suite-data json-test-suite-data
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@testsuite.test: test-suite-data.checkout.timestamp
+@HAVE_GIT_TRUE@@HAVE_JQ_TRUE@@HAVE_NETWORK_TRUE@testsuite-json.test: test-suite-data.checkout.timestamp
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@testsuite-evstream.test: test-suite-data.checkout.timestamp
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@testsuite-resolution.test: test-suite-data.checkout.timestamp
 
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@test-suite-data:
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@GIT@ clone "@TESTSUITEURL@" -- $@ && \
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	cd $@ && \
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@GIT@ checkout --detach @TESTSUITECHECKOUT@
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@test-suite-data.checkout.timestamp:
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@GIT@ clone -q "@TESTSUITEURL@" -- test-suite-data && \
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@GIT@ -C test-suite-data checkout -q --detach @TESTSUITECHECKOUT@ && \
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	touch test-suite-data.checkout.timestamp
 
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@jsontestsuite.test: json-test-suite-data
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@jsontestsuite.test: json-test-suite-data.checkout.timestamp
 
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@json-test-suite-data:
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@GIT@ clone "@JSONTESTSUITEURL@" -- $@ && \
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	cd $@ && \
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@GIT@ checkout --detach @JSONTESTSUITECHECKOUT@
-
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@check-local: test-suite-data json-test-suite-data
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@json-test-suite-data.checkout.timestamp:
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@GIT@ clone -q "@JSONTESTSUITEURL@" -- json-test-suite-data && \
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@GIT@ -C json-test-suite-data checkout -q --detach @JSONTESTSUITECHECKOUT@ && \
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	touch json-test-suite-data.checkout.timestamp
 
 @HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@distclean-local:
-@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@rm -rf test-suite-data json-test-suite-data
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@rm -rf test-suite-data test-suite-data.checkout.timestamp
+@HAVE_GIT_TRUE@@HAVE_NETWORK_TRUE@	@rm -rf json-test-suite-data json-test-suite-data.checkout.timestamp
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

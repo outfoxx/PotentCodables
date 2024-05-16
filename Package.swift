@@ -81,12 +81,14 @@ let package = Package(
       name: "Cfyaml",
       sources: [
         "src/lib/",
+        "src/util/",
         "src/xxhash/"
       ],
       cSettings: [
         .headerSearchPath("."),
         .headerSearchPath("include"),
         .headerSearchPath("src/lib"),
+        .headerSearchPath("src/util"),
         .headerSearchPath("src/valgrind"),
         .headerSearchPath("src/xxhash"),
         .define("HAVE_CONFIG_H")

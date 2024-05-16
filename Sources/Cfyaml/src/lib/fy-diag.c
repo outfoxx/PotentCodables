@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdarg.h>
-#include <alloca.h>
 #include <unistd.h>
 #include <ctype.h>
 
@@ -581,7 +580,7 @@ void fy_diag_error_atom_display(struct fy_diag *diag, enum fy_error_type type, s
 	struct fy_raw_line l_tmp;
 	struct fy_atom_raw_line_iter iter;
 	int content_start_col, content_end_col, content_width;
-	int pass, cols, min_col, max_col, total_lines, max_line_count, max_line_col8, max_width;
+	int pass, cols, min_col, max_col, max_line_count, max_line_col8, max_width;
 	int start_col, end_col;
 	const char *color_start, *color_end, *white;
 	bool first_line, last_line;
@@ -609,7 +608,6 @@ void fy_diag_error_atom_display(struct fy_diag *diag, enum fy_error_type type, s
 	max_col = -1;
 	max_line_count = -1;
 	max_line_col8 = -1;
-	total_lines = 0;
 	line_shift = -1;
 	for (pass = 0; pass < 2; pass++) {
 
@@ -643,7 +641,7 @@ void fy_diag_error_atom_display(struct fy_diag *diag, enum fy_error_type type, s
 			rbe = rowbuf + rowbufsz;
 
 			/* if the maximum column number is less than the terminal
-			 * width everything fits, and we're fine */ 
+			 * width everything fits, and we're fine */
 			if (max_line_col8 < cols) {
 				line_shift = 0;
 			} else {
@@ -689,8 +687,6 @@ void fy_diag_error_atom_display(struct fy_diag *diag, enum fy_error_type type, s
 			content_width = content_end_col - content_start_col;
 
 			if (pass == 0) {
-
-				total_lines++;
 
 				if (min_col < 0 || content_start_col < min_col)
 					min_col = content_start_col;
@@ -780,6 +776,8 @@ void fy_diag_error_atom_display(struct fy_diag *diag, enum fy_error_type type, s
 			tilde_width = content_width;
 			if (tilde_start + tilde_width > cols)
 				tilde_width = cols - tilde_start;
+			if ((size_t)tilde_width >= rowbufsz)
+				tilde_width = rowbufsz - 1;	/* guard */
 			tilde_width_m1 = tilde_width > 0 ? (tilde_width - 1) : 0;
 
 			/* output the line */
@@ -1245,6 +1243,75 @@ void fy_reader_diag_report(struct fy_reader *fyr,
 	va_end(ap);
 }
 
+void fy_diag_token_vreport(struct fy_diag *diag, struct fy_token *fyt,
+			  enum fy_error_type type, const char *fmt, va_list ap)
+{
+	struct fy_diag_report_ctx drc;
+	bool save_on_error;
+
+	if (!fyt || !diag)
+		return;
+
+	save_on_error = diag->on_error;
+	diag->on_error = false;
+
+	memset(&drc, 0, sizeof(drc));
+	drc.type = type;
+	drc.module = FYEM_UNKNOWN;
+	drc.fyt = fyt;
+	fy_diag_vreport(diag, &drc, fmt, ap);
+
+	diag->on_error = save_on_error;
+}
+
+void fy_diag_token_report(struct fy_diag *diag, struct fy_token *fyt,
+			 enum fy_error_type type, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fy_diag_token_vreport(diag, fyt, type, fmt, ap);
+	va_end(ap);
+}
+
+void fy_diag_token_override_vreport(struct fy_diag *diag, struct fy_token *fyt,
+				   enum fy_error_type type, const char *file,
+				   int line, int column,
+				   const char *fmt, va_list ap)
+{
+	struct fy_diag_report_ctx drc;
+	bool save_on_error;
+
+	if (!fyt || !diag)
+		return;
+
+	save_on_error = diag->on_error;
+	diag->on_error = false;
+
+	memset(&drc, 0, sizeof(drc));
+	drc.type = type;
+	drc.module = FYEM_UNKNOWN;
+	drc.fyt = fyt;
+	drc.has_override = true;
+	drc.override_file = file;
+	drc.override_line = line;
+	drc.override_column = column;
+	fy_diag_vreport(diag, &drc, fmt, ap);
+
+	diag->on_error = save_on_error;
+}
+
+void fy_diag_token_override_report(struct fy_diag *diag, struct fy_token *fyt,
+				  enum fy_error_type type, const char *file,
+				  int line, int column, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fy_diag_token_override_vreport(diag, fyt, type, file, line, column, fmt, ap);
+	va_end(ap);
+}
+
 void fy_diag_node_vreport(struct fy_diag *diag, struct fy_node *fyn,
 			  enum fy_error_type type, const char *fmt, va_list ap)
 {
@@ -1352,5 +1419,61 @@ void fy_node_override_report(struct fy_node *fyn, enum fy_error_type type,
 
 	va_start(ap, fmt);
 	fy_node_override_vreport(fyn, type, file, line, column, fmt, ap);
+	va_end(ap);
+}
+
+void fy_parser_vlog(struct fy_parser *fyp, enum fy_error_type type,
+		    const char *fmt, va_list ap)
+{
+	struct fy_diag_ctx ctx = {
+		.level = type,
+		.module = FYEM_UNKNOWN,
+		.source_func = "",
+		.source_file = "",
+		.source_line = 0,
+		.file = NULL,
+		.line = 0,
+		.column = 0,
+	};
+
+	if (!fyp || !fyp->diag)
+		return;
+
+	(void)fy_vdiag(fyp->diag, &ctx, fmt, ap);
+}
+
+void fy_parser_log(struct fy_parser *fyp, enum fy_error_type type,
+		   const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fy_parser_vlog(fyp, type, fmt, ap);
+	va_end(ap);
+}
+
+void fy_parser_vreport(struct fy_parser *fyp, enum fy_error_type type,
+		       struct fy_token *fyt, const char *fmt, va_list ap)
+{
+	struct fy_diag_report_ctx fydrc_local, *fydrc = &fydrc_local;
+
+	if (!fyp || !fyp->diag || !fyt)
+		return;
+
+	memset(fydrc, 0, sizeof(*fydrc));
+	fydrc->type = type;
+	fydrc->module = FYEM_UNKNOWN;
+	fydrc->fyt = fy_token_ref(fyt);
+
+	fy_parser_diag_vreport(fyp, fydrc, fmt, ap);
+}
+
+void fy_parser_report(struct fy_parser *fyp, enum fy_error_type type,
+		      struct fy_token *fyt, const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fy_parser_vreport(fyp, type, fyt, fmt, ap);
 	va_end(ap);
 }

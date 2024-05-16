@@ -26,7 +26,6 @@ struct fy_eventp {
 	struct fy_event e;
 };
 FY_TYPE_DECL_LIST(eventp);
-FY_PARSE_TYPE_DECL_ALLOC(eventp);
 
 struct fy_eventp *fy_eventp_alloc(void);
 void fy_eventp_free(struct fy_eventp *fyep);
@@ -39,6 +38,10 @@ void fy_parse_eventp_recycle(struct fy_parser *fyp, struct fy_eventp *fyep);
 
 struct fy_eventp *fy_emit_eventp_alloc(struct fy_emitter *fye);
 void fy_emit_eventp_recycle(struct fy_emitter *emit, struct fy_eventp *fyep);
+
+struct fy_eventp *fy_parse_eventp_clone(struct fy_parser *fyp, struct fy_eventp *fyep_src, bool strip_anchors);
+struct fy_token *fy_event_get_and_clear_anchor_token(struct fy_event *fye);
+const char *fy_event_get_anchor(struct fy_event *fye, size_t *anchor_lenp);
 
 struct fy_document_iterator;
 

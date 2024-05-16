@@ -490,6 +490,56 @@ START_TEST(doc_short_path)
 }
 END_TEST
 
+START_TEST(doc_scalar_path)
+{
+	struct fy_document *fyd;
+	struct fy_node *fyn_root, *fyn_foo;
+
+	/* build document */
+	fyd = fy_document_build_from_string(NULL, "--- foo\n", FY_NT);
+	ck_assert_ptr_ne(fyd, NULL);
+
+	fyn_root = fy_document_root(fyd);
+	ck_assert_ptr_ne(fyn_root, NULL);
+
+	/* get the scalar root and verify */
+	fyn_foo = fy_node_by_path(fyn_root, "/", FY_NT, FYNWF_DONT_FOLLOW);
+	ck_assert_ptr_ne(fyn_foo, NULL);
+	ck_assert_str_eq(fy_node_get_scalar0(fyn_foo), "foo");
+
+	fy_document_destroy(fyd);
+}
+END_TEST
+
+START_TEST(doc_scalar_path_array)
+{
+	struct fy_document *fyd;
+	struct fy_node *fyn_root, *fynt;
+
+	/* build document */
+	fyd = fy_document_build_from_string(NULL, "--- [ foo, bar, baz ]\n", FY_NT);
+	ck_assert_ptr_ne(fyd, NULL);
+
+	fyn_root = fy_document_root(fyd);
+	ck_assert_ptr_ne(fyn_root, NULL);
+
+	/* get the scalars in the array and verify */
+	fynt = fy_node_by_path(fyn_root, "/0", FY_NT, FYNWF_DONT_FOLLOW);
+	ck_assert_ptr_ne(fynt, NULL);
+	ck_assert_str_eq(fy_node_get_scalar0(fynt), "foo");
+
+	fynt = fy_node_by_path(fyn_root, "/1", FY_NT, FYNWF_DONT_FOLLOW);
+	ck_assert_ptr_ne(fynt, NULL);
+	ck_assert_str_eq(fy_node_get_scalar0(fynt), "bar");
+
+	fynt = fy_node_by_path(fyn_root, "/2", FY_NT, FYNWF_DONT_FOLLOW);
+	ck_assert_ptr_ne(fynt, NULL);
+	ck_assert_str_eq(fy_node_get_scalar0(fynt), "baz");
+
+	fy_document_destroy(fyd);
+}
+END_TEST
+
 START_TEST(doc_nearest_anchor)
 {
 	struct fy_document *fyd;
@@ -1826,6 +1876,126 @@ START_TEST(alloca_check)
 }
 END_TEST
 
+START_TEST(scanf_check)
+{
+	struct fy_document *fyd;
+	struct fy_node *fyn_root;
+	int ret, ival;
+	char sval[256];
+
+	/* build document */
+	fyd = fy_document_build_from_string(NULL, "{ "
+		"foo: 10, bar : 20, baz:{ frob: boo }, "
+		"frooz: [ 1, { key: value }, three ]"
+		"}", FY_NT);
+	ck_assert_ptr_ne(fyd, NULL);
+
+	fyn_root = fy_document_root(fyd);
+	ck_assert_ptr_ne(fyn_root, NULL);
+
+	/* check scanf accesses to scalars */
+	ret = fy_node_scanf(fyn_root, "/foo %d", &ival);
+	ck_assert_int_eq(ret, 1);
+	ck_assert_int_eq(ival, 10);
+
+	ret = fy_node_scanf(fyn_root, "/bar %d", &ival);
+	ck_assert_int_eq(ret, 1);
+	ck_assert_int_eq(ival, 20);
+
+	ret = fy_node_scanf(fyn_root, "/baz/frob %s", sval);
+	ck_assert_int_eq(ret, 1);
+	ck_assert_str_eq(sval, "boo");
+
+	ret = fy_node_scanf(fyn_root, "/frooz/0 %d", &ival);
+	ck_assert_int_eq(ret, 1);
+	ck_assert_int_eq(ival, 1);
+
+	ret = fy_node_scanf(fyn_root, "/frooz/1/key %s", sval);
+	ck_assert_int_eq(ret, 1);
+	ck_assert_str_eq(sval, "value");
+
+	ret = fy_node_scanf(fyn_root, "/frooz/2 %s", sval);
+	ck_assert_int_eq(ret, 1);
+	ck_assert_str_eq(sval, "three");
+
+	fy_document_destroy(fyd);
+}
+END_TEST
+
+START_TEST(token_test) {
+        struct fy_document *fyd;
+        struct fy_node *fyn_sequence, *fyn_mapping, *fyn_scalar;
+        struct fy_token *fyn_sequence_start, *fyn_sequence_end,
+            *fyn_mapping_start, *fyn_mapping_end, *fyn_scalar_token;
+        struct fy_parse_cfg cfg = {
+            .flags =  FYPCF_PARSE_COMMENTS
+        };
+
+        /* build document */
+
+        fyd = fy_document_build_from_string(&cfg, "- name: key\n"
+                                                     "  value: value\n", FY_NT);
+
+
+        /* Root (sequence) */
+        fyn_sequence = fy_document_root(fyd);
+        ck_assert_ptr_ne(fyn_sequence, NULL);
+
+        fyn_sequence_start = fy_node_get_start_token(fyn_sequence);
+        ck_assert_ptr_ne(fyn_sequence_start, NULL);
+
+        ck_assert_ptr_ne(fy_token_start_mark(fyn_sequence_start), NULL);
+
+        ck_assert_int_eq(fy_token_start_mark(fyn_sequence_start)->line, 0);
+        ck_assert_int_eq(fy_token_start_mark(fyn_sequence_start)->column, 0);
+
+        fyn_sequence_end = fy_node_get_end_token(fyn_sequence);
+        ck_assert_ptr_ne(fyn_sequence_end, NULL);
+
+        ck_assert_int_eq(fy_token_end_mark(fyn_sequence_end)->line, 2);
+        ck_assert_int_eq(fy_token_end_mark(fyn_sequence_end)->column, 0);
+
+        /* Mapping (sequence item) */
+        fyn_mapping = fy_node_sequence_get_by_index(fyn_sequence, 0);
+        ck_assert_ptr_ne(fyn_mapping, NULL);
+
+        fyn_mapping_start = fy_node_get_start_token(fyn_mapping);
+        ck_assert_ptr_ne(fyn_mapping_start, NULL);
+
+        ck_assert_ptr_ne(fy_token_start_mark(fyn_mapping_start), NULL);
+
+        ck_assert_int_eq(fy_token_start_mark(fyn_mapping_start)->line, 0);
+        ck_assert_int_eq(fy_token_start_mark(fyn_mapping_start)->column, 2);
+
+        fyn_mapping_end = fy_node_get_end_token(fyn_mapping);
+        ck_assert_ptr_ne(fyn_mapping_end, NULL);
+
+        ck_assert_ptr_ne(fy_token_start_mark(fyn_mapping_end), NULL);
+
+        ck_assert_int_eq(fy_token_start_mark(fyn_mapping_end)->line, 2);
+        ck_assert_int_eq(fy_token_start_mark(fyn_mapping_end)->column, 0);
+
+        /* Scalar (key) */
+        fyn_scalar = fy_node_pair_key(fy_node_mapping_get_by_index(fyn_mapping, 0));
+        ck_assert_ptr_ne(fyn_scalar, NULL);
+
+        fyn_scalar_token = fy_node_get_start_token(fyn_scalar);
+        ck_assert_ptr_ne(fyn_scalar_token, NULL);
+        ck_assert_ptr_eq(fyn_scalar_token, fy_node_get_end_token(fyn_scalar));
+
+        ck_assert_ptr_ne(fy_token_start_mark(fyn_scalar_token), NULL);
+        ck_assert_int_eq(fy_token_start_mark(fyn_scalar_token)->line, 0);
+        ck_assert_int_eq(fy_token_start_mark(fyn_scalar_token)->column, 2);
+
+        ck_assert_ptr_ne(fy_token_end_mark(fyn_scalar_token), NULL);
+        ck_assert_int_eq(fy_token_end_mark(fyn_scalar_token)->line, 0);
+        ck_assert_int_eq(fy_token_end_mark(fyn_scalar_token)->column, 6);
+
+       /* cleanup */
+       fy_document_destroy(fyd);
+}
+END_TEST
+
 TCase *libfyaml_case_core(void)
 {
 	TCase *tc;
@@ -1842,6 +2012,8 @@ TCase *libfyaml_case_core(void)
 	tcase_add_test(tc, doc_path_node);
 	tcase_add_test(tc, doc_path_parent);
 	tcase_add_test(tc, doc_short_path);
+	tcase_add_test(tc, doc_scalar_path);
+	tcase_add_test(tc, doc_scalar_path_array);
 
 	tcase_add_test(tc, doc_nearest_anchor);
 	tcase_add_test(tc, doc_references);
@@ -1890,6 +2062,10 @@ TCase *libfyaml_case_core(void)
 	tcase_add_test(tc, manual_block_flow_mix);
 
 	tcase_add_test(tc, alloca_check);
+
+	tcase_add_test(tc, scanf_check);
+
+        tcase_add_test(tc, token_test);
 
 	return tc;
 }

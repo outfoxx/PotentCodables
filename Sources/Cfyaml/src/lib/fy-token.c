@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdarg.h>
-#include <alloca.h>
 
 #include <libfyaml.h>
 
@@ -71,6 +70,10 @@ void fy_token_clean_rl(struct fy_token_list *fytl, struct fy_token *fyt)
 		if (fyt->tag.suffix0) {
 			free(fyt->tag.suffix0);
 			fyt->tag.suffix0 = NULL;
+		}
+		if (fyt->tag.short0) {
+			free(fyt->tag.short0);
+			fyt->tag.short0 = NULL;
 		}
 		break;
 
@@ -427,6 +430,7 @@ struct fy_token *fy_token_vcreate_rl(struct fy_token_list *fytl, enum fy_token_t
 		fyt->scalar.path_key = NULL;
 		fyt->scalar.path_key_len = 0;
 		fyt->scalar.path_key_storage = NULL;
+		fyt->scalar.is_null = false;	/* by default the scalar is not NULL */
 		break;
 	case FYTT_TAG:
 		fyt->tag.skip = va_arg(ap, unsigned int);
@@ -439,6 +443,7 @@ struct fy_token *fy_token_vcreate_rl(struct fy_token_list *fytl, enum fy_token_t
 		fyt->tag.fyt_td = fy_token_ref(fyt_td);
 		fyt->tag.handle0 = NULL;
 		fyt->tag.suffix0 = NULL;
+		fyt->tag.short0 = NULL;
 		break;
 
 	case FYTT_VERSION_DIRECTIVE:
@@ -638,11 +643,10 @@ const struct fy_mark *fy_token_end_mark(struct fy_token *fyt)
 
 int fy_token_text_analyze(struct fy_token *fyt)
 {
-	const char *s, *e;
-	const char *value = NULL;
+	struct fy_atom_iter iter;
 	enum fy_atom_style style;
-	int c, w, cn, cp, col;
-	size_t len;
+	int c, cn, cnn, cp, col;
+	uint8_t col0si, col0ei;	/* mask for --- ... at indent 0 */
 	int flags;
 
 	if (!fyt)
@@ -674,12 +678,16 @@ int fy_token_text_analyze(struct fy_token *fyt)
 	if (!fy_atom_style_is_block(style))
 		flags |= FYTTAF_DIRECT_OUTPUT;
 
-	/* get value */
-	value = fy_token_get_text(fyt, &len);
-	if (!value || len == 0) {
+	fy_atom_iter_start(&fyt->handle, &iter);
+
+	col = 0;
+
+	/* get first character */
+	cn = fy_atom_iter_utf8_get(&iter);
+	if (cn < 0) {
+		/* empty? */
 		flags |= FYTTAF_EMPTY | FYTTAF_CAN_BE_DOUBLE_QUOTED | FYTTAF_CAN_BE_UNQUOTED_PATH_KEY;
-		fyt->analyze_flags = flags;
-		return flags;
+		goto out;
 	}
 
 	flags |= FYTTAF_CAN_BE_PLAIN |
@@ -691,33 +699,27 @@ int fy_token_text_analyze(struct fy_token *fyt)
 		 FYTTAF_CAN_BE_PLAIN_FLOW |
 		 FYTTAF_CAN_BE_UNQUOTED_PATH_KEY;
 
-	/* start with document indicators must be quoted at indent 0 */
-	if (len >= 3 && (!memcmp(value, "---", 3) || !memcmp(value, "...", 3)))
-		flags |= FYTTAF_QUOTE_AT_0;
-
-	s = value;
-	e = value + len;
-
-	col = 0;
-
-	/* get first character */
-	cn = fy_utf8_get(s, e - s, &w);
-	s += w;
-	col = fy_token_is_lb(fyt, cn) ? 0 : (col + 1);
+	col0si = col0ei = 0;
 
 	/* disable folded right off the bat, it's a pain */
 	flags &= ~FYTTAF_CAN_BE_FOLDED;
 
 	/* plain scalars can't start with any indicator (or space/lb) */
-	if ((flags & (FYTTAF_CAN_BE_PLAIN | FYTTAF_CAN_BE_PLAIN_FLOW)) &&
-		(fy_is_indicator(cn) || fy_token_is_lb(fyt, cn) || fy_is_ws(cn)))
-		flags &= ~(FYTTAF_CAN_BE_PLAIN |
-			   FYTTAF_CAN_BE_PLAIN_FLOW);
+	if ((flags & (FYTTAF_CAN_BE_PLAIN | FYTTAF_CAN_BE_PLAIN_FLOW))) {
+		if (fy_is_start_indicator(cn) || fy_token_is_lb(fyt, cn) || fy_is_ws(cn))
+			flags &= ~(FYTTAF_CAN_BE_PLAIN | FYTTAF_CAN_BE_PLAIN_FLOW);
+	}
 
 	/* plain scalars in flow mode can't start with a flow indicator */
 	if ((flags & FYTTAF_CAN_BE_PLAIN_FLOW) &&
 		fy_is_flow_indicator(cn))
 		flags &= ~FYTTAF_CAN_BE_PLAIN_FLOW;
+
+	if ((flags & (FYTTAF_CAN_BE_PLAIN | FYTTAF_CAN_BE_PLAIN_FLOW))) {
+		cnn = fy_atom_iter_utf8_peek(&iter);
+		if (fy_is_blankz_m(cnn, fy_token_atom_lb_mode(fyt)) && fy_is_indicator_before_space(cn))
+			flags &= ~(FYTTAF_CAN_BE_PLAIN | FYTTAF_CAN_BE_PLAIN_FLOW);
+	}
 
 	/* plain unquoted path keys can only start with [a-zA-Z_] */
 	if ((flags & FYTTAF_CAN_BE_UNQUOTED_PATH_KEY) &&
@@ -725,10 +727,22 @@ int fy_token_text_analyze(struct fy_token *fyt)
 		flags &= ~FYTTAF_CAN_BE_UNQUOTED_PATH_KEY;
 
 	cp = -1;
-	for (c = cn; c >= 0; s += w, cp = c, c = cn) {
+	for (c = cn; c >= 0; cp = c, c = cn) {
+
+		if (col <= 2) {
+			if (cn == '-') {
+				col0si |= (uint8_t)1 << col;
+				if (col0si == 7)
+					flags |= FYTTAF_HAS_START_IND | FYTTAF_QUOTE_AT_0;
+			} else if (cn == '.') {
+				col0ei |= (uint8_t)1 << col;
+				if (col0ei == 7)
+					flags |= FYTTAF_HAS_END_IND | FYTTAF_QUOTE_AT_0;
+			}
+		}
 
 		/* can be -1 on end */
-		cn = fy_utf8_get(s, e - s, &w);
+		cn = fy_atom_iter_utf8_get(&iter);
 
 		/* zero can't be output, only in double quoted mode */
 		if (c == 0) {
@@ -779,12 +793,11 @@ int fy_token_text_analyze(struct fy_token *fyt)
 			flags &= ~FYTTAF_CAN_BE_PLAIN_FLOW;
 
 		/* non printable characters, turn off these styles */
-		if ((flags & (FYTTAF_CAN_BE_SINGLE_QUOTED |
-			      FYTTAF_CAN_BE_LITERAL |
-			      FYTTAF_CAN_BE_FOLDED)) && !fy_is_print(c))
-			flags &= ~(FYTTAF_CAN_BE_SINGLE_QUOTED |
-				   FYTTAF_CAN_BE_LITERAL |
+		if (!fy_is_print(c)) {
+			flags &= ~(FYTTAF_CAN_BE_SINGLE_QUOTED | FYTTAF_CAN_BE_LITERAL |
 				   FYTTAF_CAN_BE_FOLDED);
+			flags |= FYTTAF_HAS_NON_PRINT;
+		}
 
 		/* if there's an escape, it can't be direct */
 		if ((flags & FYTTAF_DIRECT_OUTPUT) &&
@@ -793,17 +806,25 @@ int fy_token_text_analyze(struct fy_token *fyt)
 		     (style == FYAS_DOUBLE_QUOTED && c == '\\')))
 			flags &= ~FYTTAF_DIRECT_OUTPUT;
 
-		col = fy_token_is_lb(fyt, c) ? 0 : (col + 1);
+		if (fy_token_is_lb(fyt, c)) {
+			col = 0;
+			col0si = col0ei = 0;
+		} else
+			col++;
+
+		if (fy_is_any_lb(c))
+			flags |= FYTTAF_HAS_ANY_LB;
 
 		/* last character */
 		if (cn < 0) {
 			/* if ends with whitespace or linebreak, can't be plain */
-			if (fy_is_ws(cn) || fy_token_is_lb(fyt, cn))
+			if (fy_is_ws(c) || fy_token_is_lb(fyt, c))
 				flags &= ~(FYTTAF_CAN_BE_PLAIN |
 					   FYTTAF_CAN_BE_PLAIN_FLOW);
 		}
 	}
-
+out:
+	fy_atom_iter_finish(&iter);
 	fyt->analyze_flags = flags;
 	return flags;
 }
@@ -937,6 +958,58 @@ const char *fy_tag_token_suffix0(struct fy_token *fyt)
 	fyt->tag.suffix0 = text0;
 
 	return fyt->tag.suffix0;
+}
+
+const char *fy_tag_token_short(struct fy_token *fyt, size_t *lenp)
+{
+	const char *handle, *suffix;
+	size_t handle_len, suffix_len;
+	char *text0;
+
+	if (!fyt || fyt->type != FYTT_TAG)
+		return NULL;
+
+	/* use the cache if it's there (and doesn't need a rebuild) */
+	if (fyt->tag.short0 && !fy_token_text_needs_rebuild(fyt))
+		return fyt->tag.short0;
+
+	if (fyt->tag.short0) {
+		free(fyt->tag.short0);
+		fyt->tag.short0 = NULL;
+	}
+
+	handle = fy_tag_token_handle(fyt, &handle_len);
+	if (!handle)
+		return NULL;
+
+	suffix = fy_tag_token_suffix(fyt, &suffix_len);
+	if (!suffix)
+		return NULL;
+
+	text0 = malloc(handle_len + suffix_len + 1);
+	if (!text0)
+		return NULL;
+	memcpy(text0, handle, handle_len);
+	memcpy(text0 + handle_len, suffix, suffix_len);
+	text0[handle_len + suffix_len] = '\0';
+
+	fyt->tag.short0 = text0;
+	fyt->tag.short_length = handle_len + suffix_len;
+
+	*lenp = fyt->tag.short_length;
+
+	return fyt->tag.short0;
+}
+
+const char *fy_tag_token_short0(struct fy_token *fyt)
+{
+	const char *text;
+	size_t len;
+
+	text = fy_tag_token_short(fyt, &len);
+	if (!text)
+		return NULL;
+	return text;
 }
 
 const struct fy_version * fy_version_directive_token_version(struct fy_token *fyt)
@@ -1409,7 +1482,7 @@ unsigned int fy_analyze_scalar_content(const char *data, size_t size,
 
 		/* comment indicator can't be present after a space or lb */
 		/* : followed by blank can't be any plain */
-		if (flags & (FYACF_BLOCK_PLAIN | FYACF_FLOW_PLAIN) &&
+		if ((flags & (FYACF_BLOCK_PLAIN | FYACF_FLOW_PLAIN)) &&
 		    (((fy_is_blank(c) || fy_is_generic_lb_m(c, lb_mode)) && nextc == '#') ||
 		     (c == ':' && fy_is_blankz_m(nextc, lb_mode))))
 			flags &= ~(FYACF_BLOCK_PLAIN | FYACF_FLOW_PLAIN);
@@ -1518,6 +1591,7 @@ int fy_token_cmp(struct fy_token *fyt1, struct fy_token *fyt2)
 	const char *t1, *t2;
 	size_t l1, l2, l;
 	int ret;
+	bool aoa;	/* anchor or alias */
 
 	/* handles both NULL */
 	if (fyt1 == fyt2)
@@ -1531,8 +1605,12 @@ int fy_token_cmp(struct fy_token *fyt1, struct fy_token *fyt2)
 	if (fyt1 && !fyt2)
 		return 1;
 
+	/* special case for comparing anchors and aliases */
+	aoa = (fyt1->type == FYTT_ANCHOR || fyt1->type == FYTT_ALIAS) &&
+	      (fyt2->type == FYTT_ANCHOR || fyt2->type == FYTT_ALIAS);
+
 	/* tokens with different types can't be equal */
-	if (fyt1->type != fyt2->type)
+	if (!aoa && fyt1->type != fyt2->type)
 		return fyt2->type > fyt1->type ? -1 : 1;
 
 	/* special case, these can't use the atom comparisons */
@@ -1696,8 +1774,11 @@ int fy_token_iter_getc(struct fy_token_iter *iter)
 		return -1;
 
 	/* first try the pushed ungetc */
-	if (iter->unget_c != -1) {
+	if (iter->unget_c >= 0) {
 		c = iter->unget_c;
+		/* unmatched getc/ungetc */
+		if (fy_utf8_width(c) != 1)
+			return -1;
 		iter->unget_c = -1;
 		return c;
 	}
@@ -1716,14 +1797,18 @@ int fy_token_iter_getc(struct fy_token_iter *iter)
 
 int fy_token_iter_ungetc(struct fy_token_iter *iter, int c)
 {
-	if (iter->unget_c != -1)
+	if (!iter || c >= 0x80)
 		return -1;
-	if (c == -1) {
+
+	if (iter->unget_c >= 0)
+		return -1;
+
+	if (c < 0) {
 		iter->unget_c = -1;
 		return 0;
 	}
-	iter->unget_c = c & 0xff;
-	return c & 0xff;
+	iter->unget_c = c;
+	return c;
 }
 
 int fy_token_iter_peekc(struct fy_token_iter *iter)
@@ -1741,8 +1826,11 @@ int fy_token_iter_utf8_get(struct fy_token_iter *iter)
 {
 	int c, w, w1;
 
+	if (!iter)
+		return -1;
+
 	/* first try the pushed ungetc */
-	if (iter->unget_c != -1) {
+	if (iter->unget_c >= 0) {
 		c = iter->unget_c;
 		iter->unget_c = -1;
 		return c;
@@ -1774,13 +1862,18 @@ int fy_token_iter_utf8_get(struct fy_token_iter *iter)
 
 int fy_token_iter_utf8_unget(struct fy_token_iter *iter, int c)
 {
-	if (iter->unget_c != -1)
+	if (!iter)
 		return -1;
 
-	if (c == -1) {
+	if (iter->unget_c >= 0)
+		return -1;
+
+	if (c < 0) {
 		iter->unget_c = -1;
 		return 0;
 	}
+	if (!fy_utf8_is_valid(c))
+		return -1;
 
 	iter->unget_c = c;
 	return c;
@@ -1867,4 +1960,10 @@ bool fy_token_has_any_comment(struct fy_token *fyt)
 			return true;
 	}
 	return false;
+}
+
+bool
+fy_token_scalar_is_null(struct fy_token *fyt)
+{
+	return !fyt || fyt->type != FYTT_SCALAR || fyt->scalar.is_null;
 }

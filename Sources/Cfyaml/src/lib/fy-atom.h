@@ -85,6 +85,7 @@ struct fy_atom {
 			bool valid_anchor : 1;		/* atom is a valid anchor */
 			bool json_mode : 1;		/* atom was read in json mode */
 			bool ends_with_eof : 1;		/* atom ends at EOF of input */
+			bool is_merge_key: 1;		/* atom is just << */
 		};
 	};
 };
@@ -114,6 +115,11 @@ static inline enum fy_lb_mode fy_atom_lb_mode(struct fy_atom *handle)
 		return fylb_cr_nl;
 
 	return handle->lb_mode;
+}
+
+static inline bool fy_atom_is_merge_key(struct fy_atom *handle)
+{
+	return handle && handle->is_merge_key;
 }
 
 static inline enum fy_flow_ws_mode fy_atom_flow_ws_mode(struct fy_atom *handle)
@@ -178,6 +184,13 @@ static inline void
 fy_reader_fill_atom_end(struct fy_reader *fyr, struct fy_atom *handle)
 {
 	fy_reader_fill_atom_end_at(fyr, handle, NULL);
+}
+
+static inline void
+fy_atom_reset_storage_hints(struct fy_atom *handle)
+{
+	handle->storage_hint = 0;
+	handle->storage_hint_valid = false;
 }
 
 struct fy_atom *fy_reader_fill_atom(struct fy_reader *fyr, int advance, struct fy_atom *handle);
