@@ -16,6 +16,35 @@ import XCTest
 
 class ValueCoderTests: XCTestCase {
 
+  struct InvalidValue: Codable {
+    init() {}
+    init(from decoder: any Decoder) throws {
+    }
+    func encode(to encoder: any Encoder) throws {
+    }
+  }
+
+  func testEncodeInvalidTreeValue() throws {
+
+    XCTAssertThrowsError(try JSON.Encoder.default.encodeTree(InvalidValue())) { error in
+      XCTAssertTrue(error is EncodingError)
+    }
+  }
+
+  func testEncodeInvalidDataValue() throws {
+
+    XCTAssertThrowsError(try JSON.Encoder.default.encode(InvalidValue())) { error in
+      XCTAssertTrue(error is EncodingError)
+    }
+  }
+
+  func testEncodeInvalidStringValue() throws {
+
+    XCTAssertThrowsError(try JSON.Encoder.default.encodeString(InvalidValue())) { error in
+      XCTAssertTrue(error is EncodingError)
+    }
+  }
+
   func testDecodeTreeValue() throws {
 
     struct TestValue: Codable, Equatable {
@@ -45,6 +74,27 @@ class ValueCoderTests: XCTestCase {
       try JSON.Decoder.default.decodeTree(TestValue.self, from: .string("Hello World!")),
       TestValue(test: "Hello World!")
     )
+  }
+
+  func testDecodeMissingTreeValue() throws {
+
+    XCTAssertThrowsError(try JSON.Decoder.default.decodeTree(String.self, from: nil)) { error in
+      XCTAssertTrue(error is DecodingError)
+    }
+  }
+
+  func testDecodeMissingDataValue() throws {
+
+    XCTAssertThrowsError(try JSON.Decoder.default.decode(String.self, from: Data("{}".utf8))) { error in
+      XCTAssertTrue(error is DecodingError)
+    }
+  }
+
+  func testDecodeMissingStringValue() throws {
+
+    XCTAssertThrowsError(try JSON.Decoder.default.decode(String.self, from: "{}")) { error in
+      XCTAssertTrue(error is DecodingError)
+    }
   }
 
   func testDecodeUnwrappedTreeValue() throws {
