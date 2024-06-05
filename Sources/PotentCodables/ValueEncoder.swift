@@ -79,6 +79,10 @@ public protocol InternalEncoderTransform {
   static func box(_ value: Any, interceptedType: Encodable.Type, encoder: IVE) throws -> Value
   static func box(_ value: Any, otherType: Encodable.Type, encoder: IVE) throws -> Value?
 
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  static func box<T, C>(_ value: Any, otherType: T.Type, configuration: C, encoder: IVE) throws -> Value?
+  where T: EncodableWithConfiguration, C == T.EncodingConfiguration
+
   static func unkeyedValuesToValue(_ values: UnkeyedValues, encoder: IVE) throws -> Value
   static func keyedValuesToValue(_ values: KeyedValues, encoder: IVE) throws -> Value
 
@@ -105,10 +109,10 @@ open class ValueEncoder<Value, Transform> where Transform: InternalEncoderTransf
 
   // MARK: - Encoding Values
 
-  /// Encodes the given top-level value and returns its representation.
+  /// Encodes the given top-level value inta a tree representation.
   ///
   /// - parameter value: The value to encode.
-  /// - returns: A new value containing the encoded data.
+  /// - returns: The encoded `value` as a tree.
   /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point
   ///           value is encountered during encoding, and the encoding strategy
   ///           is `.throw`.
@@ -126,14 +130,66 @@ open class ValueEncoder<Value, Transform> where Transform: InternalEncoderTransf
     return topLevel
   }
 
+  /// Encodes the given top-level value inta a tree representation, using the provided configuration.
+  ///
+  /// - parameters:
+  ///   - value: The value to encode.
+  ///   - configuration: Configuration to encode `value` with.
+  /// - returns: The encoded `value` as a tree.
+  /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point
+  ///           value is encountered during encoding, and the encoding strategy
+  ///           is `.throw`.
+  /// - throws: An error if any value throws an error during encoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  open func encodeTree<T, C>(_ value: T, configuration: C) throws -> Value
+  where T: EncodableWithConfiguration, C == T.EncodingConfiguration {
+    let encoder = InternalValueEncoder<Value, Transform>(options: options)
+
+    guard let topLevel = try encoder.box(value: value, configuration: configuration) else {
+      throw EncodingError.invalidValue(
+        value,
+        EncodingError.Context(codingPath: [], debugDescription: "Top-level \(T.self) did not encode any values.")
+      )
+    }
+
+    return topLevel
+  }
+
+  /// Encodes the given top-level value inta a tree representation, using the provider to
+  /// obtain a configuration.
+  ///
+  /// - parameters:
+  ///   - value: The value to encode.
+  ///   - configuration: Configuration provider to obtain a configuration to use when encoding `value`.
+  /// - returns: The encoded `value` as a tree.
+  /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point
+  ///           value is encountered during encoding, and the encoding strategy
+  ///           is `.throw`.
+  /// - throws: An error if any value throws an error during encoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  open func encodeTree<T, C>(_ value: T, configuration: C.Type) throws -> Value
+  where T: EncodableWithConfiguration, C: EncodingConfigurationProviding,
+        T.EncodingConfiguration == C.EncodingConfiguration {
+    let encoder = InternalValueEncoder<Value, Transform>(options: options)
+
+    guard let topLevel = try encoder.box(value: value, configuration: configuration.encodingConfiguration) else {
+      throw EncodingError.invalidValue(
+        value,
+        EncodingError.Context(codingPath: [], debugDescription: "Top-level \(T.self) did not encode any values.")
+      )
+    }
+
+    return topLevel
+  }
+
 }
 
 extension ValueEncoder where Transform: InternalValueSerializer {
 
-  /// Encodes the given top-level value and returns its data.
+  /// Encodes the given top-level value inta binary data.
   ///
   /// - parameter value: The value to encode.
-  /// - returns: A new value containing the encoded data.
+  /// - returns: The binary encoded `value`.
   /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point
   ///           value is encountered during encoding, and the encoding strategy
   ///           is `.throw`.
@@ -143,20 +199,92 @@ extension ValueEncoder where Transform: InternalValueSerializer {
     return try Transform.data(from: tree, options: options)
   }
 
+  /// Encodes the given top-level value inta binary data, using the provided configuration.
+  ///
+  /// - parameters:
+  ///   - value: The value to encode.
+  ///   - configuration: Configuration to encode `value` with.
+  /// - returns: The binary encoded `value`.
+  /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point
+  ///           value is encountered during encoding, and the encoding strategy
+  ///           is `.throw`.
+  /// - throws: An error if any value throws an error during encoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func encode<T, C>(_ value: T, configuration: C) throws -> Data
+  where T: EncodableWithConfiguration, C == T.EncodingConfiguration {
+    let tree = try encodeTree(value, configuration: configuration)
+    return try Transform.data(from: tree, options: options)
+  }
+
+  /// Encodes the given top-level value inta binary data, using the provider to
+  /// obtain a configuration.
+  ///
+  /// - parameters:
+  ///   - value: The value to encode.
+  ///   - configuration: Configuration provider to obtain a configuration to use when encoding `value`.
+  /// - returns: The binary encoded `value`.
+  /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point
+  ///           value is encountered during encoding, and the encoding strategy
+  ///           is `.throw`.
+  /// - throws: An error if any value throws an error during encoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func encode<T, C>(_ value: T, configuration: C.Type) throws -> Data
+  where T: EncodableWithConfiguration, C: EncodingConfigurationProviding,
+        T.EncodingConfiguration == C.EncodingConfiguration {
+    let tree = try encodeTree(value, configuration: configuration)
+    return try Transform.data(from: tree, options: options)
+  }
+
 }
 
 extension ValueEncoder where Transform: InternalValueStringifier {
 
-  /// Encodes the given top-level value and returns its stringified form.
+  /// Encodes the given top-level value inta a string.
   ///
   /// - parameter value: The value to encode.
-  /// - returns: A new value containing the stringified value.
+  /// - returns: The string encoded `value`.
   /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point
   ///           value is encountered during encoding, and the encoding strategy
   ///           is `.throw`.
   /// - throws: An error if any value throws an error during encoding.
   public func encodeString<T: Encodable>(_ value: T) throws -> String {
     let tree = try encodeTree(value)
+    return try Transform.string(from: tree, options: options)
+  }
+
+  /// Encodes the given top-level value inta a string, using the provide configuration.
+  ///
+  /// - parameters:
+  ///   - value: The value to encode.
+  ///   - configuration: Configuration to encode `value` with.
+  /// - returns: The string encoded `value`.
+  /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point
+  ///           value is encountered during encoding, and the encoding strategy
+  ///           is `.throw`.
+  /// - throws: An error if any value throws an error during encoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func encodeString<T, C>(_ value: T, configuration: C) throws -> String
+  where T: EncodableWithConfiguration, C == T.EncodingConfiguration {
+    let tree = try encodeTree(value, configuration: configuration)
+    return try Transform.string(from: tree, options: options)
+  }
+
+  /// Encodes the given top-level value inta a string, using the provider to
+  /// obtain a configuration.
+  ///
+  /// - parameters:
+  ///   - value: The value to encode.
+  ///   - configuration: Configuration provider to obtain a configuration to use when encoding `value`.
+  /// - returns: The string encoded `value`.
+  /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point
+  ///           value is encountered during encoding, and the encoding strategy
+  ///           is `.throw`.
+  /// - throws: An error if any value throws an error during encoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func encodeString<T, C>(_ value: T, configuration: C.Type) throws -> String
+  where T: EncodableWithConfiguration, C: EncodingConfigurationProviding,
+        T.EncodingConfiguration == C.EncodingConfiguration {
+    let tree = try encodeTree(value, configuration: configuration)
     return try Transform.string(from: tree, options: options)
   }
 
@@ -858,6 +986,15 @@ private extension InternalValueEncoder {
 
 public extension InternalValueEncoder {
 
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  func box<T: EncodableWithConfiguration>(value: T, configuration: T.EncodingConfiguration) throws -> Value? {
+    if let value = value as? Value {
+      return value
+    }
+    let type = Swift.type(of: value)
+    return try Transform.box(value, otherType: type, configuration: configuration, encoder: self)
+  }
+
   func box(value: Encodable) throws -> Value? {
     if let value = value as? Value {
       return value
@@ -1065,6 +1202,17 @@ public extension InternalEncoderTransform {
   static func box(_ value: Any, otherType: Encodable.Type, encoder: IVE) throws -> Value? {
     return try encoder.subEncode { subEncoder in
       try ((value as? Encodable).unsafelyUnwrapped).encode(to: subEncoder.encoder)
+    }
+  }
+
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  static func box<T: EncodableWithConfiguration >(
+    _ value: Any, otherType: T.Type,
+    configuration: T.EncodingConfiguration,
+    encoder: IVE
+  ) throws -> Value? {
+    return try encoder.subEncode { subEncoder in
+      try ((value as? T).unsafelyUnwrapped).encode(to: subEncoder.encoder, configuration: configuration)
     }
   }
 

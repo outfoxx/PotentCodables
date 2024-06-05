@@ -77,6 +77,10 @@ public protocol InternalDecoderTransform {
 
   static func unbox(_ value: Value, otherType: Decodable.Type, decoder: IVD) throws -> Any?
 
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  static func unbox<T, C>(_ value: Value, type: T.Type, configuration: C, decoder: IVD) throws -> Any?
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration
+
   static func valueToUnkeyedValues(_ value: Value, decoder: IVD) throws -> UnkeyedValues?
   static func valueToKeyedValues(_ value: Value, decoder: IVD) throws -> KeyedValues?
 
@@ -101,10 +105,11 @@ open class ValueDecoder<Value, Transform> where Transform: InternalDecoderTransf
 
   // MARK: - Decoding Values
 
-  /// Decodes a top-level value of the given type from the given value.
+  /// Decodes a top-level value of the specified type from a tree value.
   ///
-  /// - parameter type: The type of the value to decode.
-  /// - parameter value: The value to decode from.
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - value: The value to decode from.
   /// - returns: A value of the requested type.
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
@@ -122,11 +127,12 @@ open class ValueDecoder<Value, Transform> where Transform: InternalDecoderTransf
     return value
   }
 
-  /// Decodes a top-level value of the given type from the given value or
-  /// nil if the value contains a `null`.
+  /// Decodes a top-level value of the specified type from a tree value, unless the value is `null` or non-existent,
+  /// which results in `nil` being returned.
   ///
-  /// - parameter type: The type of the value to decode.
-  /// - parameter value: The value to decode from.
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - value: The value to decode from.
   /// - returns: A value of the requested type or nil.
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: An error if any value throws an error during decoding.
@@ -142,16 +148,119 @@ open class ValueDecoder<Value, Transform> where Transform: InternalDecoderTransf
     return value
   }
 
+  /// Decodes a top-level value of the specified type from a tree value, using the provided configuration.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - value: The value to decode from.
+  ///   - configuration: Configuration used when decoding `value`.
+  /// - returns: A value of the requested type.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  open func decodeTree<T, C>(_ type: T.Type, from value: Value, configuration: C) throws -> T
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration {
+    guard let value = try decodeTreeIfPresent(type, from: value, configuration: configuration) as T? else {
+      throw DecodingError.valueNotFound(
+        T.self,
+        DecodingError.Context(
+          codingPath: [],
+          debugDescription: "Value contained null when attempting to decode non-optional type"
+        )
+      )
+    }
+    return value
+  }
+
+  /// Decodes a top-level value of the specified type from a tree value, using the provided configuration, unless
+  /// the value is `null` or non-existent, which results in `nil` being returned.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - value: The value to decode from.
+  ///   - configuration: Configuration used when decoding `value`.
+  /// - returns: A value of the requested type or nil.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  open func decodeTreeIfPresent<T, C>(_ type: T.Type, from value: Value, configuration: C) throws -> T?
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration {
+    guard !value.isNull else { return nil }
+    let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)
+    guard let value = try decoder.unbox(value, as: type, configuration: configuration) else {
+      throw DecodingError.valueNotFound(
+        type,
+        DecodingError.Context(codingPath: [], debugDescription: "The given data did not contain a top-level value.")
+      )
+    }
+    return value
+  }
+
+  /// Decodes a top-level value of the specified type from a tree value, using the provider to
+  /// obtain a configuration.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - value: The value to decode from.
+  ///   - configuration: Provides a configuration to use when decoding `value`.
+  /// - returns: A value of the requested type.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  open func decodeTree<T, C>(_ type: T.Type, from value: Value, configuration: C.Type) throws -> T
+  where T: DecodableWithConfiguration, C: DecodingConfigurationProviding,
+        T.DecodingConfiguration == C.DecodingConfiguration {
+    guard let value = try decodeTreeIfPresent(type, from: value, configuration: configuration) as T? else {
+      throw DecodingError.valueNotFound(
+        T.self,
+        DecodingError.Context(
+          codingPath: [],
+          debugDescription: "Value contained null when attempting to decode non-optional type"
+        )
+      )
+    }
+    return value
+  }
+
+  /// Decodes a top-level value of the specified type from a tree value, using the provider to
+  /// obtain a configuration, unless the value is `null` or non-existent, which results in `nil`
+  /// being returned.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - value: The value to decode from.
+  ///   - configuration: Provides a configuration to use when decoding `value`.
+  /// - returns: A value of the requested type or nil.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  open func decodeTreeIfPresent<T, C>(_ type: T.Type, from value: Value, configuration: C.Type) throws -> T?
+  where T: DecodableWithConfiguration, C: DecodingConfigurationProviding,
+        T.DecodingConfiguration == C.DecodingConfiguration {
+    guard !value.isNull else { return nil }
+    let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)
+    guard let value = try decoder.unbox(value, as: type, configuration: configuration.decodingConfiguration) else {
+      throw DecodingError.valueNotFound(
+        type,
+        DecodingError.Context(codingPath: [], debugDescription: "The given data did not contain a top-level value.")
+      )
+    }
+    return value
+  }
+
   public init() {}
 
 }
 
 extension ValueDecoder where Transform: InternalValueDeserializer {
 
-  /// Decodes a top-level value of the given type from the given data.
+  /// Decodes a top-level value of the specified type from binary data.
   ///
-  /// - parameter type: The type of the value to decode.
-  /// - parameter value: The value to decode from.
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - data: The data to decode from.
   /// - returns: A value of the requested type.
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
@@ -170,11 +279,12 @@ extension ValueDecoder where Transform: InternalValueDeserializer {
     return result
   }
 
-  /// Decodes a top-level value of the given type from the given value or
-  /// nil if the value contains a `null`.
+  /// Decodes a top-level value of the specified type from binary data, unless the value is `null` or non-existent,
+  /// which results in `nil` being returned.
   ///
-  /// - parameter type: The type of the value to decode.
-  /// - parameter value: The value to decode from.
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - data: The data to decode from.
   /// - returns: A value of the requested type or nil.
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: An error if any value throws an error during decoding.
@@ -191,20 +301,127 @@ extension ValueDecoder where Transform: InternalValueDeserializer {
     return result
   }
 
-}
-
-extension ValueDecoder where Transform: InternalValueParser {
-
-  /// Decodes a top-level value of the given type from the given string.
+  /// Decodes a top-level value of the specified type from binary data, using the configuration provided.
   ///
-  /// - parameter type: The type of the value to decode.
-  /// - parameter value: The string to decode from.
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - data: The data to decode from.
+  ///   - configuration: Configuration used when decoding `data`.
   /// - returns: A value of the requested type.
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
   /// - throws: An error if any value throws an error during decoding.
-  public func decode<T: Decodable>(_ type: T.Type, from data: String) throws -> T {
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func decode<T, C>(_ type: T.Type, from data: Data, configuration: C) throws -> T
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration {
     let value = try Transform.value(from: data, options: options)
+    guard let result = try decodeTreeIfPresent(type, from: value, configuration: configuration) as T? else {
+      throw DecodingError.valueNotFound(
+        T.self,
+        DecodingError.Context(
+          codingPath: [],
+          debugDescription: "Value contained null when attempting to decode non-optional type"
+        )
+      )
+    }
+    return result
+  }
+
+  /// Decodes a top-level value of the specified type from binary data, using the configuration provided,
+  /// unless the value is `null` or non-existent, which results in `nil` being returned.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - data: The data to decode from.
+  ///   - configuration: Configuration used when decoding `data`.
+  /// - returns: A value of the requested type or nil.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func decodeIfPresent<T, C>(_ type: T.Type, from data: Data, configuration: C) throws -> T?
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration {
+    let value = try Transform.value(from: data, options: options)
+    guard !value.isNull else { return nil }
+    let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)
+    guard let result = try decoder.unbox(value, as: type, configuration: configuration) else {
+      throw DecodingError.valueNotFound(
+        type,
+        DecodingError.Context(codingPath: [], debugDescription: "The given data did not contain a top-level value.")
+      )
+    }
+    return result
+  }
+
+  /// Decodes a top-level value of the specified type from binary data, using the provider to
+  /// obtain a configuration.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - data: The data to decode from.
+  ///   - configuration: Provides configuration to use when decoding `data`.
+  /// - returns: A value of the requested type.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func decode<T, C>(_ type: T.Type, from data: Data, configuration: C.Type) throws -> T
+  where T: DecodableWithConfiguration, C: DecodingConfigurationProviding,
+        T.DecodingConfiguration == C.DecodingConfiguration {
+    let value = try Transform.value(from: data, options: options)
+    guard let result = try decodeTreeIfPresent(type, from: value, configuration: configuration) as T? else {
+      throw DecodingError.valueNotFound(
+        T.self,
+        DecodingError.Context(
+          codingPath: [],
+          debugDescription: "Value contained null when attempting to decode non-optional type"
+        )
+      )
+    }
+    return result
+  }
+
+  /// Decodes a top-level value of the specified type from binary data, using the provider to
+  /// obtain a configuration, unless the value is `null` or non-existent, which results in `nil`
+  /// being returned.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - data: The data to decode from.
+  ///   - configuration: Provides configuration to use when decoding `data`.
+  /// - returns: A value of the requested type or nil.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func decodeIfPresent<T, C>(_ type: T.Type, from data: Data, configuration: C.Type) throws -> T?
+  where T: DecodableWithConfiguration, C: DecodingConfigurationProviding,
+        T.DecodingConfiguration == C.DecodingConfiguration {
+    let value = try Transform.value(from: data, options: options)
+    guard !value.isNull else { return nil }
+    let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)
+    guard let result = try decoder.unbox(value, as: type, configuration: configuration.decodingConfiguration) else {
+      throw DecodingError.valueNotFound(
+        type,
+        DecodingError.Context(codingPath: [], debugDescription: "The given data did not contain a top-level value.")
+      )
+    }
+    return result
+  }
+
+}
+
+extension ValueDecoder where Transform: InternalValueParser {
+
+  /// Decodes a top-level value of the specified type from a string.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - string: The string to decode from.
+  /// - returns: A value of the requested type.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
+  /// - throws: An error if any value throws an error during decoding.
+  public func decode<T: Decodable>(_ type: T.Type, from string: String) throws -> T {
+    let value = try Transform.value(from: string, options: options)
     guard let result = try decodeTreeIfPresent(type, from: value) as T? else {
       throw DecodingError.valueNotFound(
         T.self,
@@ -217,19 +434,126 @@ extension ValueDecoder where Transform: InternalValueParser {
     return result
   }
 
-  /// Decodes a top-level value of the given type from the given string or
-  /// nil if the value contains a `null`.
+  /// Decodes a top-level value of the specified type from a string, unless the value is `null`
+  /// or non-existent, which results in `nil` being returned.
   ///
-  /// - parameter type: The type of the value to decode.
-  /// - parameter value: The string to decode from.
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - string: The string to decode from.
   /// - returns: A value of the requested type or nil.
   /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
   /// - throws: An error if any value throws an error during decoding.
-  public func decodeIfPresent<T: Decodable>(_ type: T.Type, from data: String) throws -> T? {
-    let value = try Transform.value(from: data, options: options)
+  public func decodeIfPresent<T: Decodable>(_ type: T.Type, from string: String) throws -> T? {
+    let value = try Transform.value(from: string, options: options)
     guard !value.isNull else { return nil }
     let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)
     guard let result = try decoder.unbox(value, as: type) else {
+      throw DecodingError.valueNotFound(
+        type,
+        DecodingError.Context(codingPath: [], debugDescription: "The given data did not contain a top-level value.")
+      )
+    }
+    return result
+  }
+
+  /// Decodes a top-level value of the specified type from a string, using the provided configuration.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - string: The string to decode from.
+  ///   - configuration: Configuration used when decoding `string`.
+  /// - returns: A value of the requested type.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func decode<T, C>(_ type: T.Type, from string: String, configuration: C) throws -> T
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration {
+    let value = try Transform.value(from: string, options: options)
+    guard let result = try decodeTreeIfPresent(type, from: value, configuration: configuration) as T? else {
+      throw DecodingError.valueNotFound(
+        T.self,
+        DecodingError.Context(
+          codingPath: [],
+          debugDescription: "Value contained null when attempting to decode non-optional type"
+        )
+      )
+    }
+    return result
+  }
+
+  /// Decodes a top-level value of the specified type from a string, using the provided configuration,
+  /// unless the value is `null` or non-existent, which results in `nil` being returned.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - string: The string to decode from.
+  ///   - configuration: Configuration used when decoding `string`.
+  /// - returns: A value of the requested type or nil.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func decodeIfPresent<T, C>(_ type: T.Type, from string: String, configuration: C) throws -> T?
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration {
+    let value = try Transform.value(from: string, options: options)
+    guard !value.isNull else { return nil }
+    let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)
+    guard let result = try decoder.unbox(value, as: type, configuration: configuration) else {
+      throw DecodingError.valueNotFound(
+        type,
+        DecodingError.Context(codingPath: [], debugDescription: "The given data did not contain a top-level value.")
+      )
+    }
+    return result
+  }
+
+  /// Decodes a top-level value of the specified type from a string, using the provider to
+  /// obtain a configuration.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - string: The string to decode from.
+  ///   - configuration: Provides configuration to use when decoding `data`.
+  /// - returns: A value of the requested type.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: `DecodingError.valueNotFound` if source contains a `null` value.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func decode<T, C>(_ type: T.Type, from string: String, configuration: C.Type) throws -> T
+  where T: DecodableWithConfiguration, C: DecodingConfigurationProviding,
+        T.DecodingConfiguration == C.DecodingConfiguration {
+    let value = try Transform.value(from: string, options: options)
+    guard let result = try decodeTreeIfPresent(type, from: value, configuration: configuration) as T? else {
+      throw DecodingError.valueNotFound(
+        T.self,
+        DecodingError.Context(
+          codingPath: [],
+          debugDescription: "Value contained null when attempting to decode non-optional type"
+        )
+      )
+    }
+    return result
+  }
+
+  /// Decodes a top-level value of the specified type from a string, using the provider to
+  /// obtain a configuration, unless the value is `null` or non-existent, which results in `nil`
+  /// being returned.
+  ///
+  /// - parameters:
+  ///   - type: The type of the value to decode.
+  ///   - string: The string to decode from.
+  ///   - configuration: Provides configuration to use when decoding `data`.
+  /// - returns: A value of the requested type or nil.
+  /// - throws: `DecodingError.dataCorrupted` if values requested from the payload are corrupted.
+  /// - throws: An error if any value throws an error during decoding.
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  public func decodeIfPresent<T, C>(_ type: T.Type, from string: String, configuration: C.Type) throws -> T?
+  where T: DecodableWithConfiguration, C: DecodingConfigurationProviding,
+        T.DecodingConfiguration == C.DecodingConfiguration {
+    let value = try Transform.value(from: string, options: options)
+    guard !value.isNull else { return nil }
+    let decoder = InternalValueDecoder<Value, Transform>(referencing: value, options: options)
+    guard let result = try decoder.unbox(value, as: type, configuration: configuration.decodingConfiguration) else {
       throw DecodingError.valueNotFound(
         type,
         DecodingError.Context(codingPath: [], debugDescription: "The given data did not contain a top-level value.")
@@ -492,6 +816,23 @@ private struct ValueKeyedDecodingContainer<K: CodingKey, Value, Transform>: Keye
     defer { self.decoder.codingPath.removeLast() }
 
     guard let value = try decoder.unbox(entry, as: type) else {
+      throw nullFoundError(type: type)
+    }
+
+    return value
+  }
+
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  internal func decode<T, C>(_ type: T.Type, forKey key: Key, configuration: C) throws -> T
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration {
+    guard let entry = container[key.stringValue] else {
+      throw notFoundError(key: key)
+    }
+
+    decoder.codingPath.append(key)
+    defer { self.decoder.codingPath.removeLast() }
+
+    guard let value = try decoder.unbox(entry, as: type, configuration: configuration) else {
       throw nullFoundError(type: type)
     }
 
@@ -1366,6 +1707,18 @@ private extension InternalValueDecoder {
     return result
   }
 
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  func unbox<T, C>(_ value: Value, as type: T.Type, configuration: C) throws -> T?
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration {
+    guard let unboxed = try unbox(value: value, as: type, configuration: configuration) else {
+      return nil
+    }
+    guard let result = unboxed as? T else {
+      throw DecodingError.typeMismatch(at: codingPath, expectation: type, reality: unboxed)
+    }
+    return result
+  }
+
 }
 
 public extension InternalValueDecoder {
@@ -1383,6 +1736,12 @@ public extension InternalValueDecoder {
     else {
       return try Transform.unbox(value, otherType: type, decoder: self)
     }
+  }
+
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  func unbox<T, C>(value: Value, as type: T.Type, configuration: C) throws -> Any?
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration {
+    return try Transform.unbox(value, type: type, configuration: configuration, decoder: self)
   }
 
 }
@@ -1418,6 +1777,12 @@ public extension InternalDecoderTransform {
 
   static func unbox(_ value: Value, otherType: Decodable.Type, decoder: IVD) throws -> Any? {
     return try decoder.subDecode(with: value) { decoder in try otherType.init(from: decoder) }
+  }
+
+  @available(macOS 12, iOS 15, tvOS 15, watchOS 8, *)
+  static func unbox<T, C>(_ value: Value, type: T.Type, configuration: C, decoder: IVD) throws -> Any?
+  where T: DecodableWithConfiguration, C == T.DecodingConfiguration {
+    return try decoder.subDecode(with: value) { decoder in try type.init(from: decoder, configuration: configuration) }
   }
 
 }
