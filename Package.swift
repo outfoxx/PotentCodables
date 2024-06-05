@@ -16,7 +16,7 @@ import PackageDescription
  let pcDeps: [Target.Dependency] = [
   "BigInt",
   .product(name: "Collections", package: "swift-collections"),
-  .byName(name: "Float16", condition: .when(platforms: [.macOS, .linux]))
+  .byName(name: "Float16", condition: .when(platforms: [.macOS, .macCatalyst, .linux]))
  ]
  #else
  let pcDeps: [Target.Dependency] = [
