@@ -238,6 +238,129 @@ class YAMLTests: XCTestCase {
     )
   }
 
+  func testJSONOutput() throws {
+
+    let yaml: YAML = [
+      "a": [1, 2, 3],
+      "b": "Testing 1.. 2.. 3..",
+      "c": 45.678,
+      "d": true,
+      "e": nil
+    ]
+
+    XCTAssertEqual(
+      try YAMLSerialization.string(from: yaml, options: [.json]),
+      #"""
+      {"a": [1, 2, 3], "b": "Testing 1.. 2.. 3..", "c": 45.678, "d": true, "e": null}
+
+      """#
+    )
+
+    XCTAssertEqual(
+      try YAMLSerialization.string(from: yaml, options: [.json, .pretty]),
+      #"""
+      {
+        "a": [
+          1,
+          2,
+          3
+        ],
+        "b": "Testing 1.. 2.. 3..",
+        "c": 45.678,
+        "d": true,
+        "e": null
+      }
+
+      """#
+    )
+  }
+
+  func testPreferredStringStyle() {
+
+    XCTAssertEqual(
+      try YAMLSerialization.string(from: ["plain": "This should be output plain"]),
+      #"""
+      ---
+      plain: This should be output plain
+      ...
+
+      """#
+    )
+
+    XCTAssertEqual(
+      try YAMLSerialization.string(from: ["dquoted": "This should be output dquoted"],
+                                   preferredStringStyle: .doubleQuoted),
+      #"""
+      ---
+      "dquoted": "This should be output dquoted"
+      ...
+
+      """#
+    )
+
+    XCTAssertEqual(
+      try YAMLSerialization.string(from: ["squoted": "This should be output squoted"],
+                                   preferredStringStyle: .singleQuoted),
+      #"""
+      ---
+      'squoted': 'This should be output squoted'
+      ...
+
+      """#
+    )
+
+    XCTAssertEqual(
+      try YAMLSerialization.string(from: [.string("plain", style: .plain): "This should be output squoted"],
+                                   preferredStringStyle: .singleQuoted),
+      #"""
+      ---
+      plain: 'This should be output squoted'
+      ...
+
+      """#
+    )
+
+  }
+
+  func testPreferredCollectionStyle() {
+
+    XCTAssertEqual(
+      try YAMLSerialization.string(from: ["block": "This should be output block"]),
+      #"""
+      ---
+      block: This should be output block
+      ...
+
+      """#
+    )
+
+    XCTAssertEqual(
+      try YAMLSerialization.string(from: ["flow": "This should be output flow"],
+                                   preferredCollectionStyle: .flow),
+      #"""
+      ---
+      {
+        'flow': 'This should be output flow'
+      }
+      ...
+
+      """#
+    )
+
+    XCTAssertEqual(
+      try YAMLSerialization
+        .string(from: .mapping([.init(key: "block", value: "This should be output block")], style: .block),
+                preferredCollectionStyle: .flow),
+      #"""
+      ---
+      block: This should be output block
+      ...
+
+      """#
+    )
+
+  }
+
 }
 
 
