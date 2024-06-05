@@ -23,8 +23,14 @@ internal struct YAMLWriter {
     case infinite
   }
 
+  let emitter: OpaquePointer
+  let sortedKeys: Bool
+  let preferredCollectionStyle: YAML.CollectionStyle
+  let preferredStringStyle: YAML.StringStyle
+
   static func write(_ documents: YAML.Sequence,
-                    preferredCollectionStyle: YAML.CollectionStyle = .block,
+                    preferredStyles: (collection: YAML.CollectionStyle, string: YAML.StringStyle) = (.block, .plain),
+                    json: Bool = false,
                     pretty: Bool = true,
                     width: Width = .normal,
                     sortedKeys: Bool = false,
@@ -51,7 +57,13 @@ internal struct YAMLWriter {
 
     try withUnsafePointer(to: writer) { writerPtr in
 
-      var flags: UInt32 = pretty ? FYECF_MODE_PRETTY.rawValue : FYECF_DEFAULT.rawValue
+      var flags =
+        switch (pretty, json) {
+        case (true, true): FYECF_MODE_JSON.rawValue
+        case (true, false): FYECF_MODE_PRETTY.rawValue
+        case (false, true): FYECF_MODE_JSON_ONELINE.rawValue
+        default: FYECF_DEFAULT.rawValue
+        }
 
       switch width {
       case .normal:
@@ -74,83 +86,68 @@ internal struct YAMLWriter {
       }
       defer { fy_emitter_destroy(emitter) }
 
-      emit(emitter: emitter, type: FYET_STREAM_START)
+      let writer = YAMLWriter(
+        emitter: emitter,
+        sortedKeys: sortedKeys,
+        preferredCollectionStyle: preferredStyles.collection,
+        preferredStringStyle: preferredStyles.string
+      )
 
-      try documents.forEach {
-        emit(emitter: emitter, type: FYET_DOCUMENT_START, args: 0, 0, 0)
-
-        try emit(emitter: emitter,
-                 value: $0,
-                 preferredCollectionStyle: preferredCollectionStyle,
-                 sortedKeys: sortedKeys)
-
-        emit(emitter: emitter, type: FYET_DOCUMENT_END)
-      }
-
-      emit(emitter: emitter, type: FYET_STREAM_END)
+      return try writer.emit(documents: documents)
     }
-
   }
 
-  private static func emit(emitter: OpaquePointer,
-                           value: YAML,
-                           preferredCollectionStyle: YAML.CollectionStyle,
-                           sortedKeys: Bool) throws {
+  private func emit(documents: [YAML]) throws {
+
+    emit(type: FYET_STREAM_START)
+
+    for document in documents {
+      emit(type: FYET_DOCUMENT_START, args: 0, 0, 0)
+
+      try emit(value: document)
+
+      emit(type: FYET_DOCUMENT_END)
+    }
+
+    emit(type: FYET_STREAM_END)
+  }
+
+  private func emit(value: YAML) throws {
 
     switch value {
     case .null(anchor: let anchor):
-      emit(emitter: emitter, scalar: "null", style: FYSS_PLAIN, anchor: anchor, tag: nil)
+      emit(scalar: "null", style: FYSS_PLAIN, anchor: anchor, tag: nil)
 
     case .string(let string, style: let style, tag: let tag, anchor: let anchor):
-      let scalarStyle = fy_scalar_style(rawValue: style.rawValue)
-      emit(emitter: emitter, scalar: string, style: scalarStyle, anchor: anchor, tag: tag?.rawValue)
+      let stringStyle = style != .any ? style : preferredStringStyle
+      let scalarStyle =  fy_scalar_style(rawValue: stringStyle.rawValue)
+      emit(scalar: string, style: scalarStyle, anchor: anchor, tag: tag?.rawValue)
 
     case .integer(let integer, anchor: let anchor):
-      emit(emitter: emitter, scalar: integer.value, style: FYSS_PLAIN, anchor: anchor, tag: nil)
+      emit(scalar: integer.value, style: FYSS_PLAIN, anchor: anchor, tag: nil)
 
     case .float(let float, anchor: let anchor):
-      emit(emitter: emitter, scalar: float.value, style: FYSS_PLAIN, anchor: anchor, tag: nil)
+      emit(scalar: float.value, style: FYSS_PLAIN, anchor: anchor, tag: nil)
 
     case .bool(let bool, anchor: let anchor):
-      emit(emitter: emitter, scalar: bool ? "true" : "false", style: FYSS_PLAIN, anchor: anchor, tag: nil)
+      emit(scalar: bool ? "true" : "false", style: FYSS_PLAIN, anchor: anchor, tag: nil)
 
     case .sequence(let sequence, style: let style, tag: let tag, anchor: let anchor):
-      try emit(emitter: emitter,
-               sequence: sequence,
-               style: style,
-               preferredStyle: preferredCollectionStyle,
-               sortedKeys: sortedKeys,
-               anchor: anchor,
-               tag: tag)
+      try emit(sequence: sequence, style: style, anchor: anchor, tag: tag)
 
     case .mapping(let mapping, style: let style, tag: let tag, anchor: let anchor):
-      try emit(emitter: emitter,
-               mapping: mapping,
-               style: style,
-               preferredStyle: preferredCollectionStyle,
-               sortedKeys: sortedKeys,
-               anchor: anchor,
-               tag: tag)
+      try emit(mapping: mapping, style: style, anchor: anchor, tag: tag)
 
     case .alias(let alias):
-      emit(emitter: emitter, alias: alias)
+      emit(alias: alias)
 
     }
   }
 
-  private static func emit(
-    emitter: OpaquePointer,
-    mapping: YAML.Mapping,
-    style: YAML.CollectionStyle,
-    preferredStyle: YAML.CollectionStyle,
-    sortedKeys: Bool,
-    anchor: String?,
-    tag: YAML.Tag?
-  ) throws {
+  private func emit(mapping: YAML.Mapping, style: YAML.CollectionStyle, anchor: String?, tag: YAML.Tag?) throws {
     emit(
-      emitter: emitter,
       type: FYET_MAPPING_START,
-      args: style.nodeStyle(preferred: preferredStyle).rawValue,
+      args: style.nodeStyle(preferred: preferredCollectionStyle).rawValue,
       anchor.varArg,
       (tag?.rawValue).varArg
     )
@@ -161,36 +158,26 @@ internal struct YAMLWriter {
       }
     }
     try mapping.forEach { entry in
-      try emit(emitter: emitter, value: entry.key, preferredCollectionStyle: preferredStyle, sortedKeys: sortedKeys)
-      try emit(emitter: emitter, value: entry.value, preferredCollectionStyle: preferredStyle, sortedKeys: sortedKeys)
+      try emit(value: entry.key)
+      try emit(value: entry.value)
     }
-    emit(emitter: emitter, type: FYET_MAPPING_END)
+    emit(type: FYET_MAPPING_END)
   }
 
-  private static func emit(
-    emitter: OpaquePointer,
-    sequence: [YAML],
-    style: YAML.CollectionStyle,
-    preferredStyle: YAML.CollectionStyle,
-    sortedKeys: Bool,
-    anchor: String?,
-    tag: YAML.Tag?
-  ) throws {
+  private func emit(sequence: [YAML], style: YAML.CollectionStyle, anchor: String?, tag: YAML.Tag?) throws {
     emit(
-      emitter: emitter,
       type: FYET_SEQUENCE_START,
-      args: style.nodeStyle(preferred: preferredStyle).rawValue,
+      args: style.nodeStyle(preferred: preferredCollectionStyle).rawValue,
       anchor.varArg,
       (tag?.rawValue).varArg
     )
     try sequence.forEach { element in
-      try emit(emitter: emitter, value: element, preferredCollectionStyle: preferredStyle, sortedKeys: sortedKeys)
+      try emit(value: element)
     }
-    emit(emitter: emitter, type: FYET_SEQUENCE_END)
+    emit(type: FYET_SEQUENCE_END)
   }
 
-  private static func emit(
-    emitter: OpaquePointer,
+  private func emit(
     scalar: String,
     style: fy_scalar_style,
     anchor: String?,
@@ -199,22 +186,21 @@ internal struct YAMLWriter {
     scalar.withCString { scalarPtr in
       anchor.withCString { anchorPtr in
         tag.withCString { tagPtr in
-          emit(emitter: emitter, type: FYET_SCALAR, args: style.rawValue, scalarPtr, FY_NT, anchorPtr, tagPtr)
+          emit(type: FYET_SCALAR, args: style.rawValue, scalarPtr, FY_NT, anchorPtr, tagPtr)
         }
       }
     }
   }
 
-  private static func emit(
-    emitter: OpaquePointer,
+  private func emit(
     alias: String
   ) {
     alias.withCString { aliasPtr in
-      emit(emitter: emitter, type: FYET_ALIAS, args: aliasPtr)
+      emit(type: FYET_ALIAS, args: aliasPtr)
     }
   }
 
-  private static func emit(emitter: OpaquePointer, type: fy_event_type, args: CVarArg...) {
+  private func emit(type: fy_event_type, args: CVarArg...) {
     withVaList(args) { valist in
       let event = fy_emit_event_vcreate(emitter, type, valist)
       fy_emit_event(emitter, event)

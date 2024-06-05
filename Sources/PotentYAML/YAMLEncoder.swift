@@ -41,6 +41,9 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
 
     /// Produce YAML with dictionary keys sorted in lexicographic order.
     public static let sortedKeys = OutputFormatting(rawValue: 1 << 1)
+
+    /// Produce JSON compatible output.
+    public static let json = OutputFormatting(rawValue: 1 << 2)
   }
 
   /// The strategy to use for encoding `Date` values.
@@ -90,6 +93,9 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
   /// The preferred output style for sequences and mappings. Defaults to `.any`.
   public var preferredCollectionStyle: YAML.CollectionStyle = .any
 
+  /// The preferred output style for strings. Defaults to `.any`.
+  public var preferredStringStyle: YAML.StringStyle = .any
+
   /// The strategy to use in encoding dates. Defaults to `.deferredToDate`.
   public var dateEncodingStrategy: DateEncodingStrategy = .deferredToDate
 
@@ -104,6 +110,7 @@ public class YAMLEncoder: ValueEncoder<YAML, YAMLEncoderTransform>, EncodesToStr
       outputFormatting: outputFormatting,
       keyEncodingStrategy: keyEncodingStrategy,
       preferredCollectionStyle: preferredCollectionStyle,
+      preferredStringStyle: preferredStringStyle,
       userInfo: userInfo
     )
   }
@@ -131,6 +138,7 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
     public let outputFormatting: YAMLEncoder.OutputFormatting
     public let keyEncodingStrategy: KeyEncodingStrategy
     public let preferredCollectionStyle: YAML.CollectionStyle
+    public let preferredStringStyle: YAML.StringStyle
     public let userInfo: [CodingUserInfoKey: Any]
   }
 
@@ -373,8 +381,12 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
     if options.outputFormatting.contains(.pretty) {
       writingOptions.insert(.pretty)
     }
+    if options.outputFormatting.contains(.json) {
+      writingOptions.insert(.json)
+    }
     return try YAMLSerialization.data(from: value,
                                       preferredCollectionStyle: options.preferredCollectionStyle,
+                                      preferredStringStyle: options.preferredStringStyle,
                                       options: writingOptions)
   }
 
@@ -386,8 +398,12 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
     if options.outputFormatting.contains(.pretty) {
       writingOptions.insert(.pretty)
     }
+    if options.outputFormatting.contains(.json) {
+      writingOptions.insert(.json)
+    }
     return try YAMLSerialization.string(from: value,
                                         preferredCollectionStyle: options.preferredCollectionStyle,
+                                        preferredStringStyle: options.preferredStringStyle,
                                         options: writingOptions)
   }
 

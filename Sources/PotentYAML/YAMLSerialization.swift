@@ -73,14 +73,17 @@ public enum YAMLSerialization {
 
     public static let sortedKeys = WritingOptions(rawValue: 1 << 0)
     public static let pretty = WritingOptions(rawValue: 1 << 1)
+    public static let json = WritingOptions(rawValue: 1 << 3)
   }
 
   public static func data(from yaml: YAML,
                           preferredCollectionStyle: YAML.CollectionStyle = .any,
+                          preferredStringStyle: YAML.StringStyle = .any,
                           options: WritingOptions = []) throws -> Data {
     guard
       let data = try string(from: yaml,
                             preferredCollectionStyle: preferredCollectionStyle,
+                            preferredStringStyle: preferredStringStyle,
                             options: options).data(using: .utf8)
     else {
       throw DecodingError
@@ -94,12 +97,14 @@ public enum YAMLSerialization {
 
   public static func string(from yaml: YAML,
                             preferredCollectionStyle: YAML.CollectionStyle = .any,
+                            preferredStringStyle: YAML.StringStyle = .any,
                             options: WritingOptions = []) throws -> String {
 
     var output = String()
 
     try YAMLWriter.write([yaml],
-                         preferredCollectionStyle: preferredCollectionStyle,
+                         preferredStyles: (preferredCollectionStyle, preferredStringStyle),
+                         json: options.contains(.json),
                          pretty: options.contains(.pretty),
                          width: options.contains(.pretty) ? .normal : .infinite,
                          sortedKeys: options.contains(.sortedKeys)) {
