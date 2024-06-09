@@ -648,8 +648,7 @@ void fy_emit_common_node_preamble(struct fy_emitter *emit,
 	}
 
 	/* content for root always starts on a new line */
-	if ((flags & DDNF_ROOT) && emit->column != 0 &&
-            !(emit->flags & FYEF_HAD_DOCUMENT_START)) {
+	if ((flags & DDNF_ROOT) && emit->column != 0) {
 		fy_emit_putc(emit, fyewt_linebreak, '\n');
 		emit->flags = FYEF_WHITESPACE | FYEF_INDENTATION;
 	}
@@ -1361,7 +1360,7 @@ out:
 		 * - plain in block mode that can't be plain in flow mode
 		 * - special handling for plains on start of line
 		 */
-		if ((flow && !(aflags & FYTTAF_CAN_BE_PLAIN_FLOW) && !is_null_scalar) ||
+		if ((flow && !(aflags & FYTTAF_CAN_BE_PLAIN_FLOW) && !(aflags & FYTTAF_CAN_BE_SIMPLE_KEY) && !is_null_scalar) ||
 		    ((aflags & FYTTAF_QUOTE_AT_0) && indent == 0))
 			style = FYNS_DOUBLE_QUOTED;
 	}
@@ -1897,7 +1896,9 @@ int fy_emit_common_document_end(struct fy_emitter *emit, bool override_state, bo
 	fyds = emit->fyds;
 
 	implicit = fyds->end_implicit;
-	if (override_state)
+	if (fyds->started_explicit)
+		implicit = false;
+	else if (override_state)
 		implicit = implicit_override;
 
 	dem = ((dem_flags == FYECF_DOC_END_MARK_AUTO && !implicit) ||
@@ -2921,8 +2922,10 @@ static int fy_emit_streaming_node(struct fy_emitter *emit, struct fy_parser *fyp
 	case FYET_SCALAR:
 		/* if we're pretty and at column 0 (meaning it's a single scalar document) output --- */
 		if ((emit->s_flags & DDNF_ROOT) && fy_emit_is_pretty_mode(emit) && !emit->column &&
-				!fy_emit_is_flow_mode(emit) && !(emit->s_flags & DDNF_FLOW))
+				!fy_emit_is_flow_mode(emit) && !(emit->s_flags & DDNF_FLOW)) {
 			fy_emit_document_start_indicator(emit);
+			emit->fyds->started_explicit = true;
+		}
 		fy_emit_common_node_preamble(emit, fye->scalar.anchor, fye->scalar.tag, emit->s_flags, emit->s_indent);
 		style = fye->scalar.value ?
 				fy_node_style_from_scalar_style(fye->scalar.value->scalar.style) :

@@ -1,0 +1,33 @@
+From 1dc14fc555ddc537835030b11f9d156f4b6ec8da Mon Sep 17 00:00:00 2001
+From: Kevin Wooten <kevin@wooten.com>
+Date: Sat, 8 Jun 2024 17:44:49 -0700
+Subject: [PATCH] Fixes creating blank (aka ws only) scalars with emit event
+ api
+
+Adds a check in `fy_analyze_scalar_content` for scalars that start or end with whitespace or newlines. When this condition is true, it removes the `FYACF_FLOW_PLAIN` flag, ensuring whitespace-only tokens get output properly.
+
+Without this check, whitespace-only tokens created with `fy_emit_event_create` (or similar API functions) are output as a double-quoted zero-length string.
+---
+ src/lib/fy-token.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/lib/fy-token.c b/src/lib/fy-token.c
+index bfcf27d..35e8c34 100644
+--- a/src/lib/fy-token.c
++++ b/src/lib/fy-token.c
+@@ -1515,6 +1515,12 @@ unsigned int fy_analyze_scalar_content(const char *data, size_t size,
+ 	if (break_run > 1)
+ 		flags |= FYACF_TRAILING_LB;
+ 
++	if ((flags & FYACF_STARTS_WITH_WS) ||
++		(flags & FYACF_STARTS_WITH_LB) ||
++		(flags & FYACF_ENDS_WITH_WS) ||
++		(flags & FYACF_ENDS_WITH_LB))
++		flags &= ~FYACF_FLOW_PLAIN;
++
+ 	return flags;
+ }
+ 
+-- 
+2.39.3 (Apple Git-146)
+

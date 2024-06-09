@@ -1,0 +1,31 @@
+From 28fc397e5a1cb5333c7e7afbf2795f2f984c2aa8 Mon Sep 17 00:00:00 2001
+From: Kevin Wooten <kevin@wooten.com>
+Date: Sun, 9 Jun 2024 10:54:58 -0700
+Subject: [PATCH] Emit doc start marker on its own line for single scalar
+ documents
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When outputting a single scalar as the root of a document, this ensures it’s output on its own line instead of letting some scalar values continue on the same line.
+---
+ src/lib/fy-emit.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/src/lib/fy-emit.c b/src/lib/fy-emit.c
+index 0cf56c9..6bc226f 100644
+--- a/src/lib/fy-emit.c
++++ b/src/lib/fy-emit.c
+@@ -663,8 +663,7 @@ void fy_emit_common_node_preamble(struct fy_emitter *emit,
+ 	}
+ 
+ 	/* content for root always starts on a new line */
+-	if ((flags & DDNF_ROOT) && emit->column != 0 &&
+-            !(emit->flags & FYEF_HAD_DOCUMENT_START)) {
++	if ((flags & DDNF_ROOT) && emit->column != 0) {
+ 		fy_emit_putc(emit, fyewt_linebreak, '\n');
+ 		emit->flags = FYEF_WHITESPACE | FYEF_INDENTATION;
+ 	}
+-- 
+2.39.3 (Apple Git-146)
+

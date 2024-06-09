@@ -1,0 +1,59 @@
+From 67c48fedc8be92088a63f4812922c2cbb3736082 Mon Sep 17 00:00:00 2001
+From: Kevin Wooten <kevin@wooten.com>
+Date: Sun, 9 Jun 2024 09:37:42 -0700
+Subject: [PATCH] =?UTF-8?q?Force=20doc=20end=20marker=20when=20=E2=80=9Cpr?=
+ =?UTF-8?q?etty=E2=80=9D=20emit=20mode=20forces=20a=20doc=20start=20marker?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When emitting with pretty mode enabled, and a single scalar root object is output, it forces a document start marker to be output. This change tracks when a doc start marker is forced and forces a doc end marker to match.
+
+This change only affects pretty mode because this is the only time when a doc start marked is forced out (even when it is requested to be implicit).
+---
+ src/lib/fy-docstate.h | 1 +
+ src/lib/fy-emit.c     | 8 ++++++--
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/src/lib/fy-docstate.h b/src/lib/fy-docstate.h
+index 380c5f0..eb8df53 100644
+--- a/src/lib/fy-docstate.h
++++ b/src/lib/fy-docstate.h
+@@ -33,6 +33,7 @@ struct fy_document_state {
+ 	bool tags_explicit : 1;
+ 	bool start_implicit : 1;
+ 	bool end_implicit : 1;
++	bool started_explicit : 1;
+ 	bool json_mode : 1;
+ 	struct fy_mark start_mark;
+ 	struct fy_mark end_mark;
+diff --git a/src/lib/fy-emit.c b/src/lib/fy-emit.c
+index 8074564..0cf56c9 100644
+--- a/src/lib/fy-emit.c
++++ b/src/lib/fy-emit.c
+@@ -1912,7 +1912,9 @@ int fy_emit_common_document_end(struct fy_emitter *emit, bool override_state, bo
+ 	fyds = emit->fyds;
+ 
+ 	implicit = fyds->end_implicit;
+-	if (override_state)
++	if (fyds->started_explicit)
++		implicit = false;
++	else if (override_state)
+ 		implicit = implicit_override;
+ 
+ 	dem = ((dem_flags == FYECF_DOC_END_MARK_AUTO && !implicit) ||
+@@ -2975,8 +2977,10 @@ static int fy_emit_streaming_node(struct fy_emitter *emit, struct fy_parser *fyp
+ 	case FYET_SCALAR:
+ 		/* if we're pretty and at column 0 (meaning it's a single scalar document) output --- */
+ 		if ((emit->s_flags & DDNF_ROOT) && fy_emit_is_pretty_mode(emit) && !emit->column &&
+-				!fy_emit_is_flow_mode(emit) && !(emit->s_flags & DDNF_FLOW))
++				!fy_emit_is_flow_mode(emit) && !(emit->s_flags & DDNF_FLOW)) {
+ 			fy_emit_document_start_indicator(emit);
++			emit->fyds->started_explicit = true;
++		}
+ 		fy_emit_common_node_preamble(emit, fye->scalar.anchor, fye->scalar.tag, emit->s_flags, emit->s_indent);
+ 		style = fye->scalar.value ?
+ 				fy_node_style_from_scalar_style(fye->scalar.value->scalar.style) :
+-- 
+2.39.3 (Apple Git-146)
+

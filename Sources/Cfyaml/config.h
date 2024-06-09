@@ -283,4 +283,5 @@
 /* Define as 'int' if <sys/types.h> doesn't define. */
 /* #undef uid_t */
 
+/* Ignore warnings for Swift package build */
 #pragma clang diagnostic ignored "-Wconversion"
