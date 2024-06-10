@@ -405,7 +405,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    data: \(data.hexEncodedString())
+    data: "\(data.hexEncodedString())"
 
     """
 
@@ -1138,7 +1138,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    null: null
+    "null": null
 
     """
 

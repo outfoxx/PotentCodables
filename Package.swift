@@ -16,13 +16,15 @@ import PackageDescription
  let pcDeps: [Target.Dependency] = [
   "BigInt",
   .product(name: "Collections", package: "swift-collections"),
-  .byName(name: "Float16", condition: .when(platforms: [.macOS, .macCatalyst, .linux]))
+  .byName(name: "Float16", condition: .when(platforms: [.macOS, .macCatalyst, .linux])),
+  .product(name: "Regex", package: "regex"),
  ]
  #else
  let pcDeps: [Target.Dependency] = [
   "BigInt",
   .product(name: "Collections", package: "swift-collections"),
   "Float16",
+  .product(name: "Regex", package: "regex"),
  ]
  #endif
 
@@ -43,7 +45,8 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/attaswift/BigInt.git", .upToNextMinor(from: "5.3.0")),
     .package(url: "https://github.com/SusanDoggie/Float16.git", .upToNextMinor(from: "1.1.1")),
-    .package(url: "https://github.com/apple/swift-collections.git", .upToNextMinor(from: "1.0.4"))
+    .package(url: "https://github.com/apple/swift-collections.git", .upToNextMinor(from: "1.0.4")),
+    .package(url: "https://github.com/sharplet/Regex.git", .upToNextMinor(from: "2.1.1"))
   ],
   targets: [
     .target(
@@ -100,7 +103,8 @@ let package = Package(
         "PotentCodables",
         "BigInt",
         "Cfyaml",
-        .product(name: "Collections", package: "swift-collections")
+        .product(name: "Collections", package: "swift-collections"),
+        .product(name: "Regex", package: "regex")
       ]
     ),
     .testTarget(

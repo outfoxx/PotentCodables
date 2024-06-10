@@ -1,5 +1,5 @@
 //
-//  Cfyaml.swift
+//  Libfyaml.swift
 //  PotentCodables
 //
 //  Copyright © 2021 Outfox, inc.
@@ -11,7 +11,7 @@
 import Cfyaml
 
 
-enum Libfyaml {
+internal enum Libfyaml {
 
   internal static func createParser() -> OpaquePointer? {
 

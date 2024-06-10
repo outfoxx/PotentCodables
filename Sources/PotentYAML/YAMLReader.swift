@@ -12,11 +12,11 @@ import Cfyaml
 import Foundation
 
 
-internal enum YAMLReader {
+internal struct YAMLReader {
 
   typealias Error = YAMLSerialization.Error
 
-  static func read(data: Data) throws -> YAML.Sequence {
+  static func read(data: Data, schema: YAMLSchema = .core) throws -> YAML.Sequence {
 
     guard let parser = Libfyaml.createParser().map(Parser.init) else {
       throw Error.unableToCreateParser
@@ -29,11 +29,19 @@ internal enum YAMLReader {
 
       try parser.expect(eventType: FYET_STREAM_START)
 
-      return try stream(parser: parser)
+      return try YAMLReader(parser: parser, schema: schema).stream()
     }
   }
 
-  static func stream(parser: Parser) throws -> YAML.Sequence {
+  let parser: Parser
+  let schema: YAMLSchema
+
+  init(parser: Parser, schema: YAMLSchema = .core) {
+    self.parser = parser
+    self.schema = schema
+  }
+
+  private func stream() throws -> YAML.Sequence {
 
     var documents: YAML.Sequence = []
 
@@ -47,7 +55,7 @@ internal enum YAMLReader {
       }
 
       if event.type == FYET_DOCUMENT_START {
-        documents.append(try document(parser: parser))
+        documents.append(try document())
       }
       else {
         throw parser.error(fallback: .unexpectedEvent)
@@ -58,12 +66,12 @@ internal enum YAMLReader {
   }
 
 
-  static func document(parser: Parser) throws -> YAML {
+  private func document() throws -> YAML {
 
     let root = try parser.next()
     defer { parser.free(event: root) }
 
-    let document = try value(event: root, parser: parser)
+    let document = try value(event: root)
 
     try parser.expect(eventType: FYET_DOCUMENT_END)
 
@@ -71,7 +79,7 @@ internal enum YAMLReader {
   }
 
 
-  static func mapping(parser: Parser) throws -> YAML.Mapping {
+  private func mapping() throws -> YAML.Mapping {
 
     var result: YAML.Mapping = []
 
@@ -84,12 +92,12 @@ internal enum YAMLReader {
         break
       }
 
-      let key = try value(event: event, parser: parser)
+      let key = try value(event: event)
 
       let valEvent = try parser.next()
       defer { parser.free(event: valEvent) }
 
-      let val = try value(event: valEvent, parser: parser)
+      let val = try value(event: valEvent)
 
       result.append(YAML.Mapping.Element(key: key, value: val))
     }
@@ -98,7 +106,7 @@ internal enum YAMLReader {
   }
 
 
-  static func sequence(parser: Parser) throws -> YAML.Sequence {
+  private func sequence() throws -> YAML.Sequence {
 
     var result: YAML.Sequence = []
 
@@ -111,7 +119,7 @@ internal enum YAMLReader {
         break
       }
 
-      let val = try value(event: event, parser: parser)
+      let val = try value(event: event)
 
       result.append(val)
     }
@@ -119,16 +127,10 @@ internal enum YAMLReader {
     return result
   }
 
-  private static let nullRegex = RegEx(pattern: #"^(null|Null|NULL|~)$"#)
-  private static let trueRegex = RegEx(pattern: #"^(true|True|TRUE)$"#)
-  private static let falseRegex = RegEx(pattern: #"^(false|False|FALSE)$"#)
-  private static let integerRegex = RegEx(pattern: #"^(([-+]?[0-9]+)|(0o[0-7]+)|(0x[0-9a-fA-F]+))$"#)
-  private static let floatRegex = RegEx(pattern: #"^([-+]?(\.[0-9]+|[0-9]+(\.[0-9]*)?)([eE][-+]?[0-9]+)?)$"#)
-  private static let infinityRegex = RegEx(pattern: #"^([-+]?(\.inf|\.Inf|\.INF))$"#)
-  private static let nanRegex = RegEx(pattern: #"^(\.nan|\.NaN|\.NAN)$"#)
-
-  static func scalar(value: String, style: fy_scalar_style, tag: YAML.Tag?, anchor: String?) throws -> YAML {
-    let stringStyle = YAML.StringStyle(rawValue: style.rawValue) ?? .any
+  private func scalar(value: String, style: fy_scalar_style, tag: YAML.Tag?, anchor: String?) throws -> YAML {
+    guard let stringStyle = YAML.StringStyle(rawValue: style.rawValue) else {
+      preconditionFailure("String style not recognized")
+    }
 
     switch tag {
     case .none:
@@ -152,7 +154,7 @@ internal enum YAMLReader {
 
   }
 
-  static func untaggedScalar(
+  private func untaggedScalar(
     value: String,
     stringStyle: YAML.StringStyle,
     style: fy_scalar_style,
@@ -161,32 +163,26 @@ internal enum YAMLReader {
 
     if style == FYSS_PLAIN {
 
-      if nullRegex.matches(string: value) {
+      if schema.isNull(value) {
         return .null(anchor: anchor)
       }
 
-      if trueRegex.matches(string: value) {
+      if schema.isTrue(value) {
         return .bool(true, anchor: anchor)
       }
 
-      if falseRegex.matches(string: value) {
+      if schema.isFalse(value) {
         return .bool(false, anchor: anchor)
       }
 
-      if integerRegex.matches(string: value) {
-        return .integer(YAML.Number(value), anchor: anchor)
+      if schema.isInt(value) {
+        return .integer(YAML.Number(value.lowercased(), isInteger: true, isNegative: value.hasPrefix("-")),
+                        anchor: anchor)
       }
 
-      if floatRegex.matches(string: value) {
-        return .float(YAML.Number(value), anchor: anchor)
-      }
-
-      if infinityRegex.matches(string: value) {
-        return .float(YAML.Number(value.lowercased()), anchor: anchor)
-      }
-
-      if nanRegex.matches(string: value) {
-        return .float(YAML.Number(value.lowercased()), anchor: anchor)
+      if schema.isFloat(value) {
+        return .float(YAML.Number(value.lowercased(), isInteger: false, isNegative: value.hasPrefix("-")),
+                      anchor: anchor)
       }
 
     }
@@ -194,7 +190,7 @@ internal enum YAMLReader {
     return .string(value, style: stringStyle, tag: nil, anchor: nil)
   }
 
-  static func boolTaggedScalar(value: String, anchor: String?) throws -> YAML {
+  private func boolTaggedScalar(value: String, anchor: String?) throws -> YAML {
 
     if let bool = Bool(value.lowercased()) {
       return .bool(bool, anchor: anchor)
@@ -209,14 +205,14 @@ internal enum YAMLReader {
     throw Error.invalidTaggedBool
   }
 
-  static func value(event: Parser.Event, parser: Parser) throws -> YAML {
+  private func value(event: Parser.Event) throws -> YAML {
     switch event.type {
     case FYET_MAPPING_START:
-      let value = try mapping(parser: parser)
+      let value = try mapping()
       return .mapping(value, style: event.style.collectionStyle, tag: YAML.Tag(event.tag), anchor: event.anchor)
 
     case FYET_SEQUENCE_START:
-      let value = try sequence(parser: parser)
+      let value = try sequence()
       return .sequence(value, style: event.style.collectionStyle, tag: YAML.Tag(event.tag), anchor: event.anchor)
 
     case FYET_SCALAR:
@@ -334,57 +330,6 @@ extension String {
       return nil
     }
     self.init(data: Data(bytes: UnsafeRawPointer(tokenData), count: tokenLen), encoding: .utf8)
-  }
-
-}
-
-
-private class RegEx {
-
-  struct Options: OptionSet {
-    let rawValue: Int32
-
-    init(rawValue: Int32) {
-      self.rawValue = rawValue
-    }
-
-    static let basic = Options([])
-    static let extended = Options(rawValue: 1 << 0)
-    static let caseInsensitive = Options(rawValue: 1 << 1)
-    static let resultOnly = Options(rawValue: 1 << 2)
-    static let newLineSensitive = Options(rawValue: 1 << 3)
-  }
-
-  struct MatchOptions: OptionSet {
-    let rawValue: Int32
-
-    init(rawValue: Int32) {
-      self.rawValue = rawValue
-    }
-
-    static let firstCharacterNotAtBeginningOfLine = MatchOptions(rawValue: REG_NOTBOL)
-    static let lastCharacterNotAtEndOfLine = MatchOptions(rawValue: REG_NOTEOL)
-  }
-
-  private var posixRegex = regex_t()
-
-  init(pattern: String, options: Options = [.extended]) {
-    let res = pattern.withCString { patternPtr in
-      regcomp(&posixRegex, patternPtr, options.rawValue)
-    }
-    guard res == 0 else {
-      fatalError("invalid pattern")
-    }
-  }
-
-  deinit {
-    regfree(&posixRegex)
-  }
-
-  func matches(string: String, options: MatchOptions = []) -> Bool {
-    return string.withCString { stringPtr in
-      regexec(&posixRegex, stringPtr, 0, nil, options.rawValue) == 0
-    }
   }
 
 }
