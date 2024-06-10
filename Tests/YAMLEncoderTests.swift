@@ -25,9 +25,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     camelCased: Hello World!
-    ...
 
     """
 
@@ -45,9 +43,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     snake_cased: Hello World!
-    ...
 
     """
 
@@ -65,9 +61,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     kebab-cased: Hello World!
-    ...
 
     """
 
@@ -88,10 +82,8 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: 5
     string: Hello World!
-    ...
 
     """
 
@@ -109,11 +101,9 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     a: 2
     b: 3
     c: 1
-    ...
 
     """
 
@@ -133,10 +123,8 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: 5
     string: Hello World!
-    ...
 
     """
 
@@ -154,11 +142,9 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     a: 2
     b: 3
     c: 1
-    ...
 
     """
 
@@ -184,7 +170,6 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     b: 5
     d: Hello World!
     a: true
@@ -196,7 +181,6 @@ class YAMLEncoderTests: XCTestCase {
         b: 5
         d: Hello World!
         a: true
-    ...
 
     """
 
@@ -217,9 +201,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     date: \(parsedDate.iso8601EncodedString())
-    ...
 
     """
 
@@ -240,9 +222,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     date: \(date.timeIntervalSince1970)
-    ...
 
     """
 
@@ -263,9 +243,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     date: \(date.timeIntervalSince1970 * 1000.0)
-    ...
 
     """
 
@@ -286,9 +264,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     date: \(date.timeIntervalSinceReferenceDate)
-    ...
 
     """
 
@@ -312,9 +288,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     date: \(formatter.string(from: date))
-    ...
 
     """
 
@@ -338,9 +312,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     date: \(date.timeIntervalSinceReferenceDate)
-    ...
 
     """
 
@@ -367,9 +339,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     date: {}
-    ...
 
     """
 
@@ -392,9 +362,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     data: \(data.base64EncodedString())
-    ...
 
     """
 
@@ -415,10 +383,8 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     data:
     \(data.map { "- \($0)" }.joined(separator: "\n"))
-    ...
 
     """
 
@@ -439,9 +405,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
-    data: \(data.hexEncodedString())
-    ...
+    data: "\(data.hexEncodedString())"
 
     """
 
@@ -465,9 +429,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     data: {}
-    ...
 
     """
 
@@ -489,9 +451,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     bigInt: \(bigInt)
-    ...
 
     """
 
@@ -509,9 +469,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     bigInt: \(bigInt)
-    ...
 
     """
 
@@ -529,9 +487,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     bigUInt: \(bigUInt)
-    ...
 
     """
 
@@ -549,9 +505,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     dec: \(dec)
-    ...
 
     """
 
@@ -569,9 +523,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     dec: \(dec)
-    ...
 
     """
 
@@ -589,9 +541,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     dec: .nan
-    ...
 
     """
 
@@ -609,9 +559,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     double: \(double)
-    ...
 
     """
 
@@ -629,9 +577,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     double: \(double)
-    ...
 
     """
 
@@ -649,9 +595,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     double: .nan
-    ...
 
     """
 
@@ -669,9 +613,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     double: +.inf
-    ...
 
     """
 
@@ -689,9 +631,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     double: -.inf
-    ...
 
     """
 
@@ -709,9 +649,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     float: \(float)
-    ...
 
     """
 
@@ -729,9 +667,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     float: \(float)
-    ...
 
     """
 
@@ -749,9 +685,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     float: .nan
-    ...
 
     """
 
@@ -769,9 +703,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     float: +.inf
-    ...
 
     """
 
@@ -789,9 +721,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     float: -.inf
-    ...
 
     """
 
@@ -809,9 +739,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     float: \(float)
-    ...
 
     """
 
@@ -829,9 +757,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     float: \(float)
-    ...
 
     """
 
@@ -849,9 +775,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     float: .nan
-    ...
 
     """
 
@@ -869,9 +793,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     float: +.inf
-    ...
 
     """
 
@@ -889,9 +811,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     float: -.inf
-    ...
 
     """
 
@@ -909,9 +829,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: \(int)
-    ...
 
     """
 
@@ -929,9 +847,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: \(int)
-    ...
 
     """
 
@@ -949,9 +865,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: \(int)
-    ...
 
     """
 
@@ -969,9 +883,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: \(int)
-    ...
 
     """
 
@@ -989,9 +901,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: \(int)
-    ...
 
     """
 
@@ -1009,9 +919,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: \(int)
-    ...
 
     """
 
@@ -1029,9 +937,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: \(int)
-    ...
 
     """
 
@@ -1049,9 +955,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: \(int)
-    ...
 
     """
 
@@ -1069,9 +973,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: \(int)
-    ...
 
     """
 
@@ -1089,9 +991,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     int: \(int)
-    ...
 
     """
 
@@ -1109,9 +1009,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     uint: \(uint)
-    ...
 
     """
 
@@ -1129,9 +1027,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     uint: \(uint)
-    ...
 
     """
 
@@ -1149,9 +1045,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     uint: \(uint)
-    ...
 
     """
 
@@ -1169,9 +1063,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     uint: \(uint)
-    ...
 
     """
 
@@ -1189,9 +1081,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     uint: \(uint)
-    ...
 
     """
 
@@ -1209,9 +1099,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     url: \(url.absoluteString)
-    ...
 
     """
 
@@ -1229,9 +1117,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     uuid: \(uuid.uuidString)
-    ...
 
     """
 
@@ -1252,9 +1138,7 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
-    null: null
-    ...
+    "null": null
 
     """
 
@@ -1268,12 +1152,10 @@ class YAMLEncoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     b: 1
     z: 2
     n: 3
     f: 4
-    ...
 
     """
 

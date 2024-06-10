@@ -75,8 +75,8 @@ public enum YAML {
       self.isNegative = isNegative
     }
 
-    public init(_ value: String) {
-      self.init(value, isInteger: value.allSatisfy { $0.isNumber || $0 == "-" }, isNegative: value.hasPrefix("-"))
+    public init(_ value: String, schema: YAMLSchema = .core) {
+      self.init(value, isInteger: schema.isInt(value), isNegative: value.hasPrefix("-"))
     }
 
     public init<T: FloatingPoint>(_ value: T) {
@@ -193,6 +193,10 @@ public enum YAML {
     case doubleQuoted = 2
     case literal = 3
     case folded = 4
+
+    public var isQuoted: Bool {
+      self == .singleQuoted || self == .doubleQuoted
+    }
   }
 
   public enum CollectionStyle: Int32 {

@@ -15,17 +15,185 @@ import XCTest
 
 class YAMLWriterTests: XCTestCase {
 
-  func testWriteMultipleDocuments() throws {
+  func testWriteScalarCompact() throws {
 
-    var output = ""
-    try YAMLWriter.write([.bool(true), .integer(123)]) { output += $0 ?? "" }
+    let options = YAMLWriter.Options(pretty: false)
 
     XCTAssertEqual(
-      output,
+      try YAMLWriter.write(["simple"], options: options),
       """
-      --- true
+      simple
+
+      """
+    )
+
+  }
+
+  func testWriteScalarExplicitDocumentMarkers() throws {
+
+    let options = YAMLWriter.Options(pretty: false, explicitDocumentMarkers: true)
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple"], options: options),
+      """
+      ---
+      simple
       ...
-      --- 123
+
+      """
+    )
+
+  }
+
+  func testWriteScalarPretty() throws {
+
+    let options = YAMLWriter.Options(pretty: true)
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple"], options: options),
+      """
+      ---
+      simple
+      ...
+
+      """
+    )
+
+  }
+
+  func testWriteStringPreferPlain() throws {
+
+    let options = YAMLWriter.Options(preferredStringStyle: .plain, pretty: false)
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple\nstring"], options: options),
+      """
+      simple
+
+      string
+
+      """
+    )
+
+  }
+
+  func testWriteStringPreferSingleQuoted() throws {
+
+    let options = YAMLWriter.Options(preferredStringStyle: .singleQuoted, pretty: false)
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple\nstring"], options: options),
+      """
+      'simple
+
+      string'
+
+      """
+    )
+
+  }
+
+  func testWriteStringPreferDoubleQuoted() throws {
+
+    let options = YAMLWriter.Options(preferredStringStyle: .doubleQuoted, pretty: false)
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple\nstring"], options: options),
+      """
+      "simple\\nstring"
+
+      """
+    )
+
+  }
+
+  func testWriteStringPreferLiteral() throws {
+
+    let options = YAMLWriter.Options(preferredStringStyle: .literal, pretty: false)
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple\nstring"], options: options),
+      """
+      |-
+        simple
+        string
+
+      """
+    )
+
+  }
+
+  func testWriteStringPreferFolded() throws {
+
+    let options = YAMLWriter.Options(preferredStringStyle: .folded, pretty: false)
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple\nstring"], options: options),
+      """
+      >-
+        simple
+        \
+
+        string
+
+      """
+    )
+
+  }
+
+  func testWriteWidthNormal() throws {
+
+    let yamlVal: YAML =
+      "Long Text 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 1234567890"
+
+    let options = YAMLWriter.Options(width: .normal)
+    let yamlStr = try YAMLWriter.write([yamlVal], options: options)
+
+    XCTAssertEqual(
+      yamlStr,
+      """
+      ---
+      Long Text 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789
+      1234567890
+      ...
+
+      """
+    )
+
+    XCTAssertEqual(try YAMLReader.read(data: Data(yamlStr.utf8)).first, yamlVal)
+  }
+
+  func testWriteWidthNormalInBlock() throws {
+
+    let yamlVal: YAML = [
+      "a": "Long Text 123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 1234567890"
+    ]
+
+    let options = YAMLWriter.Options(preferredCollectionStyle: .block, width: .normal)
+    let yamlStr = try YAMLWriter.write([yamlVal], options: options)
+
+    XCTAssertEqual(
+      yamlStr,
+      """
+      a: Long Text 123456789 123456789 123456789 123456789 123456789 123456789 123456789
+        123456789 1234567890
+
+      """
+    )
+
+    XCTAssertEqual(try YAMLReader.read(data: Data(yamlStr.utf8)).first, yamlVal)
+  }
+
+  func testWriteMultipleDocuments() throws {
+
+    XCTAssertEqual(
+      try YAMLWriter.write([.bool(true), .integer(123)]),
+      """
+      ---
+      true
+      ...
+      ---
+      123
       ...
 
       """
@@ -35,10 +203,9 @@ class YAMLWriterTests: XCTestCase {
   func testWriteAliases() throws {
 
     XCTAssertEqual(
-      try YAMLSerialization.string(from: .alias("num")),
+      try YAMLWriter.write([.alias("num")]),
       """
-      --- *num
-      ...
+      *num
 
       """
     )
