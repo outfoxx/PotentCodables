@@ -1,0 +1,43 @@
+From daa7ad61d26776b15053a01cf53e0494235ba4f5 Mon Sep 17 00:00:00 2001
+From: Kevin Wooten <kevin@wooten.com>
+Date: Sat, 8 Jun 2024 18:01:05 -0700
+Subject: [PATCH] Allow prefix only tags to pass `fy_tag_scan`.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Allows tags like `!` to pass scanning. This is required to pass the emitter tests when the events are passed through the emit event apis.
+
+In `fy_tag_scan` it replaces the test for `handle_length <= 0`, with just less than zero.
+
+This change is validated by the fact that further down in `fy_tag_scan` there is a check for `handle_length == 0’, meaning it is expets zero-length handles and handles them properly.
+---
+ src/util/fy-utils.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/util/fy-utils.c b/src/util/fy-utils.c
+index 6b45f15..8a372d8 100644
+--- a/src/util/fy-utils.c
++++ b/src/util/fy-utils.c
+@@ -295,6 +295,9 @@ int fy_tag_handle_length(const char *data, size_t len)
+ 	s += w;
+ 
+ 	c = fy_utf8_get(s, e - s, &w);
++	if (c == -1)
++		return len;
++
+ 	if (fy_is_ws(c))
+ 		return s - data;
+ 	/* if first character is !, empty handle */
+@@ -364,7 +367,7 @@ int fy_tag_scan(const char *data, size_t len, struct fy_tag_scan_info *info)
+ 		/* either !suffix or !handle!suffix */
+ 		/* we scan back to back, and split handle/suffix */
+ 		handle_length = fy_tag_handle_length(s, e - s);
+-		if (handle_length <= 0)
++		if (handle_length < 0)
+ 			return -1;
+ 		s += handle_length;
+ 	}
+-- 
+2.39.3 (Apple Git-146)
+

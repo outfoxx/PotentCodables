@@ -11,53 +11,27 @@
 import Cfyaml
 import Foundation
 
+
 internal enum YAMLReader {
 
   typealias Error = YAMLSerialization.Error
 
   static func read(data: Data) throws -> YAML.Sequence {
 
-    var diagCfg =
-      fy_diag_cfg(
-        fp: nil,
-        output_fn: nil,
-        user: nil,
-        level: FYET_ERROR,
-        module_mask: UInt32.max,
-        colorize: false,
-        show_source: false,
-        show_position: true,
-        show_type: false,
-        show_module: false,
-        source_width: Int32.max,
-        position_width: 4,
-        type_width: 0,
-        module_width: 0
-      )
-    let diag = fy_diag_create(&diagCfg)
-    fy_diag_set_collect_errors(diag, true)
-    defer { fy_diag_destroy(diag) }
-
-    var parseCfg = fy_parse_cfg(search_path: nil, flags: FYPCF_QUIET, userdata: nil, diag: diag)
-
-    guard let parser = fy_parser_create(&parseCfg).map({ Parser(rawParser: $0, rawDiag: diag) }) else {
+    guard let parser = Libfyaml.createParser().map(Parser.init) else {
       throw Error.unableToCreateParser
     }
-
     defer { parser.destroy() }
 
     return try data.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
 
-      let bytes = ptr.bindMemory(to: Int8.self)
+      parser.setInput(ptr.bindMemory(to: CChar.self))
 
-      fy_parser_set_string(parser.rawParser, bytes.baseAddress, bytes.count)
-
-      _ = try parser.expect(eventType: FYET_STREAM_START)
+      try parser.expect(eventType: FYET_STREAM_START)
 
       return try stream(parser: parser)
     }
   }
-
 
   static func stream(parser: Parser) throws -> YAML.Sequence {
 
@@ -91,7 +65,7 @@ internal enum YAMLReader {
 
     let document = try value(event: root, parser: parser)
 
-    _ = try parser.expect(eventType: FYET_DOCUMENT_END)
+    try parser.expect(eventType: FYET_DOCUMENT_END)
 
     return document
   }
@@ -263,58 +237,72 @@ internal enum YAMLReader {
   struct Parser {
 
     struct Event {
-      let rawEvent: UnsafeMutablePointer<fy_event>
 
-      var type: fy_event_type { rawEvent.pointee.type }
+      let event: UnsafeMutablePointer<fy_event>
+
+      init(_ event: UnsafeMutablePointer<fy_event>) {
+        self.event = event
+      }
+
+      var type: fy_event_type { event.pointee.type }
 
       var anchor: String? {
-        guard let token = rawEvent.pointee.scalar.anchor else { return nil }
+        guard let token = event.pointee.scalar.anchor else { return nil }
         return String(token: token)
       }
 
       var tag: String? {
-        guard let token = rawEvent.pointee.scalar.tag else { return nil }
+        guard let token = event.pointee.scalar.tag else { return nil }
         return String(token: token)
       }
 
       var scalar: (String, fy_scalar_style)? {
-        guard let token = rawEvent.pointee.scalar.value else { return nil }
+        guard let token = event.pointee.scalar.value else { return nil }
         return String(token: token).map { ($0, fy_token_scalar_style(token)) }
       }
 
       var style: fy_node_style {
-        return fy_event_get_node_style(rawEvent)
+        return fy_event_get_node_style(event)
       }
 
     }
 
-    let rawParser: OpaquePointer
-    let rawDiag: OpaquePointer?
+    let parser: OpaquePointer
 
-    func nextIfPresent() -> Event? {
-      return fy_parser_parse(rawParser).map { Event(rawEvent: $0) }
+    func setInput(_ bytes: UnsafeBufferPointer<CChar>) {
+
+      fy_parser_set_string(parser, bytes.baseAddress, bytes.count)
+    }
+
+    private func nextIfPresent() -> Event? {
+
+      return fy_parser_parse(parser).map(Event.init)
     }
 
     func next() throws -> Event {
+
       guard let event = nextIfPresent() else {
         throw error(fallback: .unexpectedEOF)
       }
+
       return event
     }
 
-    func expect(eventType: fy_event_type) throws -> Event {
+    func expect(eventType: fy_event_type) throws {
 
       let event = try next()
+      defer { free(event: event) }
 
       if event.type != eventType {
         throw error(fallback: .unexpectedEvent)
       }
-
-      return event
     }
 
     func error(fallback: Error) -> Error {
-      guard let diag = rawDiag else { return fallback }
+
+      guard let diag = fy_parser_get_diag(parser) else {
+        return fallback
+      }
 
       var prev: UnsafeMutableRawPointer?
       if let error = fy_diag_errors_iterate(diag, &prev) {
@@ -327,11 +315,11 @@ internal enum YAMLReader {
     }
 
     func destroy() {
-      fy_parser_destroy(rawParser)
+      fy_parser_destroy(parser)
     }
 
     func free(event: Event) {
-      fy_parser_event_free(rawParser, event.rawEvent)
+      fy_parser_event_free(parser, event.event)
     }
 
   }

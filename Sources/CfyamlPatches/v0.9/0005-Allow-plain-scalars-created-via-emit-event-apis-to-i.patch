@@ -1,0 +1,46 @@
+From 8c045ede2a15c6e1a8802b2d10e3b125495cf1f6 Mon Sep 17 00:00:00 2001
+From: Kevin Wooten <kevin@wooten.com>
+Date: Sat, 8 Jun 2024 17:55:21 -0700
+Subject: [PATCH] =?UTF-8?q?Allow=20=E2=80=9Cplain=E2=80=9D=20scalars,=20cr?=
+ =?UTF-8?q?eated=20via=20emit=20event=20apis,=20to=20include=20newlines?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Removes special handling for “simple” or `FYACF_FLOW_PLAIN` inputs in `fy_input_from_data_setup`.
+
+Without this, a “plain” scalar created with the string value `first\nsecond third` will be output as `first second third`.
+---
+ src/lib/fy-input.c | 16 ++++------------
+ 1 file changed, 4 insertions(+), 12 deletions(-)
+
+diff --git a/src/lib/fy-input.c b/src/lib/fy-input.c
+index cc29ae8..47bbd20 100644
+--- a/src/lib/fy-input.c
++++ b/src/lib/fy-input.c
+@@ -128,18 +128,10 @@ static void fy_input_from_data_setup(struct fy_input *fyi,
+ 	handle->end_mark.input_pos = size;
+ 	handle->end_mark.line = 0;
+ 	handle->end_mark.column = fy_utf8_count(data, size);
+-	/* if it's plain, all is good */
+-	if (simple || (aflags & FYACF_FLOW_PLAIN)) {
+-		handle->storage_hint = size;	/* maximum */
+-		handle->storage_hint_valid = false;
+-		handle->direct_output = !!(aflags & FYACF_JSON_ESCAPE);
+-		handle->style = FYAS_PLAIN;
+-	} else {
+-		handle->storage_hint = 0;	/* just calculate */
+-		handle->storage_hint_valid = false;
+-		handle->direct_output = false;
+-		handle->style = FYAS_DOUBLE_QUOTED_MANUAL;
+-	}
++	handle->storage_hint = 0;	/* just calculate */
++	handle->storage_hint_valid = false;
++	handle->direct_output = false;
++	handle->style = FYAS_DOUBLE_QUOTED_MANUAL;
+ 	handle->empty = !!(aflags & FYACF_EMPTY);
+ 	handle->has_lb = !!(aflags & FYACF_LB);
+ 	handle->has_ws = !!(aflags & FYACF_WS);
+-- 
+2.39.3 (Apple Git-146)
+

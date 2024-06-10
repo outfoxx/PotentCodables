@@ -1,0 +1,55 @@
+From 5a97fe656d777e6342cfa3bb459c6e5c27f93e28 Mon Sep 17 00:00:00 2001
+From: Kevin Wooten <kevin@wooten.com>
+Date: Sat, 8 Jun 2024 17:47:24 -0700
+Subject: [PATCH] =?UTF-8?q?Allow=20zero-length=20scalars=20created=20with?=
+ =?UTF-8?q?=20emit=20event=20api=20to=20be=20=E2=80=9Cplain=E2=80=9D=20map?=
+ =?UTF-8?q?ping=20keys?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+In `fy_token_text_analyze`, this adds `FYTTAF_CAN_BE_SIMPLE_KEY` to the flags returned when a zero-length scalar is encountered.
+
+Additionally, `FYTTAF_CAN_BE_SIMPLE_KEY` was added to the kind of `FYNS_PLAIN` scalars that can be emitted without dobule quoting in `fy_emit_token_scalar_style`.
+---
+ src/lib/fy-emit.c  | 2 +-
+ src/lib/fy-token.c | 3 +--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/src/lib/fy-emit.c b/src/lib/fy-emit.c
+index b9311d2..8074564 100644
+--- a/src/lib/fy-emit.c
++++ b/src/lib/fy-emit.c
+@@ -1376,7 +1376,7 @@ out:
+ 		 * - plain in block mode that can't be plain in flow mode
+ 		 * - special handling for plains on start of line
+ 		 */
+-		if ((flow && !(aflags & FYTTAF_CAN_BE_PLAIN_FLOW) && !is_null_scalar) ||
++		if ((flow && !(aflags & FYTTAF_CAN_BE_PLAIN_FLOW) && !(aflags & FYTTAF_CAN_BE_SIMPLE_KEY) && !is_null_scalar) ||
+ 		    ((aflags & FYTTAF_QUOTE_AT_0) && indent == 0))
+ 			style = FYNS_DOUBLE_QUOTED;
+ 	}
+diff --git a/src/lib/fy-token.c b/src/lib/fy-token.c
+index 35e8c34..5976c7c 100644
+--- a/src/lib/fy-token.c
++++ b/src/lib/fy-token.c
+@@ -686,7 +686,7 @@ int fy_token_text_analyze(struct fy_token *fyt)
+ 	cn = fy_atom_iter_utf8_get(&iter);
+ 	if (cn < 0) {
+ 		/* empty? */
+-		flags |= FYTTAF_EMPTY | FYTTAF_CAN_BE_DOUBLE_QUOTED | FYTTAF_CAN_BE_UNQUOTED_PATH_KEY;
++		flags |= FYTTAF_EMPTY | FYTTAF_CAN_BE_DOUBLE_QUOTED | FYTTAF_CAN_BE_UNQUOTED_PATH_KEY | FYTTAF_CAN_BE_SIMPLE_KEY;
+ 		goto out;
+ 	}
+ 
+@@ -694,7 +694,6 @@ int fy_token_text_analyze(struct fy_token *fyt)
+ 		 FYTTAF_CAN_BE_SINGLE_QUOTED |
+ 		 FYTTAF_CAN_BE_DOUBLE_QUOTED |
+ 		 FYTTAF_CAN_BE_LITERAL |
+-		 FYTTAF_CAN_BE_LITERAL |
+ 		 FYTTAF_CAN_BE_FOLDED |
+ 		 FYTTAF_CAN_BE_PLAIN_FLOW |
+ 		 FYTTAF_CAN_BE_UNQUOTED_PATH_KEY;
+-- 
+2.39.3 (Apple Git-146)
+

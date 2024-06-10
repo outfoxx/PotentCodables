@@ -76,13 +76,13 @@ PATH_SEPARATOR=":"
 
 # The host system.
 host_alias=
-host=aarch64-apple-darwin23.4.0
-host_os=darwin23.4.0
+host=aarch64-apple-darwin23.5.0
+host_os=darwin23.5.0
 
 # The build system.
 build_alias=
-build=aarch64-apple-darwin23.4.0
-build_os=darwin23.4.0
+build=aarch64-apple-darwin23.5.0
+build_os=darwin23.5.0
 
 # A sed program that does not truncate output.
 SED="/usr/bin/sed"

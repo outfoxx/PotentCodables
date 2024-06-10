@@ -686,14 +686,13 @@ int fy_token_text_analyze(struct fy_token *fyt)
 	cn = fy_atom_iter_utf8_get(&iter);
 	if (cn < 0) {
 		/* empty? */
-		flags |= FYTTAF_EMPTY | FYTTAF_CAN_BE_DOUBLE_QUOTED | FYTTAF_CAN_BE_UNQUOTED_PATH_KEY;
+		flags |= FYTTAF_EMPTY | FYTTAF_CAN_BE_DOUBLE_QUOTED | FYTTAF_CAN_BE_UNQUOTED_PATH_KEY | FYTTAF_CAN_BE_SIMPLE_KEY;
 		goto out;
 	}
 
 	flags |= FYTTAF_CAN_BE_PLAIN |
 		 FYTTAF_CAN_BE_SINGLE_QUOTED |
 		 FYTTAF_CAN_BE_DOUBLE_QUOTED |
-		 FYTTAF_CAN_BE_LITERAL |
 		 FYTTAF_CAN_BE_LITERAL |
 		 FYTTAF_CAN_BE_FOLDED |
 		 FYTTAF_CAN_BE_PLAIN_FLOW |
@@ -1514,6 +1513,12 @@ unsigned int fy_analyze_scalar_content(const char *data, size_t size,
 
 	if (break_run > 1)
 		flags |= FYACF_TRAILING_LB;
+
+	if ((flags & FYACF_STARTS_WITH_WS) ||
+		(flags & FYACF_STARTS_WITH_LB) ||
+		(flags & FYACF_ENDS_WITH_WS) ||
+		(flags & FYACF_ENDS_WITH_LB))
+		flags &= ~FYACF_FLOW_PLAIN;
 
 	return flags;
 }

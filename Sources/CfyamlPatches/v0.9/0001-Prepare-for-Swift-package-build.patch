@@ -1,0 +1,32 @@
+From c1020b2ae1c8d5d4369e18daa52473f0ab04ed36 Mon Sep 17 00:00:00 2001
+From: Kevin Wooten <kevin@wooten.com>
+Date: Sat, 8 Jun 2024 20:02:57 -0700
+Subject: [PATCH] Prepare for Swift package build
+
+---
+ config.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/config.h b/config.h
+index d394425..992bbda 100644
+--- a/config.h
++++ b/config.h
+@@ -39,7 +39,7 @@
+ #define HAVE_LIBCLANG 0
+ 
+ /* Define to 1 if you have libyaml available */
+-#define HAVE_LIBYAML 1
++#define HAVE_LIBYAML 0
+ 
+ /* Define to 1 if you have the <minix/config.h> header file. */
+ /* #undef HAVE_MINIX_CONFIG_H */
+@@ -282,3 +282,6 @@
+ 
+ /* Define as 'int' if <sys/types.h> doesn't define. */
+ /* #undef uid_t */
++
++/* Ignore warnings for Swift package build */
++#pragma clang diagnostic ignored "-Wconversion"
+-- 
+2.39.3 (Apple Git-146)
+
