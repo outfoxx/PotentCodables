@@ -91,6 +91,28 @@ internal enum Libfyaml {
     return diag
   }
 
+  internal static func hasError(in diag: OpaquePointer?) -> Bool {
+
+    guard let diag else {
+      return true
+    }
+
+    return fy_diag_got_error(diag)
+  }
+
+  internal static func error(from diag: OpaquePointer?) -> (message: String, line: Int, column: Int)? {
+
+    guard let diag else {
+      return nil
+    }
+
+    var prev: UnsafeMutableRawPointer?
+    guard let error = fy_diag_errors_iterate(diag, &prev) else {
+      return nil
+    }
+
+    return (String(cString: error.pointee.msg), Int(error.pointee.line), Int(error.pointee.column))
+  }
 
 }
 

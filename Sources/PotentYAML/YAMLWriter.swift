@@ -198,7 +198,7 @@ internal struct YAMLWriter {
 
   private func failIfError() throws {
 
-    guard fy_diag_got_error(fy_emitter_get_diag(emitter)) else {
+    guard Libfyaml.hasError(in: fy_emitter_get_diag(emitter)) else {
       return
     }
 
@@ -206,16 +206,12 @@ internal struct YAMLWriter {
   }
 
   private func error() -> Error {
-    if let diag = fy_emitter_get_diag(emitter) {
 
-      var prev: UnsafeMutableRawPointer?
-      if let error = fy_diag_errors_iterate(diag, &prev) {
-
-        return Error.emitError(message: String(cString: error.pointee.msg))
-      }
+    guard let error = Libfyaml.error(from: fy_emitter_get_diag(emitter)) else {
+      return .emitError(message: "Unknown emitter error")
     }
 
-    return .emitError(message: "Unknown emitter error")
+    return .emitError(message: error.message)
   }
 
   private static let emitOutput: Libfyaml.EmitterOutput = { _, _, str, len, userInfo in

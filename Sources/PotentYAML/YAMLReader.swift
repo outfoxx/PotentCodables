@@ -296,18 +296,11 @@ internal struct YAMLReader {
 
     func error(fallback: Error) -> Error {
 
-      guard let diag = fy_parser_get_diag(parser) else {
+      guard let error = Libfyaml.error(from: fy_parser_get_diag(parser)) else {
         return fallback
       }
 
-      var prev: UnsafeMutableRawPointer?
-      if let error = fy_diag_errors_iterate(diag, &prev) {
-        return Error.parserError(message: String(cString: error.pointee.msg),
-                                 line: Int(error.pointee.line),
-                                 column: Int(error.pointee.column))
-      }
-
-      return fallback
+      return Error.parserError(message: error.message, line: error.line, column: error.column)
     }
 
     func destroy() {
