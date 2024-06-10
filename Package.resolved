@@ -20,6 +20,15 @@
         }
       },
       {
+        "package": "Regex",
+        "repositoryURL": "https://github.com/sharplet/Regex.git",
+        "state": {
+          "branch": null,
+          "revision": "76c2b73d4281d77fc3118391877efd1bf972f515",
+          "version": "2.1.1"
+        }
+      },
+      {
         "package": "swift-collections",
         "repositoryURL": "https://github.com/apple/swift-collections.git",
         "state": {

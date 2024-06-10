@@ -26,6 +26,7 @@ internal struct YAMLWriter {
 
     static let `default` = Options()
 
+    var schema: YAMLSchema = .core
     var preferredCollectionStyle: YAML.CollectionStyle = .any
     var preferredStringStyle: YAML.StringStyle = .any
     var json: Bool = false
@@ -98,9 +99,7 @@ internal struct YAMLWriter {
       try emit(scalar: "null", style: FYSS_PLAIN, anchor: anchor, tag: nil)
 
     case .string(let string, style: let style, tag: let tag, anchor: let anchor):
-      let stringStyle = style != .any ? style : options.preferredStringStyle
-      let scalarStyle =  fy_scalar_style(rawValue: stringStyle.rawValue)
-      try emit(scalar: string, style: scalarStyle, anchor: anchor, tag: tag?.rawValue)
+      try emit(string: string, style: style, anchor: anchor, tag: tag?.rawValue)
 
     case .integer(let integer, anchor: let anchor):
       try emit(scalar: integer.value, style: FYSS_PLAIN, anchor: anchor, tag: nil)
@@ -156,7 +155,23 @@ internal struct YAMLWriter {
     try emit(type: FYET_SEQUENCE_END)
   }
 
+  private func emit(string: String, style: YAML.StringStyle, anchor: String?, tag: String?) throws {
+
+    let stringStyle: YAML.StringStyle
+    if options.schema.requiresQuotes(for: string) {
+      stringStyle = (options.preferredStringStyle.isQuoted ? options.preferredStringStyle : .doubleQuoted)
+    }
+    else {
+      stringStyle = style != .any ? style : options.preferredStringStyle
+    }
+
+    let scalarStyle = fy_scalar_style(rawValue: stringStyle.rawValue)
+
+    try emit(scalar: string, style: scalarStyle, anchor: anchor, tag: tag)
+  }
+
   private func emit(scalar: String, style: fy_scalar_style, anchor: String?, tag: String?) throws {
+
     try scalar.withCString { scalarPtr in
       try anchor.withCString { anchorPtr in
         try tag.withCString { tagPtr in
@@ -183,7 +198,7 @@ internal struct YAMLWriter {
 
   private func failIfError() throws {
 
-    guard fy_diag_got_error(fy_emitter_get_diag(emitter)) else {
+    guard Libfyaml.hasError(in: fy_emitter_get_diag(emitter)) else {
       return
     }
 
@@ -191,16 +206,12 @@ internal struct YAMLWriter {
   }
 
   private func error() -> Error {
-    if let diag = fy_emitter_get_diag(emitter) {
 
-      var prev: UnsafeMutableRawPointer?
-      if let error = fy_diag_errors_iterate(diag, &prev) {
-
-        return Error.emitError(message: String(cString: error.pointee.msg))
-      }
+    guard let error = Libfyaml.error(from: fy_emitter_get_diag(emitter)) else {
+      return .emitError(message: "Unknown emitter error")
     }
 
-    return .emitError(message: "Unknown emitter error")
+    return .emitError(message: error.message)
   }
 
   private static let emitOutput: Libfyaml.EmitterOutput = { _, _, str, len, userInfo in

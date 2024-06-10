@@ -47,7 +47,7 @@ class YAMLTests: XCTestCase {
 
     XCTAssertEqual(yaml["test1"]!, nil)
     XCTAssertEqual(yaml["test2"]!, nil)
-    XCTAssertEqual(yaml["test3"]!, "")
+    XCTAssertEqual(yaml["test3"]!, nil)
     XCTAssertEqual(yaml["test4"]!, false)
     XCTAssertEqual(yaml["test5"]!, true)
     XCTAssertEqual(yaml["test6"]!, 123)

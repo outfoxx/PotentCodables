@@ -16,6 +16,19 @@ import XCTest
 /// Tests covering *fixed* errors in libfyaml or its usage.
 ///
 class YAMLErrorTests: XCTestCase {
+
+  public func testEmitNumberInPlainString() throws {
+
+    let scalarYaml1: YAML = "1924."
+    XCTAssertEqual(
+      try YAMLSerialization.string(from: scalarYaml1),
+      #"""
+      "1924."
+
+      """#
+    )
+  }
+
   public func testSimpleScalarNotOnDocMarkerLinePretty() throws {
 
     let scalarYaml1: YAML = "simple"
