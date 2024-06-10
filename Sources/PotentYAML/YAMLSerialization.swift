@@ -22,7 +22,7 @@ public enum YAMLSerialization {
   /// possible
   public enum Error: Swift.Error {
     case unableToCreateEmitter
-    case emitError
+    case emitError(message: String)
     case unableToCreateParser
     case parserError(message: String, line: Int, column: Int)
     case unexpectedEOF
@@ -74,6 +74,7 @@ public enum YAMLSerialization {
     public static let sortedKeys = WritingOptions(rawValue: 1 << 0)
     public static let pretty = WritingOptions(rawValue: 1 << 1)
     public static let json = WritingOptions(rawValue: 1 << 3)
+    public static let explictDocumentMarkers = WritingOptions(rawValue: 1 << 4)
   }
 
   public static func data(from yaml: YAML,
@@ -102,17 +103,36 @@ public enum YAMLSerialization {
 
     var output = String()
 
-    try YAMLWriter.write([yaml],
-                         preferredStyles: (preferredCollectionStyle, preferredStringStyle),
-                         json: options.contains(.json),
-                         pretty: options.contains(.pretty),
-                         width: options.contains(.pretty) ? .normal : .infinite,
-                         sortedKeys: options.contains(.sortedKeys)) {
+    let writerOptions = YAMLWriter.Options(
+      writingOptions: options,
+      preferredCollectionStyle: preferredCollectionStyle,
+      preferredStringStyle: preferredStringStyle
+    )
+
+    try YAMLWriter.write([yaml], options: writerOptions) {
       guard let str = $0 else { return }
       output.append(str)
     }
 
     return output
+  }
+
+}
+
+extension YAMLWriter.Options {
+
+  init(
+    writingOptions: YAMLSerialization.WritingOptions,
+    preferredCollectionStyle: YAML.CollectionStyle,
+    preferredStringStyle: YAML.StringStyle
+  ) {
+    self.preferredCollectionStyle = preferredCollectionStyle
+    self.preferredStringStyle = preferredStringStyle
+    self.json = writingOptions.contains(.json)
+    self.pretty = writingOptions.contains(.pretty)
+    self.width = writingOptions.contains(.pretty) ? .normal : .infinite
+    self.sortedKeys = writingOptions.contains(.sortedKeys)
+    self.explicitDocumentMarkers = writingOptions.contains(.explictDocumentMarkers)
   }
 
 }

@@ -104,7 +104,6 @@ class YAMLAnyValueTests: XCTestCase {
 
     let yaml =
     """
-    ---
     nil: null
     bool: true
     string: Hello World!
@@ -147,7 +146,6 @@ class YAMLAnyValueTests: XCTestCase {
       1: b
       4: c
       3: d
-    ...
 
     """
 

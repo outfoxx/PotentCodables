@@ -165,11 +165,9 @@ class YAMLTests: XCTestCase {
     XCTAssertEqual(
       yaml,
       """
-      ---
       c: 1
       a: 2
       b: 3
-      ...
 
       """
     )
@@ -186,11 +184,9 @@ class YAMLTests: XCTestCase {
     XCTAssertEqual(
       yaml,
       """
-      ---
       a: 2
       b: 3
       c: 1
-      ...
 
       """
     )
@@ -214,7 +210,7 @@ class YAMLTests: XCTestCase {
 
       """
 
-    XCTAssertEqual(object, try YAMLSerialization.yaml(from: yaml.data(using: .utf8)!))
+    XCTAssertEqual(object, try YAMLSerialization.yaml(from: yaml))
   }
 
   func testDescriptionOrder() throws {
@@ -228,11 +224,9 @@ class YAMLTests: XCTestCase {
     XCTAssertEqual(
       yaml.description,
       """
-      ---
       c: 1
       a: 2
       b: 3
-      ...
 
       """
     )
@@ -280,9 +274,7 @@ class YAMLTests: XCTestCase {
     XCTAssertEqual(
       try YAMLSerialization.string(from: ["plain": "This should be output plain"]),
       #"""
-      ---
       plain: This should be output plain
-      ...
 
       """#
     )
@@ -291,9 +283,7 @@ class YAMLTests: XCTestCase {
       try YAMLSerialization.string(from: ["dquoted": "This should be output dquoted"],
                                    preferredStringStyle: .doubleQuoted),
       #"""
-      ---
       "dquoted": "This should be output dquoted"
-      ...
 
       """#
     )
@@ -302,9 +292,7 @@ class YAMLTests: XCTestCase {
       try YAMLSerialization.string(from: ["squoted": "This should be output squoted"],
                                    preferredStringStyle: .singleQuoted),
       #"""
-      ---
       'squoted': 'This should be output squoted'
-      ...
 
       """#
     )
@@ -313,9 +301,7 @@ class YAMLTests: XCTestCase {
       try YAMLSerialization.string(from: [.string("plain", style: .plain): "This should be output squoted"],
                                    preferredStringStyle: .singleQuoted),
       #"""
-      ---
       plain: 'This should be output squoted'
-      ...
 
       """#
     )
@@ -327,9 +313,7 @@ class YAMLTests: XCTestCase {
     XCTAssertEqual(
       try YAMLSerialization.string(from: ["block": "This should be output block"]),
       #"""
-      ---
       block: This should be output block
-      ...
 
       """#
     )
@@ -338,11 +322,9 @@ class YAMLTests: XCTestCase {
       try YAMLSerialization.string(from: ["flow": "This should be output flow"],
                                    preferredCollectionStyle: .flow),
       #"""
-      ---
       {
         'flow': 'This should be output flow'
       }
-      ...
 
       """#
     )
@@ -352,9 +334,7 @@ class YAMLTests: XCTestCase {
         .string(from: .mapping([.init(key: "block", value: "This should be output block")], style: .block),
                 preferredCollectionStyle: .flow),
       #"""
-      ---
       block: This should be output block
-      ...
 
       """#
     )
