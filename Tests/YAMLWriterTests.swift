@@ -61,6 +61,58 @@ class YAMLWriterTests: XCTestCase {
 
   }
 
+  func testWriteStringValidSpecialPlain() throws {
+
+    let options = YAMLWriter.Options(pretty: false)
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple  :string"], options: options),
+      """
+      simple  :string
+
+      """
+    )
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple# string"], options: options),
+      """
+      simple# string
+
+      """
+    )
+
+  }
+
+  func testWriteStringInvalidSpecialPlain() throws {
+
+    let options = YAMLWriter.Options(preferredStringStyle: .plain, pretty: false)
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple: string"], options: options),
+      """
+      "simple: string"
+
+      """
+    )
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple:\nstring"], options: options),
+      #"""
+      "simple:\nstring"
+
+      """#
+    )
+
+    XCTAssertEqual(
+      try YAMLWriter.write(["simple   #string"], options: options),
+      """
+      "simple   #string"
+
+      """
+    )
+
+  }
+
   func testWriteStringPreferPlain() throws {
 
     let options = YAMLWriter.Options(preferredStringStyle: .plain, pretty: false)
