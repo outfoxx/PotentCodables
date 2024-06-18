@@ -213,6 +213,56 @@ class YAMLTests: XCTestCase {
     XCTAssertEqual(object, try YAMLSerialization.yaml(from: yaml))
   }
 
+  func testDescriptionFormat() throws {
+
+    XCTAssertEqual(YAML.alias("test").description, "*test")
+
+    XCTAssertEqual(YAML.null().description, "null")
+    XCTAssertEqual(YAML.null(anchor: "test").description, "&test null")
+
+    XCTAssertEqual(YAML.string("my-string", style: .plain).description,
+                   "my-string")
+    XCTAssertEqual(YAML.string("my-string", style: .doubleQuoted).description,
+                   #""my-string""#)
+    XCTAssertEqual(YAML.string("my-string", style: .singleQuoted).description,
+                   #"'my-string'"#)
+    XCTAssertEqual(YAML.string("my-string", style: .plain, anchor: "test").description,
+                   "&test my-string")
+    XCTAssertEqual(YAML.string("my-string", style: .plain, tag: .str).description,
+                   "!tag:yaml.org,2002:str my-string")
+    XCTAssertEqual(YAML.string("my-string", style: .plain, tag: .str, anchor: "test").description,
+                   "&test !tag:yaml.org,2002:str my-string")
+
+    XCTAssertEqual(YAML.integer(123).description, "123")
+    XCTAssertEqual(YAML.integer(123, anchor: "test").description, "&test 123")
+    XCTAssertEqual(YAML.integer(123, anchor: "test").description, "&test 123")
+
+    XCTAssertEqual(YAML.float(1.23).description, "1.23")
+    XCTAssertEqual(YAML.float(1.23, anchor: "test").description, "&test 1.23")
+
+    XCTAssertEqual(YAML.bool(false).description, "false")
+    XCTAssertEqual(YAML.bool(true, anchor: "test").description, "&test true")
+
+    XCTAssertEqual(YAML.sequence([1, 2, 3]).description,
+                   "[1, 2, 3]")
+    XCTAssertEqual(YAML.sequence([1, 2, 3], anchor: "test").description,
+                   "&test [1, 2, 3]")
+    XCTAssertEqual(YAML.sequence([1, 2, 3], tag: .seq).description,
+                   "!tag:yaml.org,2002:seq [1, 2, 3]")
+    XCTAssertEqual(YAML.sequence([1, 2, 3], tag: .seq, anchor: "test").description,
+                   "&test !tag:yaml.org,2002:seq [1, 2, 3]")
+
+    XCTAssertEqual(YAML.mapping(["c": 1, "a": 2, "b": 3]).description,
+                   "{c: 1, a: 2, b: 3}")
+    XCTAssertEqual(YAML.mapping(["c": 1, "a": 2, "b": 3], anchor: "test").description,
+                   "&test {c: 1, a: 2, b: 3}")
+    XCTAssertEqual(YAML.mapping(["c": 1, "a": 2, "b": 3], tag: .map).description,
+                   "!tag:yaml.org,2002:map {c: 1, a: 2, b: 3}")
+    XCTAssertEqual(YAML.mapping(["c": 1, "a": 2, "b": 3], tag: .map, anchor: "test").description,
+                   "&test !tag:yaml.org,2002:map {c: 1, a: 2, b: 3}")
+
+  }
+
   func testDescriptionOrder() throws {
 
     let yaml: YAML = [
@@ -224,10 +274,7 @@ class YAMLTests: XCTestCase {
     XCTAssertEqual(
       yaml.description,
       """
-      c: 1
-      a: 2
-      b: 3
-
+      {c: 1, a: 2, b: 3}
       """
     )
   }

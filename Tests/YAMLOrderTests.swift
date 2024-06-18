@@ -89,10 +89,7 @@ class YAMLOrderTests: XCTestCase {
     XCTAssertEqual(
       yaml.description,
       """
-      c: 1
-      a: 2
-      b: 3
-
+      {c: 1, a: 2, b: 3}
       """
     )
   }

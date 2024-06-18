@@ -10,6 +10,7 @@
 
 import BigInt
 import Foundation
+import OrderedCollections
 import PotentCodables
 
 
@@ -34,7 +35,7 @@ import PotentCodables
 @dynamicMemberLookup
 public enum YAML {
 
-  public struct Tag: RawRepresentable, Equatable, Hashable {
+  public struct Tag: RawRepresentable, Equatable, Hashable, CustomStringConvertible {
 
     public let rawValue: String
 
@@ -59,6 +60,8 @@ public enum YAML {
 
     public static let seq = Tag("tag:yaml.org,2002:seq")
     public static let map = Tag("tag:yaml.org,2002:map")
+
+    public var description: String { "!\(rawValue)" }
   }
 
   public typealias Anchor = String
@@ -246,6 +249,15 @@ public enum YAML {
     return nil
   }
 
+  public static func mapping(
+    _ mapping: OrderedDictionary<YAML, YAML>,
+    style: CollectionStyle = .any,
+    tag: Tag? = nil,
+    anchor: Anchor? = nil
+  ) -> YAML {
+    return .mapping(mapping.map { .init(key: $0.key, value: $0.value) }, style: style, tag: tag, anchor: anchor)
+  }
+
   public var stringValue: String? {
     guard case .string(let value, _, _, _) = self else { return nil }
     return value
@@ -341,14 +353,43 @@ extension YAML: Value {
 extension YAML: CustomStringConvertible {
 
   public var description: String {
+    let schema: YAMLSchema = .core
     var output = ""
 
-    do {
-      try YAMLWriter.write([self]) { output += $0 ?? "" }
+    func append<T: CustomStringConvertible>(_ anchor: String?, _ tag: Tag?, _ value: T) {
+      if let anchor {
+        output += "&\(anchor) "
+      }
+      if let tag {
+        output += "\(tag) "
+      }
+      output += value.description
     }
-    catch {
-      return "Invalid YAML: \(error)"
+
+    switch self {
+    case .alias(let value):
+      output += "*\(value)"
+    case .string(let value, style: let style, tag: let tag, anchor: let anchor):
+      switch style {
+      case .doubleQuoted:
+        append(anchor, tag, #""\#(value)""#)
+      case .singleQuoted:
+        append(anchor, tag, "'\(value)'")
+      case .folded, .literal, .plain, .any:
+        append(anchor, tag, schema.requiresQuotes(for: value) ? #""\#(value)""# : value)
+      }
+    case .bool(let value, anchor: let anchor):
+      append(anchor, nil, value)
+    case .null(anchor: let anchor):
+      append(anchor, nil, "null")
+    case .integer(let value, anchor: let anchor), .float(let value, anchor: let anchor):
+      append(anchor, nil, value.value)
+    case .mapping(let value, style: _, tag: let tag, anchor: let anchor):
+      append(anchor, tag, "{\(value.map { "\($0.key.description): \($0.value.description)" }.joined(separator: ", "))}")
+    case .sequence(let value, style: _, tag: let tag, anchor: let anchor):
+      append(anchor, tag, "[\(value.map(\.description).joined(separator: ", "))]")
     }
+
     return output
   }
 
