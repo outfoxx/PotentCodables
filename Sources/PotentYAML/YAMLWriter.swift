@@ -10,6 +10,8 @@
 
 import Cfyaml
 import Foundation
+import PotentCodables
+import Regex
 
 
 internal struct YAMLWriter {
@@ -34,6 +36,12 @@ internal struct YAMLWriter {
     var width: Width = .normal
     var sortedKeys: Bool = false
     var explicitDocumentMarkers: Bool = false
+  }
+
+  static let disallowedPlainSequencesRegex: Regex = #"(:\s)|(\s#)"#
+
+  public static func hasDisallowedPlainSequences(in string: String) -> Bool {
+    return disallowedPlainSequencesRegex.firstMatch(in: string) != nil
   }
 
   let emitter: OpaquePointer
@@ -158,7 +166,7 @@ internal struct YAMLWriter {
   private func emit(string: String, style: YAML.StringStyle, anchor: String?, tag: String?) throws {
 
     let stringStyle: YAML.StringStyle
-    if options.schema.requiresQuotes(for: string) {
+    if style == .any && (options.schema.requiresQuotes(for: string) || Self.hasDisallowedPlainSequences(in: string)) {
       stringStyle = (options.preferredStringStyle.isQuoted ? options.preferredStringStyle : .doubleQuoted)
     }
     else {
