@@ -43,10 +43,10 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/attaswift/BigInt.git", .upToNextMinor(from: "5.3.0")),
-    .package(url: "https://github.com/SusanDoggie/Float16.git", .upToNextMinor(from: "1.1.1")),
-    .package(url: "https://github.com/apple/swift-collections.git", .upToNextMinor(from: "1.0.4")),
-    .package(url: "https://github.com/sharplet/Regex.git", .upToNextMinor(from: "2.1.1"))
+    .package(url: "https://github.com/attaswift/BigInt.git", from: "5.3.0"),
+    .package(url: "https://github.com/SusanDoggie/Float16.git", from: "1.1.1"),
+    .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.4"),
+    .package(url: "https://github.com/sharplet/Regex.git", from: "2.1.1")
   ],
   targets: [
     .target(
@@ -118,7 +118,7 @@ let package = Package(
 #if swift(>=5.6)
 
 package.dependencies.append(
-  .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.1.0")
+  .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.1.0")
 )
 
 #endif
