@@ -11,9 +11,6 @@ included:
 excluded:
 - Sources/SundayServer/Routable.swift
 
-opt_in_rules:
-- file_header
-
 vertical_whitespace:
   max_empty_lines: 3
 
