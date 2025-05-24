@@ -7,6 +7,9 @@ on:
     types: [ opened, synchronize, reopened ]
     branches: [ main ]
 
+permissions:
+  checks: write
+
 jobs:
   
   check-build-test:
