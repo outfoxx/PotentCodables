@@ -14,7 +14,7 @@ Reading and writing ASN.1 encoded data to/from ``PotentASN1/ASN1`` tree values.
 ```swift
 import PotentASN1
 
-let asn1Value = ASN1Serialization.asn1(fromDER: derData)
+let asn1Value = try ASN1Serialization.asn1(fromDER: derData)
 ```
 
 ### Writing ASN.1
@@ -24,7 +24,7 @@ let asn1Value = ASN1Serialization.asn1(fromDER: derData)
 ```swift
 import PotentASN1
 
-let derData = ASN1Serialization.der(from: .sequence([.utf8String("Hello ASN.1"), .integer(5)]))
+let derData = try ASN1Serialization.der(from: .sequence([.utf8String("Hello ASN.1"), .integer(5)]))
 print(derData.base64EncodedString())
 ```
 
