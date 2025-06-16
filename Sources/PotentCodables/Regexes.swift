@@ -12,7 +12,7 @@ import Foundation
 import Regex
 
 
-extension Regex: ExpressibleByStringLiteral {
+extension Regex: @retroactive ExpressibleByStringLiteral {
 
   public init(stringLiteral value: StaticString) {
     self.init(value)

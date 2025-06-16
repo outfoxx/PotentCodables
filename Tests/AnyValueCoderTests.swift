@@ -17,14 +17,29 @@ import XCTest
 
 class AnyValueCoderTests: XCTestCase {
 
+  let intNumericValues: AnyValue = [
+    .int8(1),
+    .int16(2),
+    .int32(3),
+    .int64(4),
+    .uint8(5),
+    .uint16(6),
+    .uint32(7),
+    .uint64(8),
+    .float16(9),
+    .float(10),
+    .double(11),
+    .decimal(12),
+    .integer(13),
+    .unsignedInteger(14),
+  ]
+
   func testDecodeBoolFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Bool.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
@@ -35,204 +50,702 @@ class AnyValueCoderTests: XCTestCase {
 
   func testDecodeIntFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Int.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
+    }
+  }
+
+  func testDecodeIntFromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index = 1
+        while !container.isAtEnd {
+          let value = try container.decode(Int.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
+  func testDecodeIntOverflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(Int.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(Int64.max) + 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeIntUnderflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(Int.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(Int64.min) - 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
     }
   }
 
   func testDecodeInt8FromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Int8.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
+    }
+  }
+
+  func testDecodeInt8FromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index = 1
+        while !container.isAtEnd {
+          let value = try container.decode(Int8.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
+  func testDecodeInt8Overflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(Int8.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(Int8.max) + 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeInt8Underflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(Int8.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(Int8.min) - 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
     }
   }
 
   func testDecodeInt16FromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Int16.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
+    }
+  }
+
+  func testDecodeInt16FromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index = 1
+        while !container.isAtEnd {
+          let value = try container.decode(Int16.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
+  func testDecodeInt16Overflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(Int16.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(Int16.max) + 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeInt16Underflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(Int16.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(Int16.min) - 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
     }
   }
 
   func testDecodeInt32FromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Int32.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
+    }
+  }
+
+  func testDecodeInt32FromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index = 1
+        while !container.isAtEnd {
+          let value = try container.decode(Int32.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
+  func testDecodeInt32Overflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(Int32.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(Int32.max) + 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeInt32Underflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(Int32.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(Int32.min) - 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
     }
   }
 
   func testDecodeInt64FromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Int64.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
+    }
+  }
+
+  func testDecodeInt64FromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index = 1
+        while !container.isAtEnd {
+          let value = try container.decode(Int64.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
+  func testDecodeInt64Overflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(Int64.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(Int64.max) + 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeInt64Underflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(Int64.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(Int64.min) - 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
     }
   }
 
   func testDecodeUIntFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UInt.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
+    }
+  }
+
+  func testDecodeUIntFromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index = 1
+        while !container.isAtEnd {
+          let value = try container.decode(UInt.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
+  func testDecodeUIntOverflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(UInt.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(UInt.max) + 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeUIntUnderflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(UInt.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(UInt.min) - 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
     }
   }
 
   func testDecodeUInt8FromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UInt8.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
+    }
+  }
+
+  func testDecodeUInt8FromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index = 1
+        while !container.isAtEnd {
+          let value = try container.decode(UInt8.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
+  func testDecodeUInt8Overflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(UInt8.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(UInt8.max) + 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeUInt8Underflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(UInt8.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(UInt8.min) - 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
     }
   }
 
   func testDecodeUInt16FromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UInt16.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
+    }
+  }
+
+  func testDecodeUInt16FromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index = 1
+        while !container.isAtEnd {
+          let value = try container.decode(UInt16.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
+  func testDecodeUInt16Overflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(UInt16.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(UInt16.max) + 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeUInt16Underflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(UInt16.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(UInt16.min) - 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
     }
   }
 
   func testDecodeUInt32FromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UInt32.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
+    }
+  }
+
+  func testDecodeUInt32FromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index = 1
+        while !container.isAtEnd {
+          let value = try container.decode(UInt32.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
+  func testDecodeUInt32Overflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(UInt32.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(UInt32.max) + 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeUInt32Underflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(UInt32.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(UInt32.min) - 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
     }
   }
 
   func testDecodeUInt64FromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UInt64.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
+    }
+  }
+
+  func testDecodeUInt64FromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index = 1
+        while !container.isAtEnd {
+          let value = try container.decode(UInt64.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
+  func testDecodeUInt64Overflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(UInt64.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(UInt64.max) + 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
+    }
+  }
+
+  func testDecodeUInt64Underflow() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        _ = try container.decode(UInt64.self)
+      }
+    }
+
+    XCTAssertThrowsError(
+      try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([.integer(BigInt(UInt64.min) - 1)]))
+    ) { error in
+      AssertDecodingTypeMismatch(error)
     }
   }
 
   func testDecodeFloat16FromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Float16.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
     }
+  }
+
+  func testDecodeFloat16FromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index: Float16 = 1
+        while !container.isAtEnd {
+          let value = try container.decode(Float16.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
   }
 
   func testDecodeFloatFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Float.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
     }
 
     XCTAssertThrowsError(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: .array([nil]))) { error in
       AssertDecodingValueNotFound(error)
     }
+  }
+
+  func testDecodeFloatFromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index: Float = 1
+        while !container.isAtEnd {
+          let value = try container.decode(Float.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
   }
 
   func testDecodeDoubleFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Double.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
@@ -241,14 +754,29 @@ class AnyValueCoderTests: XCTestCase {
     }
   }
 
+  func testDecodeDoubleFromNumerics() throws {
+
+    struct TestValue: Decodable {
+      init(from decoder: Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var index: Double = 1
+        while !container.isAtEnd {
+          let value = try container.decode(Double.self)
+          XCTAssert(value == index)
+          index += 1
+        }
+      }
+    }
+
+    XCTAssertNoThrow(try AnyValue.Decoder.default.decodeTree(TestValue.self, from: intNumericValues))
+  }
+
   func testDecodeStringFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(String.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
@@ -259,12 +787,10 @@ class AnyValueCoderTests: XCTestCase {
 
   func testDecodeUUIDFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UUID.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
@@ -275,12 +801,10 @@ class AnyValueCoderTests: XCTestCase {
 
   func testDecodeURLFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(URL.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
@@ -291,12 +815,10 @@ class AnyValueCoderTests: XCTestCase {
 
   func testDecodeDateFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Date.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
@@ -307,12 +829,10 @@ class AnyValueCoderTests: XCTestCase {
 
   func testDecodeDataFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Data.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
@@ -323,12 +843,10 @@ class AnyValueCoderTests: XCTestCase {
 
   func testDecodeDecimalFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Decimal.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
@@ -339,12 +857,10 @@ class AnyValueCoderTests: XCTestCase {
 
   func testDecodeBigIntFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(BigInt.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
@@ -355,12 +871,10 @@ class AnyValueCoderTests: XCTestCase {
 
   func testDecodeBigUIntFromNullItem() throws {
 
-    struct TestValue: Codable {
+    struct TestValue: Decodable {
       init(from decoder: Decoder) throws {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(BigUInt.self)
-      }
-      func encode(to encoder: Encoder) throws {
       }
     }
 
