@@ -126,7 +126,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .boolean(let value): return value
     case .null: return nil
     case let cbor:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: cbor)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: cbor.unwrapped)
     }
   }
 
@@ -171,7 +171,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return try unbox(untagged, type: type, decoder: decoder)
     case .null: return nil
     default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
   }
 
@@ -183,7 +183,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
         let exp = try? unbox(items[0], type: Int.self, decoder: decoder),
         let man = try? unbox(items[1], type: BigInt.self, decoder: decoder)
       else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
       }
       guard let sig = Decimal(string: man.magnitude.description) else {
         throw overflow(type, value: value, at: decoder.codingPath)
@@ -218,7 +218,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return try unbox(untagged, type: type, decoder: decoder)
     case .null: return nil
     default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
   }
 
@@ -229,7 +229,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
         let exp = try? unbox(items[0], type: Int.self, decoder: decoder),
         let man = try? unbox(items[1], type: BigInt.self, decoder: decoder)
       else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
       }
       // CHECK: Decimal(exactly:) is a fatal error for all inputs?
       guard let sig = Decimal(string: man.magnitude.description) else {
@@ -267,7 +267,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return try unbox(untagged, type: type, decoder: decoder)
     case .null: return nil
     default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
   }
 
@@ -332,7 +332,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .utf8String(let string), .tagged(_, .utf8String(let string)): return string
     case .null: return nil
     default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
   }
 
@@ -348,7 +348,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
     func decode(from data: Data) throws -> UUID {
       guard data.count == MemoryLayout<uuid_t>.size else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
       }
       var uuid = uuid_t(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
       withUnsafeMutableBytes(of: &uuid) { ptr in
@@ -365,7 +365,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .tagged(_, let tagged): return try unbox(tagged, as: type, decoder: decoder)
     case .null: return nil
     default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
   }
 
@@ -379,7 +379,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .tagged(_, let tagged): return try unbox(tagged, as: type, decoder: decoder)
     case .null: return nil
     default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
   }
 
@@ -421,7 +421,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return try unbox(tagged, as: type, decoder: decoder)
     case .null: return nil
     default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
   }
 
@@ -440,7 +440,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return data
     case .null: return nil
     default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
   }
 
@@ -456,7 +456,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .tagged(_, let tagged): return try unbox(tagged, as: type, decoder: decoder)
     case .null: return nil
     default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
   }
 
@@ -469,7 +469,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .tagged(_, let untagged): return try unbox(untagged, as: type, decoder: decoder)
     case .null: return nil
     default:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
   }
 
@@ -515,17 +515,17 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return try dictionary(from: value)
     case .tagged(.positiveBignum, _), .tagged(.negativeBignum, _):
       guard let int = try unbox(value, as: BigInt.self, decoder: decoder) else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: BigInt.self, reality: value)
+        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: BigInt.self, reality: value.unwrapped)
       }
       return .integer(int)
     case .tagged(.decimalFraction, _):
       guard let decimal = try unbox(value, as: Decimal.self, decoder: decoder) else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: Decimal.self, reality: value)
+        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: Decimal.self, reality: value.unwrapped)
       }
       return .decimal(decimal)
     case .tagged(.iso8601DateTime, _), .tagged(.epochDateTime, _):
       guard let date = try unbox(value, as: Date.self, decoder: decoder) else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: Date.self, reality: value)
+        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: Date.self, reality: value.unwrapped)
       }
       return .date(date)
     case .tagged(.uuid, _):
@@ -545,7 +545,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     decoder: IVD
   ) throws -> AnyValue.AnyDictionary {
     guard case .map(let map) = value else {
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
     return AnyValue.AnyDictionary(uniqueKeysWithValues: try map.map { key, value in
       let key = try unbox(key, as: AnyValue.self, decoder: decoder)

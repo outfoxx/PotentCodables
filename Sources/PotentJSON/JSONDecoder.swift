@@ -164,7 +164,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .bool(let value): return value
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -194,7 +194,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -203,7 +203,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -212,7 +212,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -221,7 +221,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -230,7 +230,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -239,7 +239,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -248,7 +248,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -257,7 +257,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -266,7 +266,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -275,7 +275,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .number(let number): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -288,7 +288,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return int
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -301,7 +301,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return int
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -316,7 +316,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     default:
       break
     }
-    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
   }
 
   public static func unbox(_ value: JSON, as type: Float.Type, decoder: IVD) throws -> Float? {
@@ -330,7 +330,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     default:
       break
     }
-    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
   }
 
   public static func unbox(_ value: JSON, as type: Double.Type, decoder: IVD) throws -> Double? {
@@ -344,7 +344,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     default:
       break
     }
-    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
   }
 
   public static func unbox(_ value: JSON, as type: Decimal.Type, decoder: IVD) throws -> Decimal? {
@@ -358,7 +358,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     default:
       break
     }
-    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
   }
 
   public static func unbox(_ value: JSON, as type: String.Type, decoder: IVD) throws -> String? {
@@ -367,7 +367,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return string
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -380,7 +380,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return uuid
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -393,7 +393,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return url
     case .null: return nil
     case let json:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: json.unwrapped)
     }
   }
 
@@ -452,7 +452,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
     func decodeBase64(from value: JSON) throws -> Data {
       guard case .string(let string) = value else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
       }
 
       guard let data = Data(base64EncodedUnpadded: string) else {
@@ -525,7 +525,7 @@ public struct JSONDecoderTransform: InternalDecoderTransform, InternalValueDeser
     decoder: IVD
   ) throws -> AnyValue.AnyDictionary {
     guard case .object(let object) = value else {
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
     return AnyValue.AnyDictionary(uniqueKeysWithValues: try object.map { key, value in
       (.string(key), try unbox(value, as: AnyValue.self, decoder: decoder))
