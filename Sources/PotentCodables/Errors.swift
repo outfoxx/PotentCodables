@@ -18,7 +18,7 @@ public extension DecodingError {
   /// - parameter expectation: The type expected to be encountered.
   /// - parameter reality: The value that was encountered instead of the expected type.
   /// - returns: A `DecodingError` with the appropriate path and debug description.
-  static func typeMismatch(at path: [CodingKey], expectation: Any.Type, reality: Any) -> DecodingError {
+  static func typeMismatch(at path: [CodingKey], expectation: Any.Type, reality: Any?) -> DecodingError {
     let description = "Expected to decode \(expectation) but found \(typeDescription(of: reality)) instead."
     return .typeMismatch(expectation, Context(codingPath: path, debugDescription: description))
   }
@@ -28,7 +28,7 @@ public extension DecodingError {
   /// - parameter value: The value whose type to describe.
   /// - returns: A string describing `value`.
   /// - precondition: `value` is one of the types below.
-  static func typeDescription(of value: Any) -> String {
+  static func typeDescription(of value: Any?) -> String {
     if value is NSNull {
       return "a null value"
     }
@@ -36,7 +36,7 @@ public extension DecodingError {
       return "a number"
     }
     else if value is String {
-      return "a string/data"
+      return "a string"
     }
     else if value is [Any] {
       return "an array"
@@ -45,7 +45,11 @@ public extension DecodingError {
       return "a dictionary"
     }
     else {
-      return "\(type(of: value))"
+      if let nonOptionalValue = value {
+        return String(describing: type(of: nonOptionalValue))
+      } else {
+        return "nil"
+      }
     }
   }
 }

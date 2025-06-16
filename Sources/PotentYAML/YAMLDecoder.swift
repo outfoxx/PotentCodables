@@ -159,7 +159,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .bool(let value, _): return value
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -202,7 +202,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -211,7 +211,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -220,7 +220,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -229,7 +229,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -238,7 +238,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -247,7 +247,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -256,7 +256,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -265,7 +265,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -274,7 +274,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -283,7 +283,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return try coerce(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -292,7 +292,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .integer(let number, _): return BigInt(number.value)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -305,7 +305,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return BigUInt(number.value)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -317,7 +317,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     default:
       break
     }
-    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
   }
 
   public static func unbox(_ value: YAML, as type: Float.Type, decoder: IVD) throws -> Float? {
@@ -326,7 +326,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .float(let number, _): return try decode(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -336,7 +336,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .float(let number, _): return try decode(number, at: decoder.codingPath)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -376,7 +376,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     case .float(let number, _): return try decodeFloat(number)
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -386,7 +386,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return string
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -399,7 +399,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return uuid
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -412,7 +412,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return url
     case .null: return nil
     case let yaml:
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: yaml.unwrapped)
     }
   }
 
@@ -471,7 +471,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
     func decodeBase64(from value: YAML) throws -> Data {
       guard case .string(let string, _, _, _) = value else {
-        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+        throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
       }
 
       guard let data = Data(base64EncodedUnpadded: string) else {
@@ -539,7 +539,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     default:
       break
     }
-    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+    throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
   }
 
   public static func unbox(
@@ -548,7 +548,7 @@ public struct YAMLDecoderTransform: InternalDecoderTransform, InternalValueDeser
     decoder: IVD
   ) throws -> AnyValue.AnyDictionary {
     guard case .mapping(let mapping, _, _, _) = value else {
-      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value)
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
     }
     return AnyValue.AnyDictionary(uniqueKeysWithValues: try mapping.map { entry in
       (try unbox(entry.key, as: AnyValue.self, decoder: decoder),
