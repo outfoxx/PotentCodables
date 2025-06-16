@@ -173,8 +173,8 @@ public enum YAML {
   public typealias Sequence = [YAML]
 
   public struct MappingEntry: Equatable, Hashable {
-    var key: YAML
-    var value: YAML
+    public var key: YAML
+    public var value: YAML
 
     public init(key: YAML, value: YAML) {
       self.key = key
