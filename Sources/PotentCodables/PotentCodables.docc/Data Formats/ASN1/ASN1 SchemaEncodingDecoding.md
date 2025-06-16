@@ -7,7 +7,7 @@ Use ASN.1 schemas to encode and decode to or from Swift structs and classes.
 ASN.1 is a position based format and lacks encoded field names for it's values; instead ASN.1 provides field names
 and formats via ASN.1 schema notation.
 
-To allow mapping ASN.1 data to Swift structures and classes, ``PotentASN1/ASN1Encoder`` and ``PotentASN1/ASN1Encoder``
+To allow mapping ASN.1 data to Swift structures and classes, ``PotentASN1/ASN1Encoder`` and ``PotentASN1/ASN1Decoder``
 require a provided ``PotentASN1/Schema`` to direct the encoding and/or decoding of Swift types.
 
 For example, the following is the schema for RFC-5280's `Certificate`:
