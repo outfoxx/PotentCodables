@@ -116,125 +116,267 @@ public struct AnyValueDecoderTransform: InternalDecoderTransform {
   }
 
   public static func unbox(_ value: AnyValue, as type: Bool.Type, decoder: IVD) throws -> Bool? {
-    guard case .bool(let value) = value else { return nil }
-    return value
+    switch value {
+    case .nil: return nil
+    case .bool(let value): return value
+    default:
+      throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: Bool.self, reality: value.unwrapped)
+    }
+  }
+
+  public static func convert<I: BinaryInteger, O: BinaryInteger>(
+    _ value: I,
+    to type: O.Type,
+    decoder: IVD
+  ) throws -> O {
+    guard let convertedValue = O(exactly: value) else {
+      throw DecodingError.typeMismatch(
+        type,
+        .init(codingPath: decoder.codingPath, debugDescription: "\(I.self) value overflow/underflows \(type)")
+      )
+    }
+    return convertedValue
+  }
+
+  public static func convert<I: BinaryInteger, O: BinaryFloatingPoint>(
+    _ value: I,
+    to type: O.Type,
+    decoder: IVD
+  ) throws -> O {
+    guard let convertedValue = O(exactly: value) else {
+      throw DecodingError.typeMismatch(
+        type,
+        .init(codingPath: decoder.codingPath, debugDescription: "\(I.self) value overflow/underflows \(type)")
+      )
+    }
+    return convertedValue
+  }
+
+  public static func convert<I: BinaryFloatingPoint, O: BinaryInteger>(
+    _ value: I,
+    to type: O.Type,
+    decoder: IVD
+  ) throws -> O {
+    guard let convertedValue = O(exactly: value) else {
+      throw DecodingError.typeMismatch(
+        type,
+        .init(codingPath: decoder.codingPath, debugDescription: "\(I.self) value overflow/underflows \(type)")
+      )
+    }
+    return convertedValue
+  }
+
+  public static func convert<I: BinaryFloatingPoint, O: BinaryFloatingPoint>(
+    _ value: I,
+    to type: O.Type,
+    decoder: IVD
+  ) throws -> O {
+    guard let convertedValue = O(exactly: value) else {
+      throw DecodingError.typeMismatch(
+        type,
+        .init(codingPath: decoder.codingPath, debugDescription: "\(I.self) value value overflow/underflows \(type)")
+      )
+    }
+    return convertedValue
+  }
+
+  public static func convert<O: BinaryInteger>(
+    _ value: Decimal,
+    to type: O.Type,
+    decoder: IVD
+  ) throws -> O {
+    guard let convertedValue = O(exactly: (value as NSDecimalNumber).int64Value) else {
+      throw DecodingError.typeMismatch(
+        type,
+        .init(codingPath: decoder.codingPath, debugDescription: "Decimal value overflow/underflows \(type)")
+      )
+    }
+    return convertedValue
+  }
+
+  public static func convert<O: BinaryFloatingPoint>(
+    _ value: Decimal,
+    to type: O.Type,
+    decoder: IVD
+  ) throws -> O {
+    guard let convertedValue = O(exactly: (value as NSDecimalNumber).int64Value) else {
+      throw DecodingError.typeMismatch(
+        type,
+        .init(codingPath: decoder.codingPath, debugDescription: "Decimal value overflow/underflows \(type)")
+      )
+    }
+    return convertedValue
+  }
+
+  private static func unboxNumeric<I: BinaryInteger>(
+    _ value: AnyValue,
+    as type: I.Type,
+    decoder: IVD
+  ) throws -> I? {
+    switch value {
+    case .nil: return nil
+    case .int8(let val): return try convert(val, to: type, decoder: decoder)
+    case .int16(let val): return try convert(val, to: type, decoder: decoder)
+    case .int32(let val): return try convert(val, to: type, decoder: decoder)
+    case .int64(let val): return try convert(val, to: type, decoder: decoder)
+    case .uint8(let val): return try convert(val, to: type, decoder: decoder)
+    case .uint16(let val): return try convert(val, to: type, decoder: decoder)
+    case .uint32(let val): return try convert(val, to: type, decoder: decoder)
+    case .uint64(let val): return try convert(val, to: type, decoder: decoder)
+    case .float16(let val): return try convert(val, to: type, decoder: decoder)
+    case .float(let val): return try convert(val, to: type, decoder: decoder)
+    case .double(let val): return try convert(val, to: type, decoder: decoder)
+    case .integer(let val): return try convert(val, to: type, decoder: decoder)
+    case .unsignedInteger(let val): return try convert(val, to: type, decoder: decoder)
+    case .decimal(let val): return try convert(val, to: type, decoder: decoder)
+    default: throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
+    }
+  }
+
+  private static func unboxNumeric<I: BinaryFloatingPoint>(
+    _ value: AnyValue,
+    as type: I.Type,
+    decoder: IVD
+  ) throws -> I? {
+    switch value {
+    case .nil: return nil
+    case .int8(let val): return try convert(val, to: type, decoder: decoder)
+    case .int16(let val): return try convert(val, to: type, decoder: decoder)
+    case .int32(let val): return try convert(val, to: type, decoder: decoder)
+    case .int64(let val): return try convert(val, to: type, decoder: decoder)
+    case .uint8(let val): return try convert(val, to: type, decoder: decoder)
+    case .uint16(let val): return try convert(val, to: type, decoder: decoder)
+    case .uint32(let val): return try convert(val, to: type, decoder: decoder)
+    case .uint64(let val): return try convert(val, to: type, decoder: decoder)
+    case .float16(let val): return try convert(val, to: type, decoder: decoder)
+    case .float(let val): return try convert(val, to: type, decoder: decoder)
+    case .double(let val): return try convert(val, to: type, decoder: decoder)
+    case .integer(let val): return try convert(val, to: type, decoder: decoder)
+    case .unsignedInteger(let val): return try convert(val, to: type, decoder: decoder)
+    case .decimal(let val): return try convert(val, to: type, decoder: decoder)
+    default: throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
+    }
   }
 
   public static func unbox(_ value: AnyValue, as type: Int.Type, decoder: IVD) throws -> Int? {
-    switch MemoryLayout<Int>.size {
-    case 4:
-      return try unbox(value, as: Int32.self, decoder: decoder).flatMap { Int(exactly: $0) }
-    case 8:
-      return try unbox(value, as: Int64.self, decoder: decoder).flatMap { Int(exactly: $0) }
-    default:
-      fatalError("unknown memory layout")
-    }
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: UInt.Type, decoder: IVD) throws -> UInt? {
-    switch MemoryLayout<UInt>.size {
-    case 4:
-      return try unbox(value, as: UInt32.self, decoder: decoder).flatMap { UInt(exactly: $0) }
-    case 8:
-      return try unbox(value, as: UInt64.self, decoder: decoder).flatMap { UInt(exactly: $0) }
-    default:
-      fatalError("unknown memory layout")
-    }
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: Int8.Type, decoder: IVD) throws -> Int8? {
-    guard case .int8(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: Int16.Type, decoder: IVD) throws -> Int16? {
-    guard case .int16(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: Int32.Type, decoder: IVD) throws -> Int32? {
-    guard case .int32(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: Int64.Type, decoder: IVD) throws -> Int64? {
-    guard case .int64(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: UInt8.Type, decoder: IVD) throws -> UInt8? {
-    guard case .uint8(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: UInt16.Type, decoder: IVD) throws -> UInt16? {
-    guard case .uint16(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: UInt32.Type, decoder: IVD) throws -> UInt32? {
-    guard case .uint32(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: UInt64.Type, decoder: IVD) throws -> UInt64? {
-    guard case .uint64(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: Float16.Type, decoder: IVD) throws -> Float16? {
-    guard case .float16(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: Float.Type, decoder: IVD) throws -> Float? {
-    guard case .float(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: Double.Type, decoder: IVD) throws -> Double? {
-    guard case .double(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: String.Type, decoder: IVD) throws -> String? {
-    guard case .string(let value) = value else { return nil }
-    return value
+    switch value {
+    case .nil: return nil
+    case .string(let value): return value
+    default: throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
+    }
   }
 
   public static func unbox(_ value: AnyValue, as type: UUID.Type, decoder: IVD) throws -> UUID? {
-    guard case .uuid(let value) = value else { return nil }
-    return value
+    switch value {
+    case .nil: return nil
+    case .uuid(let value): return value
+    default: throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
+    }
   }
 
   public static func unbox(_ value: AnyValue, as type: URL.Type, decoder: IVD) throws -> URL? {
-    guard case .url(let value) = value else { return nil }
-    return value
+    switch value {
+    case .nil: return nil
+    case .url(let value): return value
+    default: throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
+    }
   }
 
   public static func unbox(_ value: AnyValue, as type: Date.Type, decoder: IVD) throws -> Date? {
-    guard case .date(let value) = value else { return nil }
-    return value
+    switch value {
+    case .nil: return nil
+    case .date(let value): return value
+    default: throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
+    }
   }
 
   public static func unbox(_ value: AnyValue, as type: Data.Type, decoder: IVD) throws -> Data? {
-    guard case .data(let value) = value else { return nil }
-    return value
+    switch value {
+    case .nil: return nil
+    case .data(let value): return value
+    default: throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
+    }
   }
 
   public static func unbox(_ value: AnyValue, as type: Decimal.Type, decoder: IVD) throws -> Decimal? {
-    guard case .decimal(let value) = value else { return nil }
-    return value
+    switch value {
+    case .nil: return nil
+    case .decimal(let value): return value
+    case .int8(let val): return Decimal(val)
+    case .int16(let val): return Decimal(val)
+    case .int32(let val): return Decimal(val)
+    case .int64(let val): return Decimal(val)
+    case .uint8(let val): return Decimal(val)
+    case .uint16(let val): return Decimal(val)
+    case .uint32(let val): return Decimal(val)
+    case .uint64(let val): return Decimal(val)
+    case .float16(let val): return Decimal(string: val.description)
+    case .float(let val): return Decimal(string: val.description)
+    case .double(let val): return Decimal(val)
+    case .integer(let val): return Decimal(string: val.description)
+    case .unsignedInteger(let val): return Decimal(string: val.description)
+    default: throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: type, reality: value.unwrapped)
+    }
   }
 
   public static func unbox(_ value: AnyValue, as type: BigInt.Type, decoder: IVD) throws -> BigInt? {
-    guard case .integer(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func unbox(_ value: AnyValue, as type: BigUInt.Type, decoder: IVD) throws -> BigUInt? {
-    guard case .unsignedInteger(let value) = value else { return nil }
-    return value
+    return try unboxNumeric(value, as: type, decoder: decoder)
   }
 
   public static func valueToUnkeyedValues(_ value: AnyValue, decoder: IVD) throws -> UnkeyedValues? {
