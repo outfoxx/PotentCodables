@@ -16,6 +16,12 @@ import XCTest
 
 class CBORDecoderTests: XCTestCase {
 
+  func testDecodeFromSlice() {
+    let data = Data([0x1, 0x2, 0x3, 0x64, 0x49, 0x45, 0x54, 0x46, 0x3, 0x2, 0x1])
+    let slice = data[3..<data.count-3]
+    XCTAssertEqual(try CBORDecoder.default.decode(String.self, from: slice), "IETF")
+  }
+
   func testDecodeEmpty() {
     struct Empty: Equatable, Codable {}
     XCTAssertEqual(try CBORDecoder.default.decode(Empty.self, from: Data([0xA0])), Empty())

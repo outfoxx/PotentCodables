@@ -62,15 +62,16 @@ public class CBORDataStream: CBORInputStream, CBOROutputStream {
 
   public init(data: Data = Data(), offset: Int = 0) {
     self.data = data
-    self.offset = offset
+    self.offset = offset + data.startIndex
   }
 
   public func reset() {
     data.removeAll()
+    offset = data.startIndex
   }
 
   func checkAvailable(count: Int) throws {
-    if (offset + count) > data.count {
+    if (offset + count) > data.endIndex {
       throw CBORSerialization.Error.unexpectedEndOfStream
     }
   }
