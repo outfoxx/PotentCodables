@@ -43,9 +43,9 @@ let package = Package(
     ),
   ],
   dependencies: [
-    .package(url: "https://github.com/attaswift/BigInt.git", from: "5.3.0"),
+    .package(url: "https://github.com/attaswift/BigInt.git", from: "5.7.0"),
     .package(url: "https://github.com/SusanDoggie/Float16.git", from: "1.1.1"),
-    .package(url: "https://github.com/apple/swift-collections.git", from: "1.0.4"),
+    .package(url: "https://github.com/apple/swift-collections.git", from: "1.2.1"),
     .package(url: "https://github.com/sharplet/Regex.git", from: "2.1.1")
   ],
   targets: [
@@ -114,6 +114,12 @@ let package = Package(
     )
   ]
 )
+
+#if swift(>=6)
+package.swiftLanguageModes = [.v5, .v6]
+#elseif swift(<6)
+package.swiftLanguageVersions = [.v5]
+#endif
 
 #if swift(>=5.6)
 

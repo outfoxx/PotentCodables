@@ -35,7 +35,7 @@ import PotentCodables
 @dynamicMemberLookup
 public enum YAML {
 
-  public struct Tag: RawRepresentable, Equatable, Hashable, CustomStringConvertible {
+  public struct Tag: RawRepresentable {
 
     public let rawValue: String
 
@@ -60,13 +60,11 @@ public enum YAML {
 
     public static let seq = Tag("tag:yaml.org,2002:seq")
     public static let map = Tag("tag:yaml.org,2002:map")
-
-    public var description: String { "!\(rawValue)" }
   }
 
   public typealias Anchor = String
 
-  public struct Number: Equatable, Hashable, Codable {
+  public struct Number {
 
     public var value: String
     public var isInteger: Bool
@@ -164,15 +162,11 @@ public enum YAML {
       }
       return double
     }
-
-    public static func == (lhs: Number, rhs: Number) -> Bool {
-      return lhs.value == rhs.value && lhs.isInteger == rhs.isInteger && lhs.isNegative == rhs.isNegative
-    }
   }
 
   public typealias Sequence = [YAML]
 
-  public struct MappingEntry: Equatable, Hashable {
+  public struct MappingEntry {
     public var key: YAML
     public var value: YAML
 
@@ -258,6 +252,8 @@ public enum YAML {
     return .mapping(mapping.map { .init(key: $0.key, value: $0.value) }, style: style, tag: tag, anchor: anchor)
   }
 
+  // MARK: Accessor and Unwrapping
+
   public var stringValue: String? {
     guard case .string(let value, _, _, _) = self else { return nil }
     return value
@@ -306,10 +302,79 @@ public enum YAML {
     return value
   }
 
+  public var unwrapped: Any? {
+    switch self {
+    case .null, .alias: return nil
+    case .bool(let value, _): return value
+    case .string(let value, _, _, _): return value
+    case .integer(let value, _): return value.numberValue
+    case .float(let value, _): return value.numberValue
+    case .sequence(let value, _, _, _): return Swift.Array(value.map(\.unwrapped))
+    case .mapping(let value, _, _, _): return Dictionary(uniqueKeysWithValues: value.map { entry in
+      (entry.key.stringValue!, entry.value.unwrapped)
+    })
+    }
+  }
+
 }
 
 
 // MARK: Conformances
+
+extension YAML.Tag: Equatable {}
+
+extension YAML.Tag: Hashable {}
+
+extension YAML.Tag: Sendable {}
+
+extension YAML.Tag: CustomStringConvertible {
+
+  public var description: String { "!\(rawValue)" }
+
+}
+
+
+extension YAML.Number: Equatable {
+
+  public static func == (lhs: YAML.Number, rhs: YAML.Number) -> Bool {
+    return lhs.value == rhs.value && lhs.isInteger == rhs.isInteger && lhs.isNegative == rhs.isNegative
+  }
+
+}
+
+extension YAML.Number: Hashable {}
+
+extension YAML.Number: Sendable {}
+
+extension YAML.Number: Codable {}
+
+extension YAML.Number: CustomStringConvertible {
+
+  public var description: String { value }
+
+}
+
+
+extension YAML.MappingEntry: Equatable {}
+
+extension YAML.MappingEntry: Hashable {}
+
+extension YAML.MappingEntry: Sendable {}
+
+
+extension YAML.StringStyle: Equatable {}
+
+extension YAML.StringStyle: Hashable {}
+
+extension YAML.StringStyle: Sendable {}
+
+
+extension YAML.CollectionStyle: Hashable {}
+
+extension YAML.CollectionStyle: Equatable {}
+
+extension YAML.CollectionStyle: Sendable {}
+
 
 extension YAML: Equatable {
 
@@ -339,16 +404,8 @@ extension YAML: Equatable {
 }
 
 extension YAML: Hashable {}
-extension YAML: Value {
 
-  public var isNull: Bool {
-    if case .null = self {
-      return true
-    }
-    return false
-  }
-
-}
+extension YAML: Sendable {}
 
 extension YAML: CustomStringConvertible {
 
@@ -395,23 +452,13 @@ extension YAML: CustomStringConvertible {
 
 }
 
+extension YAML: Value {
 
-// MARK: Wrapping
-
-extension YAML {
-
-  public var unwrapped: Any? {
-    switch self {
-    case .null, .alias: return nil
-    case .bool(let value, _): return value
-    case .string(let value, _, _, _): return value
-    case .integer(let value, _): return value.numberValue
-    case .float(let value, _): return value.numberValue
-    case .sequence(let value, _, _, _): return Swift.Array(value.map(\.unwrapped))
-    case .mapping(let value, _, _, _): return Dictionary(uniqueKeysWithValues: value.map { entry in
-        (entry.key.stringValue!, entry.value.unwrapped)
-      })
+  public var isNull: Bool {
+    if case .null = self {
+      return true
     }
+    return false
   }
 
 }
@@ -453,7 +500,6 @@ extension YAML: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expressibl
 
 }
 
-
 extension YAML.Number: ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, ExpressibleByStringLiteral {
 
   public init(stringLiteral value: String) {
@@ -471,7 +517,7 @@ extension YAML.Number: ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, E
 }
 
 
-// Make encoders/decoders available in AnyValue namespace
+// Make encoders/decoders available in YAML namespace
 
 public extension YAML {
 

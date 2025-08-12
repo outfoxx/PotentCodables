@@ -30,7 +30,7 @@ import OrderedCollections
 ///     anyArray[0]
 ///
 @dynamicMemberLookup
-public enum AnyValue {
+public enum AnyValue: Sendable {
 
   public enum Error: Swift.Error {
     case unsupportedType
