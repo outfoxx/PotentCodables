@@ -82,7 +82,7 @@ class YAMLAnyValueTests: XCTestCase {
       var f64: AnyValue = .double(123.4567)
       var pdec: AnyValue = .decimal(Decimal(sign: .plus, exponent: -3, significand: 1234567))
       var ndec: AnyValue = .decimal(Decimal(sign: .minus, exponent: -3, significand: 1234567))
-      var data: AnyValue = .data("Binary Data".data(using: .utf8)!)
+      var data: AnyValue = .data(Data("Binary Data".utf8))
       var url: AnyValue = .url(URL(string: "https://example.com/some/thing")!)
       var uuid: AnyValue = .uuid(UUID(uuidString: "46076D06-86E8-4B3B-80EF-B24115D4C609")!)
       var date: AnyValue = .date(Date(timeIntervalSinceReferenceDate: 1234567.89))

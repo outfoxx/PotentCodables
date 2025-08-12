@@ -28,7 +28,7 @@ class JSONDecoderTests: XCTestCase {
     let decoder = JSON.Decoder()
     decoder.keyDecodingStrategy = .useDefaultKeys
 
-    XCTAssertNoThrow(try decoder.decode(TestValue.self, from: json.data(using: .utf8)!))
+    XCTAssertNoThrow(try decoder.decode(TestValue.self, from: Data(json.utf8)))
   }
 
   func testDecodeWithDefaultKeyStrategy() {
@@ -253,7 +253,7 @@ class JSONDecoderTests: XCTestCase {
 
   func testDecodeBase64Data() throws {
 
-    let data = "Hello World!".data(using: .utf8)!
+    let data = Data("Hello World!".utf8)
 
     struct TestValue: Codable {
       var data: Data
@@ -270,7 +270,7 @@ class JSONDecoderTests: XCTestCase {
 
   func testDecodeBase64DataUnpadded() throws {
 
-    let data = "1234".data(using: .utf8)!
+    let data = Data("1234".utf8)
 
     struct TestValue: Codable {
       var data: Data
@@ -287,7 +287,7 @@ class JSONDecoderTests: XCTestCase {
 
   func testDecodeDeferredToData() throws {
 
-    let data = "Hello World!".data(using: .utf8)!
+    let data = Data("Hello World!".utf8)
 
     struct TestValue: Codable {
       var data: Data
@@ -304,7 +304,7 @@ class JSONDecoderTests: XCTestCase {
 
   func testDecodeCustomData() throws {
 
-    let data = "Hello World!".data(using: .utf8)!
+    let data = Data("Hello World!".utf8)
 
     struct TestValue: Codable {
       var data: Data

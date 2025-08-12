@@ -219,7 +219,9 @@ public enum AnyValue: Sendable {
     return uint
   }
 
-  public func integerValue<I: FixedWidthInteger>(_ type: I.Type) -> I? {
+  public typealias AnyIntegerType = FixedWidthInteger
+
+  public func integerValue<I: AnyIntegerType>(_ type: I.Type) -> I? {
     switch self {
     case .int8(let value): return I(value)
     case .int16(let value): return I(value)
@@ -262,7 +264,9 @@ public enum AnyValue: Sendable {
     return decimal
   }
 
-  public func floatingPointValue<F: BinaryFloatingPoint & LosslessStringConvertible>(_ type: F.Type) -> F? {
+  public typealias AnyFloatingPointType = BinaryFloatingPoint & LosslessStringConvertible
+
+  public func floatingPointValue<F: AnyFloatingPointType>(_ type: F.Type) -> F? {
     switch self {
     case .int8(let value): return F(value)
     case .int16(let value): return F(value)
@@ -276,6 +280,17 @@ public enum AnyValue: Sendable {
     case .float(let value): return F(value)
     case .double(let value): return F(value)
     case .decimal(let value): return F(value.description)
+    default:
+      return nil
+    }
+  }
+
+  public func numericValue<N: Numeric>(_ type: N.Type) -> N? {
+    switch type {
+    case let floatType as any AnyFloatingPointType.Type:
+      return floatingPointValue(floatType) as? N
+    case let intType as any AnyIntegerType.Type:
+      return integerValue(intType) as? N
     default:
       return nil
     }
@@ -339,23 +354,31 @@ extension AnyValue {
     switch value {
     case let val as AnyValue: return val
     case let val as String: return .string(val)
-    case let val as Int: return .int(val)
-    case let val as UInt: return .uint(val)
     case let val as Bool: return .bool(val)
-    case let val as Int8: return .int8(val)
-    case let val as UInt8: return .uint8(val)
-    case let val as Int16: return .int16(val)
-    case let val as UInt16: return .uint16(val)
-    case let val as Int32: return .int32(val)
-    case let val as UInt32: return .uint32(val)
-    case let val as Int64: return .int64(val)
-    case let val as UInt64: return .uint64(val)
-    case let val as Decimal: return .decimal(val) // Before other floats (Swift Decimal -> Double allowed)
-    case let val as Float16: return .float16(val)
-    case let val as Float: return .float(val)
-    case let val as Double: return .double(val)
+    case let val as any FixedWidthInteger:
+      switch val {
+      case let val as Int8: return .int8(val)
+      case let val as UInt8: return .uint8(val)
+      case let val as Int16: return .int16(val)
+      case let val as UInt16: return .uint16(val)
+      case let val as Int32: return .int32(val)
+      case let val as UInt32: return .uint32(val)
+      case let val as Int64: return .int64(val)
+      case let val as UInt64: return .uint64(val)
+      case let val as Int: return .int(val)
+      case let val as UInt: return .uint(val)
+      default: throw Error.unsupportedValue(value)
+      }
     case let val as BigInt: return .integer(val)
     case let val as BigUInt: return .unsignedInteger(val)
+    case let val as any BinaryFloatingPoint:
+      switch val {
+      case let val as Float16: return .float16(val)
+      case let val as Float32: return .float(val)
+      case let val as Float64: return .double(val)
+      default: throw Error.unsupportedValue(value)
+      }
+    case let val as Decimal: return .decimal(val) // Before other floats (Swift Decimal -> Double allowed)
     case let val as Data: return .data(val)
     case let val as URL: return .url(val)
     case let val as UUID: return .uuid(val)

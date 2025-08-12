@@ -31,7 +31,7 @@ class YAMLDecoderTests: XCTestCase {
     let decoder = YAML.Decoder()
     decoder.keyDecodingStrategy = .useDefaultKeys
 
-    XCTAssertNoThrow(try decoder.decode(TestValue.self, from: yaml.data(using: .utf8)!))
+    XCTAssertNoThrow(try decoder.decode(TestValue.self, from: Data(yaml.utf8)))
   }
 
   func testDecodeWithDefaultKeyStrategy() {
@@ -80,9 +80,7 @@ class YAMLDecoderTests: XCTestCase {
     """
 
     let decoder = YAML.Decoder()
-    decoder.keyDecodingStrategy = .custom { _ in
-      return AnyCodingKey(stringValue: "kebabCased")
-    }
+    decoder.keyDecodingStrategy = .custom { _ in AnyCodingKey(stringValue: "kebabCased") }
 
     XCTAssertNoThrow(try decoder.decode(TestValue.self, from: yaml))
   }
@@ -255,9 +253,7 @@ class YAMLDecoderTests: XCTestCase {
     let decoder = YAML.Decoder()
     decoder.dateDecodingStrategy = .formatted(formatter)
 
-    XCTAssertThrowsError(try decoder.decode(TestValue.self, from: yaml)) { error in
-      AssertDecodingDataCorrupted(error)
-    }
+    XCTAssertThrowsError(try decoder.decode(TestValue.self, from: yaml)) { AssertDecodingDataCorrupted($0) }
   }
 
   func testDecodeBadISO8601Date() throws {
@@ -277,9 +273,7 @@ class YAMLDecoderTests: XCTestCase {
     let decoder = YAML.Decoder()
     decoder.dateDecodingStrategy = .iso8601
 
-    XCTAssertThrowsError(try decoder.decode(TestValue.self, from: yaml)) { error in
-      AssertDecodingDataCorrupted(error)
-    }
+    XCTAssertThrowsError(try decoder.decode(TestValue.self, from: yaml)) { AssertDecodingDataCorrupted($0) }
   }
 
   func testDecodeDateFromNull() throws {
@@ -308,8 +302,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Date.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -319,7 +312,7 @@ class YAMLDecoderTests: XCTestCase {
 
   func testDecodeBase64Data() throws {
 
-    let data = "Hello World!".data(using: .utf8)!
+    let data = Data("Hello World!".utf8)
 
     struct TestValue: Codable {
       var data: Data
@@ -342,7 +335,7 @@ class YAMLDecoderTests: XCTestCase {
 
   func testDecodeBase64DataUnpadded() throws {
 
-    let data = "1234".data(using: .utf8)!
+    let data = Data("1234".utf8)
 
     struct TestValue: Codable {
       var data: Data
@@ -365,7 +358,7 @@ class YAMLDecoderTests: XCTestCase {
 
   func testDecodeDeferredToData() throws {
 
-    let data = "Hello World!".data(using: .utf8)!
+    let data = Data("Hello World!".utf8)
 
     struct TestValue: Codable {
       var data: Data
@@ -388,7 +381,7 @@ class YAMLDecoderTests: XCTestCase {
 
   func testDecodeCustomData() throws {
 
-    let data = "Hello World!".data(using: .utf8)!
+    let data = Data("Hello World!".utf8)
 
     struct TestValue: Codable {
       var data: Data
@@ -403,9 +396,7 @@ class YAMLDecoderTests: XCTestCase {
     """
 
     let decoder = YAML.Decoder()
-    decoder.dataDecodingStrategy = .custom { decoder in
-      return Data(hexEncoded: try decoder.singleValueContainer().decode(String.self))
-    }
+    decoder.dataDecodingStrategy = .custom { Data(hexEncoded: try $0.singleValueContainer().decode(String.self)) }
 
     let testValue = try decoder.decode(TestValue.self, from: yaml)
     XCTAssertEqual(testValue.data, data)
@@ -428,9 +419,7 @@ class YAMLDecoderTests: XCTestCase {
     let decoder = YAML.Decoder()
     decoder.dataDecodingStrategy = .base64
 
-    XCTAssertThrowsError(try decoder.decode(TestValue.self, from: yaml)) { error in
-      AssertDecodingDataCorrupted(error)
-    }
+    XCTAssertThrowsError(try decoder.decode(TestValue.self, from: yaml)) { AssertDecodingDataCorrupted($0) }
   }
 
   func testDecodeIncorrectBase64Data() throws {
@@ -450,9 +439,7 @@ class YAMLDecoderTests: XCTestCase {
     let decoder = YAML.Decoder()
     decoder.dataDecodingStrategy = .base64
 
-    XCTAssertThrowsError(try decoder.decode(TestValue.self, from: yaml)) { error in
-      AssertDecodingTypeMismatch(error)
-    }
+    XCTAssertThrowsError(try decoder.decode(TestValue.self, from: yaml)) { AssertDecodingTypeMismatch($0) }
   }
 
   func testDecodeDataFromNull() throws {
@@ -481,8 +468,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Data.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -572,8 +558,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(URL.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -665,8 +650,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UUID.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -739,8 +723,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(String.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -778,9 +761,7 @@ class YAMLDecoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     decimal: \(decimal)
-    ...
 
     """
 
@@ -798,9 +779,7 @@ class YAMLDecoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     decimal: \(integer)
-    ...
 
     """
 
@@ -818,9 +797,7 @@ class YAMLDecoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     decimal: \(integer)
-    ...
 
     """
 
@@ -836,9 +813,7 @@ class YAMLDecoderTests: XCTestCase {
 
     let yaml =
     """
-    ---
     decimal: .nan
-    ...
 
     """
 
@@ -910,8 +885,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Decimal.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -1098,8 +1072,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Double.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -1286,8 +1259,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Float.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -1474,8 +1446,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Float16.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -1587,8 +1558,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(BigInt.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -1682,8 +1652,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(BigUInt.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -1796,8 +1765,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UInt.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -1910,8 +1878,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UInt64.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -2024,8 +1991,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UInt32.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -2138,8 +2104,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UInt16.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -2252,8 +2217,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(UInt8.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -2384,8 +2348,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Int.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -2516,8 +2479,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Int64.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -2648,8 +2610,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Int32.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -2780,8 +2741,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Int16.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -2912,8 +2872,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Int8.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in
@@ -2984,8 +2943,7 @@ class YAMLDecoderTests: XCTestCase {
         var container = try decoder.unkeyedContainer()
         _ = try container.decode(Bool.self)
       }
-      func encode(to encoder: Encoder) throws {
-      }
+      func encode(to encoder: Encoder) throws {}
     }
 
     XCTAssertThrowsError(try YAML.Decoder.default.decodeTree(TestValue.self, from: .sequence([nil]))) { error in

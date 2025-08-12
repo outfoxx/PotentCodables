@@ -9,36 +9,39 @@
 //
 
 import Foundation
-@testable import PotentYAML
 import XCTest
 
+@testable import PotentYAML
 
 class YAMLTests: XCTestCase {
 
   func testParse() throws {
 
-    let data = """
-    test1: null
-    test2: ~
-    test3:
-    test4: false
-    test5: true
-    test6: 123
-    test7: 123.456
-    test8: "a string"
-    test9:
-      - null
-      - false
-      - 123
-      - 123.456
-      - "a string in an array"
-    test10:
-      a: null
-      b: false
-      c: 123
-      d: 123.456
-      e: "a string in a map"
-    """.data(using: .utf8)!
+    let data =
+      Data(
+        """
+        test1: null
+        test2: ~
+        test3:
+        test4: false
+        test5: true
+        test6: 123
+        test7: 123.456
+        test8: "a string"
+        test9:
+          - null
+          - false
+          - 123
+          - 123.456
+          - "a string in an array"
+        test10:
+          a: null
+          b: false
+          c: 123
+          d: 123.456
+          e: "a string in a map"
+        """.utf8
+      )
 
     guard let yaml = try YAMLReader.read(data: data).first else {
       XCTFail("No document in stream")
@@ -116,7 +119,6 @@ class YAMLTests: XCTestCase {
     ]
   )
 
-
   let values: YAML = [
     "a": 1,
     "b": "2",
@@ -175,11 +177,14 @@ class YAMLTests: XCTestCase {
 
   func testObjectKeySerializationSortedOrder() throws {
 
-    let yaml = try YAMLSerialization.string(from: [
-      "c": 1,
-      "a": 2,
-      "b": 3,
-    ], options: .sortedKeys)
+    let yaml = try YAMLSerialization.string(
+      from: [
+        "c": 1,
+        "a": 2,
+        "b": 3,
+      ],
+      options: .sortedKeys
+    )
 
     XCTAssertEqual(
       yaml,
@@ -220,18 +225,30 @@ class YAMLTests: XCTestCase {
     XCTAssertEqual(YAML.null().description, "null")
     XCTAssertEqual(YAML.null(anchor: "test").description, "&test null")
 
-    XCTAssertEqual(YAML.string("my-string", style: .plain).description,
-                   "my-string")
-    XCTAssertEqual(YAML.string("my-string", style: .doubleQuoted).description,
-                   #""my-string""#)
-    XCTAssertEqual(YAML.string("my-string", style: .singleQuoted).description,
-                   #"'my-string'"#)
-    XCTAssertEqual(YAML.string("my-string", style: .plain, anchor: "test").description,
-                   "&test my-string")
-    XCTAssertEqual(YAML.string("my-string", style: .plain, tag: .str).description,
-                   "!tag:yaml.org,2002:str my-string")
-    XCTAssertEqual(YAML.string("my-string", style: .plain, tag: .str, anchor: "test").description,
-                   "&test !tag:yaml.org,2002:str my-string")
+    XCTAssertEqual(
+      YAML.string("my-string", style: .plain).description,
+      "my-string"
+    )
+    XCTAssertEqual(
+      YAML.string("my-string", style: .doubleQuoted).description,
+      #""my-string""#
+    )
+    XCTAssertEqual(
+      YAML.string("my-string", style: .singleQuoted).description,
+      #"'my-string'"#
+    )
+    XCTAssertEqual(
+      YAML.string("my-string", style: .plain, anchor: "test").description,
+      "&test my-string"
+    )
+    XCTAssertEqual(
+      YAML.string("my-string", style: .plain, tag: .str).description,
+      "!tag:yaml.org,2002:str my-string"
+    )
+    XCTAssertEqual(
+      YAML.string("my-string", style: .plain, tag: .str, anchor: "test").description,
+      "&test !tag:yaml.org,2002:str my-string"
+    )
 
     XCTAssertEqual(YAML.integer(123).description, "123")
     XCTAssertEqual(YAML.integer(123, anchor: "test").description, "&test 123")
@@ -243,23 +260,39 @@ class YAMLTests: XCTestCase {
     XCTAssertEqual(YAML.bool(false).description, "false")
     XCTAssertEqual(YAML.bool(true, anchor: "test").description, "&test true")
 
-    XCTAssertEqual(YAML.sequence([1, 2, 3]).description,
-                   "[1, 2, 3]")
-    XCTAssertEqual(YAML.sequence([1, 2, 3], anchor: "test").description,
-                   "&test [1, 2, 3]")
-    XCTAssertEqual(YAML.sequence([1, 2, 3], tag: .seq).description,
-                   "!tag:yaml.org,2002:seq [1, 2, 3]")
-    XCTAssertEqual(YAML.sequence([1, 2, 3], tag: .seq, anchor: "test").description,
-                   "&test !tag:yaml.org,2002:seq [1, 2, 3]")
+    XCTAssertEqual(
+      YAML.sequence([1, 2, 3]).description,
+      "[1, 2, 3]"
+    )
+    XCTAssertEqual(
+      YAML.sequence([1, 2, 3], anchor: "test").description,
+      "&test [1, 2, 3]"
+    )
+    XCTAssertEqual(
+      YAML.sequence([1, 2, 3], tag: .seq).description,
+      "!tag:yaml.org,2002:seq [1, 2, 3]"
+    )
+    XCTAssertEqual(
+      YAML.sequence([1, 2, 3], tag: .seq, anchor: "test").description,
+      "&test !tag:yaml.org,2002:seq [1, 2, 3]"
+    )
 
-    XCTAssertEqual(YAML.mapping(["c": 1, "a": 2, "b": 3]).description,
-                   "{c: 1, a: 2, b: 3}")
-    XCTAssertEqual(YAML.mapping(["c": 1, "a": 2, "b": 3], anchor: "test").description,
-                   "&test {c: 1, a: 2, b: 3}")
-    XCTAssertEqual(YAML.mapping(["c": 1, "a": 2, "b": 3], tag: .map).description,
-                   "!tag:yaml.org,2002:map {c: 1, a: 2, b: 3}")
-    XCTAssertEqual(YAML.mapping(["c": 1, "a": 2, "b": 3], tag: .map, anchor: "test").description,
-                   "&test !tag:yaml.org,2002:map {c: 1, a: 2, b: 3}")
+    XCTAssertEqual(
+      YAML.mapping(["c": 1, "a": 2, "b": 3]).description,
+      "{c: 1, a: 2, b: 3}"
+    )
+    XCTAssertEqual(
+      YAML.mapping(["c": 1, "a": 2, "b": 3], anchor: "test").description,
+      "&test {c: 1, a: 2, b: 3}"
+    )
+    XCTAssertEqual(
+      YAML.mapping(["c": 1, "a": 2, "b": 3], tag: .map).description,
+      "!tag:yaml.org,2002:map {c: 1, a: 2, b: 3}"
+    )
+    XCTAssertEqual(
+      YAML.mapping(["c": 1, "a": 2, "b": 3], tag: .map, anchor: "test").description,
+      "&test !tag:yaml.org,2002:map {c: 1, a: 2, b: 3}"
+    )
 
   }
 
@@ -286,7 +319,7 @@ class YAMLTests: XCTestCase {
       "b": "Testing 1.. 2.. 3..",
       "c": 45.678,
       "d": true,
-      "e": nil
+      "e": nil,
     ]
 
     XCTAssertEqual(
@@ -327,8 +360,10 @@ class YAMLTests: XCTestCase {
     )
 
     XCTAssertEqual(
-      try YAMLSerialization.string(from: ["dquoted": "This should be output dquoted"],
-                                   preferredStringStyle: .doubleQuoted),
+      try YAMLSerialization.string(
+        from: ["dquoted": "This should be output dquoted"],
+        preferredStringStyle: .doubleQuoted
+      ),
       #"""
       "dquoted": "This should be output dquoted"
 
@@ -336,8 +371,10 @@ class YAMLTests: XCTestCase {
     )
 
     XCTAssertEqual(
-      try YAMLSerialization.string(from: ["squoted": "This should be output squoted"],
-                                   preferredStringStyle: .singleQuoted),
+      try YAMLSerialization.string(
+        from: ["squoted": "This should be output squoted"],
+        preferredStringStyle: .singleQuoted
+      ),
       #"""
       'squoted': 'This should be output squoted'
 
@@ -345,8 +382,10 @@ class YAMLTests: XCTestCase {
     )
 
     XCTAssertEqual(
-      try YAMLSerialization.string(from: [.string("plain", style: .plain): "This should be output squoted"],
-                                   preferredStringStyle: .singleQuoted),
+      try YAMLSerialization.string(
+        from: [.string("plain", style: .plain): "This should be output squoted"],
+        preferredStringStyle: .singleQuoted
+      ),
       #"""
       plain: 'This should be output squoted'
 
@@ -366,8 +405,10 @@ class YAMLTests: XCTestCase {
     )
 
     XCTAssertEqual(
-      try YAMLSerialization.string(from: ["flow": "This should be output flow"],
-                                   preferredCollectionStyle: .flow),
+      try YAMLSerialization.string(
+        from: ["flow": "This should be output flow"],
+        preferredCollectionStyle: .flow
+      ),
       #"""
       {
         'flow': 'This should be output flow'
@@ -378,8 +419,10 @@ class YAMLTests: XCTestCase {
 
     XCTAssertEqual(
       try YAMLSerialization
-        .string(from: .mapping([.init(key: "block", value: "This should be output block")], style: .block),
-                preferredCollectionStyle: .flow),
+        .string(
+          from: .mapping([.init(key: "block", value: "This should be output block")], style: .block),
+          preferredCollectionStyle: .flow
+        ),
       #"""
       block: This should be output block
 
@@ -389,7 +432,6 @@ class YAMLTests: XCTestCase {
   }
 
 }
-
 
 private class TestValue: Codable {
   let a: Int

@@ -17,10 +17,6 @@ protocol RefTestValue {}
 
 struct AValue: RefTestValue, Codable {
   let name: String
-
-  init(name: String) {
-    self.name = name
-  }
 }
 
 struct BValue: RefTestValue, Codable {

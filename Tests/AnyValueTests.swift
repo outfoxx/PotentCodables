@@ -262,6 +262,9 @@ class AnyValueTests: XCTestCase {
     XCTAssertEqual(try AnyValue.wrapped(Float16(1.5)), .float16(1.5))
     XCTAssertEqual(try AnyValue.wrapped(Float(1.5)), .float(1.5))
     XCTAssertEqual(try AnyValue.wrapped(Double(1.5)), .double(1.5))
+    XCTAssertEqual(try AnyValue.wrapped(Float16(0.7)), .float16(0.7))
+    XCTAssertEqual(try AnyValue.wrapped(Float(0.7)), .float(0.7))
+    XCTAssertEqual(try AnyValue.wrapped(Double(0.7)), .double(0.7))
     XCTAssertEqual(try AnyValue.wrapped(Decimal(1.23)), .decimal(1.23))
     XCTAssertEqual(try AnyValue.wrapped(Data([1, 2, 3])), .data(Data([1, 2, 3])))
     let url = URL(string: "https://example.com")!
@@ -410,7 +413,7 @@ class AnyValueTests: XCTestCase {
       var f64: AnyValue = .double(123.4567)
       var pdec: AnyValue = .decimal(Decimal(sign: .plus, exponent: -3, significand: 1234567))
       var ndec: AnyValue = .decimal(Decimal(sign: .minus, exponent: -3, significand: 1234567))
-      var data: AnyValue = .data("Binary Data".data(using: .utf8)!)
+      var data: AnyValue = .data(Data("Binary Data".utf8))
       var url: AnyValue = .url(URL(string: "https://example.com/some/thing")!)
       var uuid: AnyValue = .uuid(UUID(uuidString: "46076D06-86E8-4B3B-80EF-B24115D4C609")!)
       var date: AnyValue = .date(Date(timeIntervalSinceReferenceDate: 1234567.89))
