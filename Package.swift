@@ -112,8 +112,14 @@ let package = Package(
       dependencies: ["PotentCodables", "PotentJSON", "PotentCBOR", "PotentASN1", "PotentYAML"],
       path: "./Tests"
     )
-  ],
+  ]
 )
+
+#if swift(>=6)
+package.swiftLanguageModes = [.v5, .v6]
+#elseif swift(<6)
+package.swiftLanguageVersions = [.v5]
+#endif
 
 #if swift(>=5.6)
 
