@@ -42,7 +42,7 @@ class CBORAnyValueTests: XCTestCase {
     let value = try CBOR.Decoder.default.decode(TestValue.self, from: cbor)
     XCTAssertEqual(value.unsigned, AnyValue.int64(123))
     XCTAssertEqual(value.negative, AnyValue.int64(-456))
-    XCTAssertEqual(value.byteString, AnyValue.data("Binary Data".data(using: .utf8)!))
+    XCTAssertEqual(value.byteString, AnyValue.data(Data("Binary Data".utf8)))
     XCTAssertEqual(value.utf8String, AnyValue.string("Hello World!"))
     XCTAssertEqual(value.array, AnyValue.array([.nil, .bool(false), .int64(456), .string("a")]))
     XCTAssertEqual(value.map, AnyValue.dictionary(["c": .int64(1), "a": .int64(2), "d": .int64(3), "b": .int64(4)]))
@@ -84,7 +84,7 @@ class CBORAnyValueTests: XCTestCase {
       var pndec: AnyValue = .decimal(Decimal(sign: .plus, exponent: -3, significand: 1234567))
       var npdec: AnyValue = .decimal(Decimal(sign: .minus, exponent: 1, significand: 1234567))
       var nndec: AnyValue = .decimal(Decimal(sign: .minus, exponent: -3, significand: 1234567))
-      var data: AnyValue = .data("Binary Data".data(using: .utf8)!)
+      var data: AnyValue = .data(Data("Binary Data".utf8))
       var url: AnyValue = .url(URL(string: "https://example.com/some/thing")!)
       var uuid: AnyValue = .uuid(UUID(uuidString: "46076D06-86E8-4B3B-80EF-B24115D4C609")!)
       var date: AnyValue = .date(Date(timeIntervalSinceReferenceDate: 1234567.89))
@@ -146,7 +146,7 @@ class CBORAnyValueTests: XCTestCase {
     let cbor = Data(hexEncoded: "A16762363444617461D82270516D6C7559584A35494552686447453D")
 
     let dstValue = try CBOR.Decoder.default.decode(TestValue.self, from: cbor)
-    XCTAssertEqual(dstValue.b64Data, .data("Binary Data".data(using: .utf8)!))
+    XCTAssertEqual(dstValue.b64Data, .data(Data("Binary Data".utf8)))
   }
 
   func testDecodeTaggedInt() throws {

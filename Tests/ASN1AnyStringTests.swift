@@ -36,8 +36,8 @@ class ASN1AnyStringTests: XCTestCase {
 
   func testCodable() {
 
-    XCTAssertEqual(try JSONEncoder().encode(AnyString("test")), #""test""#.data(using: .utf8))
-    XCTAssertEqual(try JSONDecoder().decode(AnyString.self, from: #""test""#.data(using: .utf8)!), AnyString("test"))
+    XCTAssertEqual(try JSONEncoder().encode(AnyString("test")), Data(#""test""#.utf8))
+    XCTAssertEqual(try JSONDecoder().decode(AnyString.self, from: Data(#""test""#.utf8)), AnyString("test"))
   }
 
   func testUppercased() {

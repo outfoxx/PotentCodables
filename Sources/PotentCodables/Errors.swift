@@ -47,7 +47,8 @@ public extension DecodingError {
     else {
       if let nonOptionalValue = value {
         return String(describing: type(of: nonOptionalValue))
-      } else {
+      }
+      else {
         return "nil"
       }
     }

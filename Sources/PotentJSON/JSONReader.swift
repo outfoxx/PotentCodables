@@ -49,10 +49,6 @@ internal struct JSONReader {
   struct UTF8Source {
     let buffer: UnsafeBufferPointer<UInt8>
 
-    init(buffer: UnsafeBufferPointer<UInt8>) {
-      self.buffer = buffer
-    }
-
     func takeASCII(_ input: Index) -> (UInt8, Index)? {
       guard hasNext(input) else {
         return nil
