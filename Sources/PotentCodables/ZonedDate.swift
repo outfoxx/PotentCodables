@@ -13,7 +13,7 @@ import Foundation
 
 /// Date and explicit specific time zone.
 ///
-public struct ZonedDate: Equatable, Hashable, Codable {
+public struct ZonedDate: Equatable, Hashable, Codable, Sendable {
 
   /// Date in UTC time zone.
   public var date: Date

@@ -21,7 +21,7 @@ public indirect enum ASN1 {
   public typealias AnyTag = UInt8
 
   /// ASN.1 Tag
-  public enum Tag: UInt8, CaseIterable, Codable {
+  public enum Tag: UInt8, CaseIterable {
 
     /// Class of ASN.1 Tag
     public enum Class: UInt8 {
@@ -370,6 +370,7 @@ public func == (lhs: ASN1.AnyTag, rhs: ASN1.Tag) -> Bool {
 
 
 extension ASN1: Hashable {}
+extension ASN1: Sendable {}
 extension ASN1: Value {
 
   /// Check if this value is an ASN.1 ``null``.
@@ -378,6 +379,20 @@ extension ASN1: Value {
   }
 
 }
+
+
+extension ASN1.Tag.Class: Equatable {}
+
+extension ASN1.Tag.Class: Hashable {}
+
+extension ASN1.Tag.Class: Sendable {}
+
+
+extension ASN1.Tag: Equatable {}
+
+extension ASN1.Tag: Hashable {}
+
+extension ASN1.Tag: Sendable {}
 
 extension ASN1.Tag: CustomStringConvertible {
 

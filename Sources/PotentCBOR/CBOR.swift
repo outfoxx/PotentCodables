@@ -38,7 +38,7 @@ public indirect enum CBOR {
 
   /// A CBOR `tag` for tagged values supported by the specification.
   ///
-  public struct Tag: RawRepresentable, Equatable, Hashable {
+  public struct Tag: RawRepresentable {
     public let rawValue: UInt64
 
     public init(rawValue: UInt64) {
@@ -256,8 +256,13 @@ public extension CBOR.Tag {
 
 // MARK: Conformances
 
+extension CBOR.Tag: Equatable {}
+extension CBOR.Tag: Hashable {}
+extension CBOR.Tag: Sendable {}
+
 extension CBOR: Equatable {}
 extension CBOR: Hashable {}
+extension CBOR: Sendable {}
 extension CBOR: Value {
 
   public var isNull: Bool {
@@ -343,7 +348,7 @@ extension CBOR: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, Expressibl
 }
 
 
-// Make encoders/decoders available in AnyValue namespace
+// Make encoders/decoders available in CBOR namespace
 
 public extension CBOR {
 

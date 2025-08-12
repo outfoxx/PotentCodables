@@ -39,7 +39,7 @@ public enum JSON {
     case invalidNumber
   }
 
-  public struct Number: Equatable, Hashable, Codable {
+  public struct Number {
 
     public var value: String
     public var isInteger: Bool
@@ -213,8 +213,14 @@ public enum JSON {
 
 // MARK: Conformances
 
+extension JSON.Number: Equatable {}
+extension JSON.Number: Hashable {}
+extension JSON.Number: Codable {}
+extension JSON.Number: Sendable {}
+
 extension JSON: Equatable {}
 extension JSON: Hashable {}
+extension JSON: Sendable {}
 extension JSON: Value {
 
   public var isNull: Bool {
@@ -321,7 +327,7 @@ extension JSON.Number: ExpressibleByFloatLiteral, ExpressibleByIntegerLiteral, E
 }
 
 
-// Make encoders/decoders available in AnyValue namespace
+// Make encoders/decoders available in JSON namespace
 
 public extension JSON {
 
